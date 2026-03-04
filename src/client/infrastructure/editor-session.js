@@ -26,6 +26,19 @@ import { createRandomUser } from '../domain/room.js';
 import { resolveWsBaseUrl } from './runtime-config.js';
 
 function createEditorTheme(theme) {
+  const activeLineBackground = theme === 'dark'
+    ? 'oklch(from var(--color-surface-offset) l c h / 0.55)'
+    : 'oklch(from var(--color-surface-offset) l c h / 0.75)';
+  const activeLineAccent = theme === 'dark'
+    ? 'oklch(from var(--color-primary) l c h / 0.28)'
+    : 'oklch(from var(--color-primary) l c h / 0.18)';
+  const selectionBackground = theme === 'dark'
+    ? 'oklch(from var(--color-primary) l c h / 0.4)'
+    : 'oklch(from var(--color-primary) l c h / 0.26)';
+  const selectionBorder = theme === 'dark'
+    ? 'oklch(from var(--color-primary) l c h / 0.65)'
+    : 'oklch(from var(--color-primary) l c h / 0.5)';
+
   return EditorView.theme({
     '&': {
       backgroundColor: 'var(--color-bg)',
@@ -55,10 +68,12 @@ function createEditorTheme(theme) {
       padding: '0 16px',
     },
     '.cm-activeLine': {
-      backgroundColor: 'var(--color-surface-offset)',
+      backgroundColor: activeLineBackground,
+      boxShadow: `inset 3px 0 0 ${activeLineAccent}`,
     },
     '.cm-activeLineGutter': {
-      backgroundColor: 'var(--color-surface-offset)',
+      backgroundColor: activeLineBackground,
+      boxShadow: `inset 3px 0 0 ${activeLineAccent}`,
       color: 'var(--color-text-muted)',
     },
     '.cm-matchingBracket': {
@@ -69,7 +84,11 @@ function createEditorTheme(theme) {
       backgroundColor: 'var(--color-primary-highlight)',
     },
     '&.cm-focused .cm-selectionBackground, .cm-selectionBackground, .cm-content ::selection': {
-      backgroundColor: 'var(--color-primary-highlight)',
+      backgroundColor: selectionBackground,
+    },
+    '&.cm-focused .cm-selectionLayer .cm-selectionBackground': {
+      border: `1px solid ${selectionBorder}`,
+      borderRadius: '2px',
     },
   }, { dark: theme === 'dark' });
 }
