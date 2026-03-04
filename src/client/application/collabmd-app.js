@@ -4,6 +4,7 @@ import { EditorSession } from '../infrastructure/editor-session.js';
 import { getRoomFromHash, navigateToRoom } from '../infrastructure/runtime-config.js';
 import { LayoutController } from '../presentation/layout-controller.js';
 import { OutlineController } from '../presentation/outline-controller.js';
+import { ScrollSyncController } from '../presentation/scroll-sync-controller.js';
 import { ThemeController } from '../presentation/theme-controller.js';
 import { ToastController } from '../presentation/toast-controller.js';
 
@@ -24,6 +25,7 @@ export class CollabMdApp {
       landingPage: document.getElementById('landing'),
       lineInfo: document.getElementById('lineInfo'),
       previewContent: document.getElementById('previewContent'),
+      previewContainer: document.getElementById('previewContainer'),
       roomInput: document.getElementById('roomInput'),
       roomName: document.getElementById('roomName'),
       shareButton: document.getElementById('shareBtn'),
@@ -43,6 +45,7 @@ export class CollabMdApp {
     this.outlineController = new OutlineController();
     this.previewRenderer = new PreviewRenderer({
       getContent: () => this.session?.getText() ?? '',
+      onRenderComplete: () => this.scrollSyncController.syncPreviewToEditor(),
       outlineController: this.outlineController,
       previewElement: this.elements.previewContent,
     });
@@ -52,6 +55,9 @@ export class CollabMdApp {
     this.layoutController = new LayoutController({
       onMeasureEditor: () => this.session?.requestMeasure(),
     });
+    this.scrollSyncController = new ScrollSyncController({
+      previewContainer: this.elements.previewContainer,
+    });
   }
 
   initialize() {
@@ -59,6 +65,7 @@ export class CollabMdApp {
     this.previewRenderer.applyTheme(this.themeController.getTheme());
     this.outlineController.initialize();
     this.layoutController.initialize();
+    this.scrollSyncController.initialize();
     this.syncCurrentUserName();
     this.bindEvents();
 
@@ -119,6 +126,7 @@ export class CollabMdApp {
       clearTimeout(resizeTimer);
       resizeTimer = setTimeout(() => {
         this.session?.requestMeasure();
+        this.scrollSyncController.syncPreviewToEditor();
       }, 100);
     };
   }
@@ -183,11 +191,13 @@ export class CollabMdApp {
         return;
       }
 
+      this.scrollSyncController.attachEditorScroller(session.getScrollContainer());
       session.applyTheme(this.themeController.getTheme());
       this.previewRenderer.queueRender();
     } catch (error) {
       console.error('[app] Failed to initialize editor:', error);
       session.destroy();
+      this.scrollSyncController.attachEditorScroller(null);
       if (this.session === session) {
         this.session = null;
       }
@@ -204,6 +214,7 @@ export class CollabMdApp {
   cleanupSession() {
     this.session?.destroy();
     this.session = null;
+    this.scrollSyncController.attachEditorScroller(null);
     this.outlineController.cleanup();
   }
 

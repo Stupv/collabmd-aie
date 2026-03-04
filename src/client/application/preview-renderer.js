@@ -119,8 +119,9 @@ function createMarkdownRenderer() {
 }
 
 export class PreviewRenderer {
-  constructor({ getContent, outlineController, previewElement }) {
+  constructor({ getContent, onRenderComplete, outlineController, previewElement }) {
     this.getContent = getContent;
+    this.onRenderComplete = onRenderComplete;
     this.outlineController = outlineController;
     this.previewElement = previewElement;
     this.markdown = createMarkdownRenderer();
@@ -185,17 +186,21 @@ export class PreviewRenderer {
 
     this.wrapTables();
 
-    const mermaidNodes = this.previewElement.querySelectorAll('.mermaid');
-    if (mermaid && mermaidNodes.length > 0) {
-      try {
-        await mermaid.run({ nodes: mermaidNodes });
-        this.enhanceMermaidDiagrams();
-      } catch (error) {
-        console.warn('[preview] Mermaid render failed:', error);
+    try {
+      const mermaidNodes = this.previewElement.querySelectorAll('.mermaid');
+      if (mermaid && mermaidNodes.length > 0) {
+        try {
+          await mermaid.run({ nodes: mermaidNodes });
+          this.enhanceMermaidDiagrams();
+        } catch (error) {
+          console.warn('[preview] Mermaid render failed:', error);
+        }
       }
-    }
 
-    this.outlineController.refresh();
+      this.outlineController.refresh();
+    } finally {
+      this.onRenderComplete?.();
+    }
   }
 
   wrapTables() {

@@ -247,6 +247,10 @@ export class EditorSession {
     return '';
   }
 
+  getScrollContainer() {
+    return this.editorView?.scrollDOM ?? null;
+  }
+
   getLocalUser() {
     return this.localUser;
   }
