@@ -1,3 +1,5 @@
+import { clamp } from '../domain/vault-utils.js';
+
 const VIEWPORT_FOCUS_RATIO = 0.35;
 const MIN_VIEWPORT_FOCUS_OFFSET = 12;
 
@@ -7,10 +9,6 @@ function getScrollableRange(element) {
 
 function clampScrollTop(value) {
   return Math.max(value, 0);
-}
-
-function clamp(value, min, max) {
-  return Math.min(Math.max(value, min), max);
 }
 
 function getViewportFocusOffset(element) {

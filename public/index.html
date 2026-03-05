@@ -206,6 +206,19 @@
   <!-- Toast notifications -->
   <div class="toast-container" id="toastContainer"></div>
 
+  <!-- Quick Switcher (Cmd+K) -->
+  <div class="qs-overlay" id="quickSwitcher">
+    <div class="qs-modal">
+      <div class="qs-input-wrap">
+        <svg class="qs-search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input type="text" class="qs-input" id="quickSwitcherInput" placeholder="Search files..." autocomplete="off" spellcheck="false">
+        <kbd class="qs-kbd">esc</kbd>
+      </div>
+      <div class="qs-results" id="quickSwitcherResults"></div>
+      <div class="qs-hint" id="quickSwitcherHint">Type to search files</div>
+    </div>
+  </div>
+
   <script src="./assets/vendor/mermaid/mermaid.min.js" defer></script>
   <script src="./app-config.js"></script>
   <script type="module" src="./assets/js/main.js"></script>

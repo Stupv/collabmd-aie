@@ -1,10 +1,13 @@
 import { PreviewRenderer } from './preview-renderer.js';
-import { USER_NAME_MAX_LENGTH, normalizeUserName, generateRoomId } from '../domain/room.js';
+import { USER_NAME_MAX_LENGTH, normalizeUserName } from '../domain/room.js';
+import { resolveWikiTarget } from '../domain/vault-utils.js';
 import { EditorSession } from '../infrastructure/editor-session.js';
+import { LobbyPresence } from '../infrastructure/lobby-presence.js';
 import { getFileFromHash, navigateToFile } from '../infrastructure/runtime-config.js';
 import { FileExplorerController } from '../presentation/file-explorer-controller.js';
 import { LayoutController } from '../presentation/layout-controller.js';
 import { OutlineController } from '../presentation/outline-controller.js';
+import { QuickSwitcherController } from '../presentation/quick-switcher-controller.js';
 import { ScrollSyncController } from '../presentation/scroll-sync-controller.js';
 import { ThemeController } from '../presentation/theme-controller.js';
 import { ToastController } from '../presentation/toast-controller.js';
@@ -37,7 +40,7 @@ export class CollabMdApp {
 
     this.session = null;
     this.currentFilePath = null;
-    this.onlineUsers = [];
+    this.globalUsers = [];
     this.connectionState = { status: 'disconnected', unreachable: false };
     this.sessionLoadToken = 0;
     this.connectionHelpShown = false;
@@ -47,7 +50,16 @@ export class CollabMdApp {
     this.followedUserClientId = null;
     this.followedCursorSignature = '';
 
+    this.lobby = new LobbyPresence({
+      preferredUserName: this.getStoredUserName(),
+      onChange: (users) => this.updateGlobalUsers(users),
+    });
+
     this.toastController = new ToastController(this.elements.toastContainer);
+    this.quickSwitcher = new QuickSwitcherController({
+      getFileList: () => this.fileExplorer.flatFiles,
+      onFileSelect: (filePath) => navigateToFile(filePath),
+    });
     this.fileExplorer = new FileExplorerController({
       onFileSelect: (filePath) => navigateToFile(filePath),
       onFileDelete: () => navigateToFile(null),
@@ -61,6 +73,7 @@ export class CollabMdApp {
     });
     this.previewRenderer = new PreviewRenderer({
       getContent: () => this.session?.getText() ?? '',
+      getFileList: () => this.fileExplorer.flatFiles,
       onRenderComplete: () => {
         requestAnimationFrame(() => {
           this.scrollSyncController.invalidatePreviewBlocks();
@@ -97,6 +110,9 @@ export class CollabMdApp {
     this.bindEvents();
     this.restoreSidebarState();
 
+    // Connect to the global presence lobby
+    this.lobby.connect();
+
     window.addEventListener('hashchange', () => this.handleHashChange());
     window.addEventListener('resize', this.createResizeHandler());
 
@@ -130,6 +146,13 @@ export class CollabMdApp {
     this.elements.sidebarToggle?.addEventListener('click', () => {
       this.toggleSidebar();
     });
+
+    document.addEventListener('keydown', (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        this.quickSwitcher.toggle();
+      }
+    });
   }
 
   createResizeHandler() {
@@ -159,13 +182,16 @@ export class CollabMdApp {
     this.sessionLoadToken += 1;
     this.cleanupSession();
     this.currentFilePath = null;
+    this.lobby.setCurrentFile(null);
     this.fileExplorer.setActiveFile(null);
 
     this.elements.emptyState?.classList.remove('hidden');
     this.elements.editorPage?.classList.add('hidden');
     this.elements.previewContent.innerHTML = '';
-    this.elements.userAvatars.innerHTML = '';
-    this.elements.userCount.textContent = '';
+
+    // Re-render global presence (users are still visible on the empty state)
+    this.renderAvatars();
+    this.renderPresence();
 
     if (this.elements.activeFileName) {
       this.elements.activeFileName.textContent = 'CollabMD';
@@ -179,9 +205,9 @@ export class CollabMdApp {
     this.cleanupSession();
     this.layoutController.reset();
     this.connectionHelpShown = false;
-    this.onlineUsers = [];
     this.connectionState = { status: 'connecting', unreachable: false };
     this.currentFilePath = filePath;
+    this.lobby.setCurrentFile(filePath);
 
     this.fileExplorer.setActiveFile(filePath);
 
@@ -201,10 +227,12 @@ export class CollabMdApp {
       lineWrappingEnabled: this.getStoredLineWrapping(),
       initialTheme: this.themeController.getTheme(),
       lineInfoElement: this.elements.lineInfo,
-      onAwarenessChange: (users) => this.updateOnlineUsers(users),
+      onAwarenessChange: (users) => this.updateFileAwareness(users),
       onConnectionChange: (state) => this.handleConnectionChange(state),
       onContentChange: () => this.previewRenderer.queueRender(),
       preferredUserName: this.getStoredUserName(),
+      localUser: this.lobby.getLocalUser(),
+      getFileList: () => this.fileExplorer.flatFiles,
     });
 
     this.session = session;
@@ -242,22 +270,38 @@ export class CollabMdApp {
     this.session = null;
     this.scrollSyncController.attachEditorScroller(null);
     this.outlineController.cleanup();
-    this.followedUserClientId = null;
+    // Keep followedUserClientId — follow persists across file switches
     this.followedCursorSignature = '';
   }
 
   handleWikiLinkClick(target) {
     const files = this.fileExplorer.flatFiles;
-    const normalized = target.endsWith('.md') ? target : `${target}.md`;
-
-    const match = files.find((f) => {
-      return f === normalized || f.endsWith(`/${normalized}`) || f.replace(/\.md$/i, '') === target;
-    });
+    const match = resolveWikiTarget(target, files);
 
     if (match) {
       navigateToFile(match);
     } else {
-      this.toastController.show(`File not found: ${target}`);
+      this.createAndOpenFile(normalized, target);
+    }
+  }
+
+  async createAndOpenFile(filePath, displayName) {
+    try {
+      const response = await fetch('/api/file', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ path: filePath, content: `# ${displayName}\n\n` }),
+      });
+      const data = await response.json();
+      if (data.ok) {
+        await this.fileExplorer.refresh();
+        navigateToFile(filePath);
+        this.toastController.show(`Created ${displayName}`);
+      } else {
+        this.toastController.show(data.error || 'Failed to create file');
+      }
+    } catch (error) {
+      this.toastController.show(`Failed to create file: ${error.message}`);
     }
   }
 
@@ -314,14 +358,22 @@ export class CollabMdApp {
     }
   }
 
-  // Presence
+  // Presence — global (lobby) + per-file awareness
 
-  updateOnlineUsers(users) {
-    this.onlineUsers = users;
+  /** Called by the lobby whenever the global user list changes. */
+  updateGlobalUsers(users) {
+    this.globalUsers = users;
     this.syncFollowedUser();
     this.renderAvatars();
     this.renderPresence();
     this.syncCurrentUserName();
+  }
+
+  /** Called by the per-file EditorSession awareness (cursor data only). */
+  updateFileAwareness(_users) {
+    // Cursor positions from the file-level awareness are used by followUserCursor.
+    // Re-check the followed user whenever cursors update.
+    this.syncFollowedUser();
   }
 
   renderPresence() {
@@ -329,7 +381,7 @@ export class CollabMdApp {
     if (!badge) return;
 
     if (this.connectionState.status === 'connected') {
-      badge.textContent = `${this.onlineUsers.length} online`;
+      badge.textContent = `${this.globalUsers.length} online`;
       badge.style.opacity = '1';
       return;
     }
@@ -349,7 +401,7 @@ export class CollabMdApp {
     if (!avatars) return;
 
     avatars.innerHTML = '';
-    const visibleUsers = [...this.onlineUsers];
+    const visibleUsers = [...this.globalUsers];
     const followedIndex = visibleUsers.findIndex((u) => u.clientId === this.followedUserClientId);
     if (followedIndex > 0) {
       const [followed] = visibleUsers.splice(followedIndex, 1);
@@ -363,14 +415,25 @@ export class CollabMdApp {
       avatar.textContent = user.name.charAt(0).toUpperCase();
       avatar.classList.toggle('is-following', user.clientId === this.followedUserClientId);
 
+      // Show which file the user is in, and whether they're on the same file
+      const sameFile = user.currentFile && user.currentFile === this.currentFilePath;
+      const fileLabel = user.currentFile
+        ? user.currentFile.replace(/\.md$/i, '').split('/').pop()
+        : 'No file';
+
       if (user.isLocal) {
-        avatar.title = `${user.name} (you)`;
+        avatar.title = `${user.name} (you) — ${fileLabel}`;
       } else {
         avatar.type = 'button';
         avatar.classList.add('user-avatar-button');
+        if (!sameFile) {
+          avatar.classList.add('different-file');
+        }
         avatar.title = user.clientId === this.followedUserClientId
           ? `Stop following ${user.name}`
-          : `Follow ${user.name}`;
+          : sameFile
+            ? `Follow ${user.name}`
+            : `Follow ${user.name} — ${fileLabel}`;
         avatar.addEventListener('click', () => this.toggleFollowUser(user.clientId));
       }
 
@@ -397,26 +460,33 @@ export class CollabMdApp {
       return;
     }
 
-    const user = this.onlineUsers.find((u) => u.clientId === clientId && !u.isLocal);
+    const user = this.globalUsers.find((u) => u.clientId === clientId && !u.isLocal);
     if (!user) return;
 
     this.followedUserClientId = clientId;
     this.followedCursorSignature = '';
     this.renderAvatars();
+
+    // If the followed user is on a different file, navigate there first
+    if (user.currentFile && user.currentFile !== this.currentFilePath) {
+      navigateToFile(user.currentFile);
+      this.toastController.show(`Following ${user.name} — switching to ${user.currentFile.replace(/\.md$/i, '').split('/').pop()}`);
+      return;
+    }
+
+    // Same file — scroll to their cursor
     requestAnimationFrame(() => {
       if (this.followedUserClientId === clientId) {
         this.followUserCursor(user, { force: true });
       }
     });
 
-    this.toastController.show(
-      user.hasCursor ? `Following ${user.name}` : `Following ${user.name}. Waiting for cursor.`,
-    );
+    this.toastController.show(`Following ${user.name}`);
   }
 
   stopFollowingUser(showToast = true) {
     if (!this.followedUserClientId) return;
-    const name = this.onlineUsers.find((u) => u.clientId === this.followedUserClientId)?.name ?? 'collaborator';
+    const name = this.globalUsers.find((u) => u.clientId === this.followedUserClientId)?.name ?? 'collaborator';
     this.followedUserClientId = null;
     this.followedCursorSignature = '';
     this.renderAvatars();
@@ -425,19 +495,31 @@ export class CollabMdApp {
 
   syncFollowedUser() {
     if (!this.followedUserClientId) return;
-    const user = this.onlineUsers.find((u) => u.clientId === this.followedUserClientId);
+    const user = this.globalUsers.find((u) => u.clientId === this.followedUserClientId);
     if (!user || user.isLocal) {
       this.stopFollowingUser(false);
       return;
     }
+
+    // If the followed user switched to a different file, follow them there
+    if (user.currentFile && user.currentFile !== this.currentFilePath) {
+      navigateToFile(user.currentFile);
+      this.toastController.show(`${user.name} switched to ${user.currentFile.replace(/\.md$/i, '').split('/').pop()}`);
+      return;
+    }
+
+    // Same file — scroll to their cursor
     this.followUserCursor(user);
   }
 
   followUserCursor(user, { force = false } = {}) {
-    const liveCursor = user?.clientId ? this.session?.getUserCursor(user.clientId) : null;
-    const cursorHead = liveCursor?.cursorHead ?? user?.cursorHead;
-    const cursorLine = liveCursor?.cursorLine ?? user?.cursorLine;
-    const cursorAnchor = liveCursor?.cursorAnchor ?? user?.cursorAnchor;
+    // The lobby user has a different clientId from the per-file awareness.
+    // Use peerId to find the matching per-file awareness entry.
+    const fileClientId = this._resolveFileClientId(user.peerId);
+    const liveCursor = fileClientId != null ? this.session?.getUserCursor(fileClientId) : null;
+    const cursorHead = liveCursor?.cursorHead ?? null;
+    const cursorLine = liveCursor?.cursorLine ?? null;
+    const cursorAnchor = liveCursor?.cursorAnchor ?? null;
 
     if (!user || cursorHead == null || cursorLine == null) {
       this.followedCursorSignature = '';
@@ -447,10 +529,22 @@ export class CollabMdApp {
     const nextSig = `${user.clientId}:${cursorAnchor}:${cursorHead}`;
     if (!force && nextSig === this.followedCursorSignature) return;
 
-    const didScroll = this.session?.scrollToUserCursor(user.clientId, 'center')
+    const didScroll = (fileClientId != null && this.session?.scrollToUserCursor(fileClientId, 'center'))
       || this.session?.scrollToPosition(cursorHead, 'center')
       || this.session?.scrollToLine(cursorLine);
     if (didScroll) this.followedCursorSignature = nextSig;
+  }
+
+  /**
+   * Given a peerId from the lobby, find the matching clientId in the
+   * current per-file EditorSession awareness.
+   */
+  _resolveFileClientId(peerId) {
+    if (!peerId || !this.session?.awareness) return null;
+    for (const [clientId, state] of this.session.awareness.getStates()) {
+      if (state.user?.peerId === peerId) return clientId;
+    }
+    return null;
   }
 
   // Display name dialog
@@ -482,6 +576,7 @@ export class CollabMdApp {
     }
 
     this.storeUserName(normalizedName);
+    this.lobby.setUserName(normalizedName);
     this.syncCurrentUserName();
     dialog.close();
     this.toastController.show(`Display name: ${normalizedName}`);
@@ -501,7 +596,10 @@ export class CollabMdApp {
   // User name storage
 
   getCurrentUser() {
-    return this.onlineUsers.find((u) => u.isLocal) ?? this.session?.getLocalUser() ?? null;
+    return this.globalUsers.find((u) => u.isLocal)
+      ?? this.session?.getLocalUser()
+      ?? this.lobby?.getLocalUser()
+      ?? null;
   }
 
   getCurrentUserName() {

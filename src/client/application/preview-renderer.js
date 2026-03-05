@@ -1,5 +1,6 @@
 import markdownIt from 'markdown-it';
 import hljs from 'highlight.js';
+import { clamp, resolveWikiTarget } from '../domain/vault-utils.js';
 
 const MERMAID_ZOOM = {
   default: 1,
@@ -37,10 +38,6 @@ function cancelIdleRender(id) {
   }
 
   window.clearTimeout(id);
-}
-
-function clamp(value, min, max) {
-  return Math.min(Math.max(value, min), max);
 }
 
 function getSvgSize(svg) {
@@ -179,8 +176,9 @@ function createMarkdownRenderer() {
 }
 
 export class PreviewRenderer {
-  constructor({ getContent, onRenderComplete, onWikiLinkClick, outlineController, previewElement }) {
+  constructor({ getContent, getFileList, onRenderComplete, onWikiLinkClick, outlineController, previewElement }) {
     this.getContent = getContent;
+    this.getFileList = getFileList;
     this.onRenderComplete = onRenderComplete;
     this.onWikiLinkClick = onWikiLinkClick;
     this.outlineController = outlineController;
@@ -373,6 +371,12 @@ export class PreviewRenderer {
         link.href = '#';
         link.textContent = display;
         link.dataset.wikiTarget = target;
+
+        if (!resolveWikiTarget(target, this.getFileList?.() ?? [])) {
+          link.classList.add('wiki-link-new');
+          link.title = `Create "${target}"`;
+        }
+
         link.addEventListener('click', (e) => {
           e.preventDefault();
           this.onWikiLinkClick?.(target);

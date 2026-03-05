@@ -1,9 +1,9 @@
+import { escapeHtml } from '../domain/vault-utils.js';
+
 export class FileExplorerController {
-  constructor({ onFileSelect, onFileCreate, onFileDelete, onFileRename }) {
+  constructor({ onFileSelect, onFileDelete }) {
     this.onFileSelect = onFileSelect;
-    this.onFileCreate = onFileCreate;
     this.onFileDelete = onFileDelete;
-    this.onFileRename = onFileRename;
     this.panel = document.getElementById('fileExplorer');
     this.treeContainer = document.getElementById('fileTree');
     this.newFileButton = document.getElementById('newFileBtn');
@@ -39,7 +39,7 @@ export class FileExplorerController {
     }
   }
 
-  flattenTree(nodes, prefix = '') {
+  flattenTree(nodes) {
     const files = [];
     for (const node of nodes) {
       if (node.type === 'file') {
@@ -133,7 +133,7 @@ export class FileExplorerController {
     button.innerHTML = `
       <svg class="file-tree-chevron${isExpanded ? ' expanded' : ''}" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
       <svg class="file-tree-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
-      <span class="file-tree-name">${this.escapeHtml(node.name)}</span>
+      <span class="file-tree-name">${escapeHtml(node.name)}</span>
     `;
 
     button.addEventListener('click', () => {
@@ -170,7 +170,7 @@ export class FileExplorerController {
 
     button.innerHTML = `
       <svg class="file-tree-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-      <span class="file-tree-name">${this.escapeHtml(displayName)}</span>
+      <span class="file-tree-name">${escapeHtml(displayName)}</span>
     `;
 
     button.addEventListener('click', () => {
@@ -317,11 +317,5 @@ export class FileExplorerController {
     } catch (error) {
       alert(`Failed to delete: ${error.message}`);
     }
-  }
-
-  escapeHtml(text) {
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
   }
 }

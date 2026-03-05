@@ -35,7 +35,8 @@ export function createAppServer(config = loadConfig()) {
       maxBufferedAmountBytes: config.wsMaxBufferedAmountBytes,
       name,
       onEmpty,
-      vaultFileStore,
+      // The __lobby__ room is awareness-only (global presence) — no file.
+      vaultFileStore: name === '__lobby__' ? null : vaultFileStore,
     }),
   });
   const requestHandler = createRequestHandler(config, vaultFileStore);

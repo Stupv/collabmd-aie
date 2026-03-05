@@ -227,7 +227,7 @@ export class CollaborationRoom {
   }
 
   handleMessage(ws, rawData) {
-    const message = rawData instanceof Buffer ? new Uint8Array(rawData) : new Uint8Array(rawData);
+    const message = new Uint8Array(rawData);
 
     try {
       const decoder = decoding.createDecoder(message);

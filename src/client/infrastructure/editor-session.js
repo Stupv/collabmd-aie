@@ -22,6 +22,7 @@ import { yCollab } from 'y-codemirror.next';
 import * as Y from 'yjs';
 
 import { createRandomUser, normalizeUserName } from '../domain/room.js';
+import { wikiLinkCompletions } from '../domain/wiki-link-completions.js';
 import { resolveWsBaseUrl } from './runtime-config.js';
 
 function createEditorTheme(theme) {
@@ -102,6 +103,8 @@ export class EditorSession {
     onConnectionChange,
     onContentChange,
     preferredUserName,
+    localUser,
+    getFileList,
   }) {
     this.editorContainer = editorContainer;
     this.lineWrappingEnabled = lineWrappingEnabled;
@@ -111,6 +114,8 @@ export class EditorSession {
     this.onConnectionChange = onConnectionChange;
     this.onContentChange = onContentChange;
     this.preferredUserName = preferredUserName;
+    this._providedLocalUser = localUser || null;
+    this.getFileList = getFileList || (() => []);
     this.editorView = null;
     this.provider = null;
     this.awareness = null;
@@ -129,7 +134,7 @@ export class EditorSession {
     this.ytext = this.ydoc.getText('codemirror');
 
     const undoManager = new Y.UndoManager(this.ytext);
-    const user = createRandomUser(this.preferredUserName);
+    const user = this._providedLocalUser ?? createRandomUser(this.preferredUserName);
     const provider = new WebsocketProvider(this.wsBaseUrl, filePath, this.ydoc, {
       disableBc: true,
       maxBackoffTime: 5000,
@@ -185,7 +190,9 @@ export class EditorSession {
           syntaxHighlighting(defaultHighlightStyle, { fallback: true }),
           bracketMatching(),
           closeBrackets(),
-          autocompletion(),
+          autocompletion({
+            override: [wikiLinkCompletions(this.getFileList)],
+          }),
           rectangularSelection(),
           crosshairCursor(),
           highlightActiveLine(),

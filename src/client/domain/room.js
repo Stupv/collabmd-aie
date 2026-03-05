@@ -1,5 +1,3 @@
-const ROOM_ADJECTIVES = ['swift', 'bright', 'calm', 'deep', 'quick', 'warm', 'bold', 'keen', 'neat', 'vast'];
-const ROOM_NOUNS = ['note', 'page', 'doc', 'draft', 'memo', 'plan', 'idea', 'mark', 'text', 'code'];
 const USER_NAMES = [
   'Alice', 'Bob', 'Charlie', 'Dana', 'Eve', 'Frank', 'Grace', 'Hank', 'Iris', 'Jack',
   'Kim', 'Leo', 'Maya', 'Nate', 'Olivia', 'Pete', 'Quinn', 'Ruby', 'Sam', 'Tara',
@@ -15,16 +13,28 @@ function pickRandom(items) {
   return items[Math.floor(Math.random() * items.length)];
 }
 
+function generatePeerId() {
+  const array = new Uint8Array(8);
+  (globalThis.crypto ?? {}).getRandomValues?.(array);
+  return Array.from(array, (b) => b.toString(16).padStart(2, '0')).join('');
+}
+
+// A stable peer ID for this browser tab, shared across lobby and per-file sessions.
+let _localPeerId = null;
+
+export function getLocalPeerId() {
+  if (!_localPeerId) {
+    _localPeerId = generatePeerId();
+  }
+  return _localPeerId;
+}
+
 export function normalizeUserName(value) {
   const normalized = String(value ?? '')
     .trim()
     .replace(/\s+/g, ' ')
     .slice(0, USER_NAME_MAX_LENGTH);
   return normalized || null;
-}
-
-export function generateRoomId() {
-  return `${pickRandom(ROOM_ADJECTIVES)}-${pickRandom(ROOM_NOUNS)}-${Math.floor(Math.random() * 999)}`;
 }
 
 export function createRandomUser(preferredName = null) {
@@ -34,5 +44,6 @@ export function createRandomUser(preferredName = null) {
     color,
     colorLight: `${color}33`,
     name: normalizeUserName(preferredName) ?? pickRandom(USER_NAMES),
+    peerId: getLocalPeerId(),
   };
 }
