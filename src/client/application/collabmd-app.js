@@ -35,6 +35,7 @@ export class CollabMdApp {
       wrapToggleLabel: document.getElementById('wrapToggleLabel'),
       activeFileName: document.getElementById('activeFileName'),
       sidebarToggle: document.getElementById('sidebarToggle'),
+      sidebarClose: document.getElementById('sidebarClose'),
       sidebar: document.getElementById('sidebar'),
       emptyState: document.getElementById('emptyState'),
       backlinksPanel: document.getElementById('backlinksPanel'),
@@ -152,6 +153,10 @@ export class CollabMdApp {
 
     this.elements.sidebarToggle?.addEventListener('click', () => {
       this.toggleSidebar();
+    });
+
+    this.elements.sidebarClose?.addEventListener('click', () => {
+      this.closeSidebarOnMobile();
     });
 
     document.addEventListener('keydown', (e) => {

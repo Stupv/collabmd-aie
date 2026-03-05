@@ -253,17 +253,33 @@ test.describe('mobile sidebar', () => {
     viewport: { width: 390, height: 844 },
   });
 
+  test('closes the sidebar when tapping close button on mobile', async ({ page }) => {
+    await page.goto('/');
+
+    const sidebar = page.locator('#sidebar');
+    if (await sidebar.isHidden()) {
+      await page.locator('#sidebarToggle').click();
+    }
+    await expect(sidebar).toBeVisible();
+
+    await page.locator('#sidebarClose').click();
+
+    await expect(sidebar).toBeHidden();
+  });
+
   test('closes the sidebar after selecting a file on mobile', async ({ page }) => {
     await page.goto('/');
 
-    await expect(page.locator('#sidebar')).toBeHidden();
-    await page.locator('#sidebarToggle').click();
-    await expect(page.locator('#sidebar')).toBeVisible();
+    const sidebar = page.locator('#sidebar');
+    if (await sidebar.isHidden()) {
+      await page.locator('#sidebarToggle').click();
+    }
+    await expect(sidebar).toBeVisible();
     await expect(page.locator('#fileTree')).toContainText('README');
 
     await page.locator('#fileTree .file-tree-item', { hasText: 'README' }).first().click();
 
     await waitForEditor(page);
-    await expect(page.locator('#sidebar')).toBeHidden();
+    await expect(sidebar).toBeHidden();
   });
 });
