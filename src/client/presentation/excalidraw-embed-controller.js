@@ -2,7 +2,9 @@ import { reconcileEmbedEntries } from './excalidraw-embed-reconciler.js';
 
 const DEFAULT_HEIGHT = 420;
 const HYDRATE_TIMEOUT_MS = 500;
+const IFRAME_BOOT_TIMEOUT_MS = 15000;
 const MAX_HEIGHT = 800;
+const MAX_IFRAME_BOOT_ATTEMPTS = 3;
 const MIN_HEIGHT = 200;
 
 function requestIdleRender(callback, timeout) {
@@ -84,6 +86,7 @@ export class ExcalidrawEmbedController {
     document.body.classList.remove('excalidraw-maximized-open');
 
     this.embedEntries.forEach((entry) => {
+      this._clearEntryBootTimeout(entry);
       entry.wrapper?.remove();
       entry.placeholder = null;
     });
@@ -294,6 +297,8 @@ export class ExcalidrawEmbedController {
       entry.iframe = mount.iframe;
       entry.labelElement = mount.labelElement;
       entry.instanceId = mount.instanceId;
+      entry.bootAttempts = (entry.bootAttempts ?? 0) + 1;
+      this._armEntryBootTimeout(entry);
     }
 
     this._updateEmbedLabel(entry);
@@ -331,9 +336,75 @@ export class ExcalidrawEmbedController {
       this._exitMaximizedEmbed();
     }
 
+    this._clearEntryBootTimeout(entry);
     this._resetPlaceholderLayout(entry);
     entry.wrapper?.remove();
     entry.placeholder = null;
+  }
+
+  _armEntryBootTimeout(entry) {
+    this._clearEntryBootTimeout(entry);
+    entry.bootTimerId = window.setTimeout(() => {
+      void this._handleEntryBootTimeout(entry);
+    }, IFRAME_BOOT_TIMEOUT_MS);
+  }
+
+  _clearEntryBootTimeout(entry) {
+    if (!entry?.bootTimerId) {
+      return;
+    }
+
+    window.clearTimeout(entry.bootTimerId);
+    entry.bootTimerId = null;
+  }
+
+  async _handleEntryBootTimeout(entry) {
+    if (!entry?.iframe?.isConnected) {
+      return;
+    }
+
+    if ((entry.bootAttempts ?? 0) >= MAX_IFRAME_BOOT_ATTEMPTS) {
+      this._clearEntryBootTimeout(entry);
+      this.toastController?.show(`Excalidraw embed timed out: ${entry.label}`);
+      return;
+    }
+
+    await this._retryEntryBootstrap(entry);
+  }
+
+  async _retryEntryBootstrap(entry) {
+    if (!entry) {
+      return;
+    }
+
+    this._clearEntryBootTimeout(entry);
+    this._resetPlaceholderLayout(entry);
+
+    if (this.maximizedEmbed?.wrapper === entry.wrapper) {
+      this._exitMaximizedEmbed();
+    }
+
+    entry.wrapper?.remove();
+    entry.wrapper = null;
+    entry.iframe = null;
+    entry.labelElement = null;
+    entry.instanceId = null;
+
+    await this._hydrateEntry(entry);
+  }
+
+  _findEntryByContentWindow(contentWindow) {
+    if (!contentWindow) {
+      return null;
+    }
+
+    for (const entry of this.embedEntries.values()) {
+      if (entry.iframe?.contentWindow === contentWindow) {
+        return entry;
+      }
+    }
+
+    return null;
   }
 
   _updateEmbedLabel(entry) {
@@ -375,6 +446,7 @@ export class ExcalidrawEmbedController {
     const iframeUrl = new URL('/excalidraw-editor.html', window.location.origin);
     iframeUrl.searchParams.set('file', entry.filePath);
     iframeUrl.searchParams.set('theme', theme);
+    iframeUrl.searchParams.set('boot', iframe.dataset.instanceId);
     const localUser = this.getLocalUser?.();
     if (localUser?.name) {
       iframeUrl.searchParams.set('userName', localUser.name);
@@ -593,8 +665,18 @@ export class ExcalidrawEmbedController {
     const msg = event.data;
     if (!msg || msg.source !== 'excalidraw-editor') return;
 
+    const entry = this._findEntryByContentWindow(event.source);
+    if (!entry) {
+      return;
+    }
+
     if (msg.type === 'ready') {
-      // Embed stays silent until the user interacts with the iframe.
+      this._clearEntryBootTimeout(entry);
+      return;
+    }
+
+    if (msg.type === 'error') {
+      void this._handleEntryBootTimeout(entry);
     }
   }
 

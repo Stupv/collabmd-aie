@@ -327,6 +327,7 @@ test('opens excalidraw files with a direct iframe preview', async ({ page }) => 
   const iframe = page.locator('#previewContent .excalidraw-embed iframe').first();
   await expect(iframe).toBeVisible();
   await expect(iframe).toHaveAttribute('src', /file=system-architecture\.excalidraw/);
+  await expect(iframe).not.toHaveAttribute('src', /mode=embed/);
   await expect(page.locator('#previewContent .excalidraw-embed-label')).toHaveText('system-architecture');
   await expect(page.locator('#editorLayout')).toHaveAttribute('data-view', 'preview');
   await expect(page.locator('#editorPane')).not.toBeVisible();
@@ -370,6 +371,18 @@ test('opens excalidraw files with a direct iframe preview', async ({ page }) => 
   expect(maximizedWidths.embedWidth).toBeGreaterThan(maximizedWidths.containerWidth - 48);
   expect(maximizedWidths.left).toBeGreaterThanOrEqual(0);
   expect(maximizedWidths.right).toBeLessThanOrEqual(maximizedWidths.innerWidth);
+});
+
+test('markdown excalidraw embeds stay on the editable editor path', async ({ page }) => {
+  test.slow();
+
+  await openFile(page, 'sample-full.md');
+  await expect.poll(async () => (
+    page.locator('#previewContent .excalidraw-embed iframe').count()
+  ), { timeout: 60000 }).toBeGreaterThan(0);
+
+  const iframe = page.locator('#previewContent .excalidraw-embed iframe').first();
+  await expect(iframe).not.toHaveAttribute('src', /mode=embed/);
 });
 
 test('creates and opens unresolved wiki-link targets', async ({ page }) => {
