@@ -26,12 +26,20 @@ function createPlantUmlPlaceholder({ key, sourceAttributes, sourceHash, sourceTe
   return `<div class="plantuml-shell"${sourceAttributes} data-plantuml-key="${escapeHtml(key)}" data-plantuml-source-hash="${escapeHtml(sourceHash)}"><div class="plantuml-placeholder-card"><div class="plantuml-placeholder-copy"><strong>PlantUML diagram</strong><span>Renders server-side when visible</span></div><button type="button" class="plantuml-placeholder-btn" data-plantuml-key="${escapeHtml(key)}">Render</button></div><pre class="plantuml-source" hidden>${escapeHtml(sourceText)}</pre></div>`;
 }
 
+function createPlantUmlEmbedShell({ embedKey, label, target }) {
+  return `<span class="plantuml-shell" data-plantuml-key="${escapeHtml(embedKey)}" data-plantuml-target="${escapeHtml(target)}" data-plantuml-label="${escapeHtml(label)}"><span class="plantuml-placeholder-card"><span class="plantuml-placeholder-copy"><strong>${escapeHtml(label)}</strong><span>Renders server-side when visible</span></span><button type="button" class="plantuml-placeholder-btn" data-plantuml-key="${escapeHtml(embedKey)}">Render</button></span><span class="plantuml-source" hidden></span></span>`;
+}
+
 function createExcalidrawPlaceholder({ embedKey, label, target }) {
   return `<span class="excalidraw-embed-placeholder" data-embed-key="${escapeHtml(embedKey)}" data-embed-target="${escapeHtml(target)}" data-embed-label="${escapeHtml(label)}"><span class="excalidraw-embed-placeholder-card"><span class="excalidraw-embed-placeholder-copy"><strong>${escapeHtml(label)}</strong><span>Loads when visible</span></span><button type="button" class="excalidraw-embed-placeholder-btn" data-embed-key="${escapeHtml(embedKey)}">Load diagram</button></span></span>`;
 }
 
-function renderInlineWikiText(content, { embedCounts, fileList }) {
-  const regex = /!\[\[([^\]|]+\.excalidraw)(?:\|([^\]]+))?\]\]|\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/gi;
+function renderInlineWikiText(content, {
+  excalidrawEmbedCounts,
+  fileList,
+  plantUmlEmbedCounts,
+}) {
+  const regex = /!\[\[([^\]|]+\.(?:excalidraw|puml))(?:\|([^\]]+))?\]\]|\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/gi;
   let lastIndex = 0;
   let html = '';
   let match;
@@ -43,14 +51,25 @@ function renderInlineWikiText(content, { embedCounts, fileList }) {
 
     if (match[1]) {
       const target = match[1].trim();
-      const label = (match[2] || target).trim().replace(/\.excalidraw$/i, '');
-      const occurrenceIndex = embedCounts.get(target) ?? 0;
-      embedCounts.set(target, occurrenceIndex + 1);
-      html += createExcalidrawPlaceholder({
-        embedKey: `${target}#${occurrenceIndex}`,
-        label,
-        target,
-      });
+      const label = (match[2] || target).trim();
+
+      if (/\.excalidraw$/i.test(target)) {
+        const occurrenceIndex = excalidrawEmbedCounts.get(target) ?? 0;
+        excalidrawEmbedCounts.set(target, occurrenceIndex + 1);
+        html += createExcalidrawPlaceholder({
+          embedKey: `${target}#${occurrenceIndex}`,
+          label: label.replace(/\.excalidraw$/i, ''),
+          target,
+        });
+      } else {
+        const occurrenceIndex = plantUmlEmbedCounts.get(target) ?? 0;
+        plantUmlEmbedCounts.set(target, occurrenceIndex + 1);
+        html += createPlantUmlEmbedShell({
+          embedKey: `${target}#${occurrenceIndex}`,
+          label: label.replace(/\.puml$/i, ''),
+          target,
+        });
+      }
     } else {
       const target = match[3].trim();
       const display = (match[4] || match[3]).trim();
@@ -109,9 +128,10 @@ function createMarkdownRenderer(fileList = []) {
     });
   });
 
-  const embedCounts = new Map();
+  const excalidrawEmbedCounts = new Map();
   const mermaidCounts = new Map();
   const plantUmlCounts = new Map();
+  const plantUmlEmbedCounts = new Map();
 
   const fallbackFence = markdown.renderer.rules.fence;
   const fallbackLinkOpen = markdown.renderer.rules.link_open;
@@ -177,14 +197,26 @@ function createMarkdownRenderer(fileList = []) {
     const content = tokens[index].content;
 
     if (content.startsWith('[x] ') || content.startsWith('[X] ')) {
-      return `<input type="checkbox" checked disabled> ${renderInlineWikiText(content.slice(4), { embedCounts, fileList })}`;
+      return `<input type="checkbox" checked disabled> ${renderInlineWikiText(content.slice(4), {
+        excalidrawEmbedCounts,
+        fileList,
+        plantUmlEmbedCounts,
+      })}`;
     }
 
     if (content.startsWith('[ ] ')) {
-      return `<input type="checkbox" disabled> ${renderInlineWikiText(content.slice(4), { embedCounts, fileList })}`;
+      return `<input type="checkbox" disabled> ${renderInlineWikiText(content.slice(4), {
+        excalidrawEmbedCounts,
+        fileList,
+        plantUmlEmbedCounts,
+      })}`;
     }
 
-    return renderInlineWikiText(content, { embedCounts, fileList });
+    return renderInlineWikiText(content, {
+      excalidrawEmbedCounts,
+      fileList,
+      plantUmlEmbedCounts,
+    });
   };
 
   markdown.renderer.rules.link_open = (tokens, index, options, env, self) => {

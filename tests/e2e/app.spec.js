@@ -223,6 +223,29 @@ test('renders PlantUML fenced blocks through the preview pipeline', async ({ pag
   await expect(page.locator('#previewContent .plantuml-frame')).toContainText('plantuml-fence');
 });
 
+test('renders embedded PlantUML files through the preview pipeline', async ({ page }) => {
+  await page.route('**/api/plantuml/render', async (route) => {
+    await route.fulfill({
+      body: JSON.stringify({
+        ok: true,
+        svg: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 48"><text x="8" y="28">plantuml-embed</text></svg>',
+      }),
+      contentType: 'application/json',
+      status: 200,
+    });
+  });
+
+  await openFile(page, 'README.md');
+  await replaceEditorContent(page, [
+    '# PlantUML Embed',
+    '',
+    '![[sample-plantuml.puml]]',
+  ].join('\n'));
+
+  await expect(page.locator('#previewContent .plantuml-frame svg')).toBeVisible();
+  await expect(page.locator('#previewContent .plantuml-frame')).toContainText('plantuml-embed');
+});
+
 test('escapes raw html in markdown preview', async ({ page }) => {
   await openFile(page, 'README.md');
 

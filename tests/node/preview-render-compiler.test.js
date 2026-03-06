@@ -71,6 +71,22 @@ test('compilePreviewDocument keeps Mermaid keys stable across unrelated markdown
   assert.equal(baseKey, editedKey);
 });
 
+test('compilePreviewDocument emits stable PlantUML embed shell keys', () => {
+  const markdown = [
+    '![[sample-plantuml.puml]]',
+    '',
+    '![[sample-plantuml.puml|Sequence flow]]',
+  ].join('\n');
+
+  const { html, stats } = compilePreviewDocument({ markdownText: markdown });
+
+  assert.match(html, /data-plantuml-key="sample-plantuml\.puml#0"/);
+  assert.match(html, /data-plantuml-key="sample-plantuml\.puml#1"/);
+  assert.match(html, /data-plantuml-target="sample-plantuml\.puml"/);
+  assert.match(html, /<strong>Sequence flow<\/strong>/);
+  assert.equal(stats.plantumlBlocks, 2);
+});
+
 test('large-document classification triggers on any configured threshold', () => {
   const largeByChars = analyzeMarkdownComplexity('a'.repeat(LARGE_DOCUMENT_CHAR_THRESHOLD));
   assert.equal(isLargeDocumentStats(largeByChars), true);
@@ -83,4 +99,7 @@ test('large-document classification triggers on any configured threshold', () =>
 
   const largeByPlantUml = analyzeMarkdownComplexity('```plantuml\n@startuml\nAlice -> Bob: Hi\n@enduml\n```\n'.repeat(12));
   assert.equal(isLargeDocumentStats(largeByPlantUml), true);
+
+  const largeByPlantUmlEmbed = analyzeMarkdownComplexity('![[diagram.puml]]\n'.repeat(12));
+  assert.equal(isLargeDocumentStats(largeByPlantUmlEmbed), true);
 });

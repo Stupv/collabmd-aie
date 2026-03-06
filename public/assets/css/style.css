@@ -1244,6 +1244,11 @@
   margin-bottom: 0;
 }
 
+.preview-content p:has(> .plantuml-shell:only-child) {
+  max-width: none;
+  margin-bottom: 0;
+}
+
 .preview-content a {
   color: var(--color-primary);
   text-decoration: none;
@@ -2077,6 +2082,10 @@ body.plantuml-maximized-open::before {
 }
 
 .editor-layout[data-view="preview"] .preview-content p:has(> .excalidraw-embed-placeholder:only-child) {
+  max-width: none;
+}
+
+.editor-layout[data-view="preview"] .preview-content p:has(> .plantuml-shell:only-child) {
   max-width: none;
 }
 .editor-layout[data-view="editor"] .editor-pane {

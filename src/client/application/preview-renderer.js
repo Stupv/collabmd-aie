@@ -251,6 +251,7 @@ export class PreviewRenderer {
     this.preservedMermaidShells = new Map();
     this.preservedPlantUmlShells = new Map();
     this.plantUmlSvgCache = new Map();
+    this.plantUmlFileInflightRequests = new Map();
     this.plantUmlInflightRequests = new Map();
     this.plantUmlShellRefits = new WeakMap();
     this.activeMaximizedPlantUmlShell = null;
@@ -799,6 +800,8 @@ export class PreviewRenderer {
     syncAttribute(preservedShell, nextShell, 'data-source-line');
     syncAttribute(preservedShell, nextShell, 'data-source-line-end');
     syncAttribute(preservedShell, nextShell, 'data-plantuml-key');
+    syncAttribute(preservedShell, nextShell, 'data-plantuml-target');
+    syncAttribute(preservedShell, nextShell, 'data-plantuml-label');
     syncAttribute(preservedShell, nextShell, 'data-plantuml-source-hash');
 
     preservedShell.classList.add('plantuml-shell');
@@ -1121,16 +1124,31 @@ export class PreviewRenderer {
       return;
     }
 
-    const sourceNode = shell.querySelector('.plantuml-source');
-    const source = sourceNode?.textContent ?? '';
-    if (!source.trim()) {
-      return;
+    let sourceNode = shell.querySelector('.plantuml-source');
+    if (!sourceNode) {
+      sourceNode = document.createElement('span');
+      sourceNode.className = 'plantuml-source';
+      sourceNode.hidden = true;
+      shell.appendChild(sourceNode);
     }
 
     const placeholder = shell.querySelector('.plantuml-placeholder-card');
     placeholder?.remove();
 
     try {
+      let source = sourceNode.textContent ?? '';
+      if (!source.trim() && shell.dataset.plantumlTarget) {
+        source = await this.fetchPlantUmlSource(shell.dataset.plantumlTarget);
+        if (!shell.isConnected) {
+          return;
+        }
+        sourceNode.textContent = source;
+      }
+
+      if (!source.trim()) {
+        throw new Error(shell.dataset.plantumlTarget ? 'PlantUML file is empty' : 'PlantUML source is empty');
+      }
+
       const svgMarkup = await this.fetchPlantUmlSvg(source);
 
       if (!shell.isConnected) {
@@ -1225,6 +1243,37 @@ export class PreviewRenderer {
       });
 
     this.plantUmlInflightRequests.set(cacheKey, request);
+    return request;
+  }
+
+  async fetchPlantUmlSource(filePath) {
+    const target = String(filePath ?? '').trim();
+    if (!target) {
+      throw new Error('Missing PlantUML file path');
+    }
+
+    if (this.plantUmlFileInflightRequests.has(target)) {
+      return this.plantUmlFileInflightRequests.get(target);
+    }
+
+    const request = fetch(`/api/file?path=${encodeURIComponent(target)}`, {
+      headers: {
+        Accept: 'application/json',
+      },
+    })
+      .then(async (response) => {
+        const data = await response.json().catch(() => null);
+        if (!response.ok || typeof data?.content !== 'string') {
+          throw new Error(data?.error || `Failed to load ${target}`);
+        }
+
+        return data.content;
+      })
+      .finally(() => {
+        this.plantUmlFileInflightRequests.delete(target);
+      });
+
+    this.plantUmlFileInflightRequests.set(target, request);
     return request;
   }
 
