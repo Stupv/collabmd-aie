@@ -14,6 +14,24 @@ async function openFile(page, filePath) {
   await waitForEditor(page);
 }
 
+async function stubPlantUmlRender(page, label = 'plantuml-stub') {
+  await page.route('**/api/plantuml/render', async (route) => {
+    await route.fulfill({
+      body: JSON.stringify({
+        ok: true,
+        svg: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 48"><text x="8" y="28">${label}</text></svg>`,
+      }),
+      contentType: 'application/json',
+      status: 200,
+    });
+  });
+}
+
+async function openSampleFull(page, { plantUmlLabel = 'sample-full-plantuml' } = {}) {
+  await stubPlantUmlRender(page, plantUmlLabel);
+  await openFile(page, 'sample-full.md');
+}
+
 async function appendEditorContent(page, content) {
   const editor = page.locator('.cm-content').first();
   await editor.click();
@@ -433,13 +451,22 @@ test('opens excalidraw files with a direct iframe preview', async ({ page }) => 
 test('markdown excalidraw embeds stay on the editable editor path', async ({ page }) => {
   test.slow();
 
-  await openFile(page, 'sample-full.md');
+  await openSampleFull(page);
   await expect.poll(async () => (
     page.locator('#previewContent .excalidraw-embed iframe').count()
   ), { timeout: 60000 }).toBeGreaterThan(0);
 
   const iframe = page.locator('#previewContent .excalidraw-embed iframe').first();
   await expect(iframe).not.toHaveAttribute('src', /mode=embed/);
+});
+
+test('sample-full renders embedded PlantUML files', async ({ page }) => {
+  await openSampleFull(page);
+
+  await page.locator('#previewContent .plantuml-placeholder-btn').first().click();
+
+  await expect(page.locator('#previewContent .plantuml-frame svg').first()).toBeVisible();
+  await expect(page.locator('#previewContent .plantuml-frame').first()).toContainText('sample-full-plantuml');
 });
 
 test('creates and opens unresolved wiki-link targets', async ({ page }) => {
@@ -651,8 +678,7 @@ test('keeps the outline open on desktop after selecting a section', async ({ pag
 test('keeps the editor interactive before heavy preview reaches ready', async ({ page }) => {
   test.slow();
 
-  await page.goto(`/#file=${encodeURIComponent('sample-full.md')}`);
-  await waitForEditor(page);
+  await openSampleFull(page);
 
   const phase = await page.locator('#previewContent').getAttribute('data-render-phase');
   expect(phase).not.toBe('ready');
@@ -666,7 +692,7 @@ test('keeps the editor interactive before heavy preview reaches ready', async ({
 test('progressively hydrates heavy preview instead of rendering all embeds at once', async ({ page }) => {
   test.slow();
 
-  await openFile(page, 'sample-full.md');
+  await openSampleFull(page);
   await waitForHeavyPreviewContent(page);
 
   const counts = await getHeavyPreviewCounts(page);
@@ -679,7 +705,7 @@ test('progressively hydrates heavy preview instead of rendering all embeds at on
 test('preserves excalidraw iframe instances across unrelated preview rerenders', async ({ page }) => {
   test.slow();
 
-  await openFile(page, 'sample-full.md');
+  await openSampleFull(page);
   await expect.poll(async () => (
     page.locator('#previewContent .excalidraw-embed iframe').count()
   ), { timeout: 60000 }).toBeGreaterThan(0);
@@ -719,7 +745,7 @@ test('preserves excalidraw iframe instances across unrelated preview rerenders',
 test('embedded excalidraw maximize preserves layout and modal sizing', async ({ page }) => {
   test.slow();
 
-  await openFile(page, 'sample-full.md');
+  await openSampleFull(page);
 
   await expect.poll(async () => (
     page.locator('#previewContent .excalidraw-embed iframe').count()
@@ -774,7 +800,7 @@ test('embedded excalidraw maximize preserves layout and modal sizing', async ({ 
 test('embedded excalidraw matches mermaid width in preview-only view', async ({ page }) => {
   test.slow();
 
-  await openFile(page, 'sample-full.md');
+  await openSampleFull(page);
   await page.locator('.view-btn[data-view="preview"]').click();
   await expect(page.locator('#editorLayout')).toHaveAttribute('data-view', 'preview');
 
@@ -802,7 +828,7 @@ test('embedded excalidraw matches mermaid width in preview-only view', async ({ 
 test('preserves Mermaid instances across unrelated preview rerenders', async ({ page }) => {
   test.slow();
 
-  await openFile(page, 'sample-full.md');
+  await openSampleFull(page);
   await waitForHeavyPreviewContent(page);
 
   const mermaidKey = await page.evaluate(() => (
@@ -915,7 +941,7 @@ test('preserves PlantUML instances across unrelated preview rerenders', async ({
 test('hydrates more mermaid and excalidraw content as the heavy preview scrolls', async ({ page }) => {
   test.slow();
 
-  await openFile(page, 'sample-full.md');
+  await openSampleFull(page);
   await waitForHeavyPreviewContent(page);
 
   const before = await getHeavyPreviewCounts(page);
@@ -943,7 +969,7 @@ test('hydrates more mermaid and excalidraw content as the heavy preview scrolls'
 test('defers heavy preview hydration while the editor is actively scrolling', async ({ page }) => {
   test.slow();
 
-  await openFile(page, 'sample-full.md');
+  await openSampleFull(page);
   await waitForHeavyPreviewContent(page);
   await expect.poll(async () => (
     page.locator('#previewContent').getAttribute('data-render-phase')
@@ -979,7 +1005,7 @@ test('defers heavy preview hydration while the editor is actively scrolling', as
 test('keeps editor, preview, and outline aligned in heavy documents after lazy hydration changes layout', async ({ page }) => {
   test.slow();
 
-  await openFile(page, 'sample-full.md');
+  await openSampleFull(page);
   await page.locator('#outlineToggle').click();
 
   const outlineItems = page.locator('#outlineNav .outline-item[data-source-line]');

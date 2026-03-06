@@ -35,6 +35,12 @@ graph LR
 
 The diagram above is fully editable — try drawing on it directly in the preview panel.
 
+### Service Handshake Sequence
+
+![[sample-plantuml.puml|Realtime handshake]]
+
+The PlantUML diagram above is rendered from a standalone `.puml` file embedded directly in this markdown document.
+
 ---
 
 ## Data Flow
@@ -115,6 +121,7 @@ graph TD
 |------|-----------|--------|---------|
 | Markdown | `.md` | CodeMirror | Rendered HTML |
 | Excalidraw | `.excalidraw` | Excalidraw (iframe) | Inline embed |
+| PlantUML | `.puml` | CodeMirror | Inline embed / standalone preview |
 | Mermaid | fenced block | CodeMirror | SVG diagram |
 
 ---
@@ -238,4 +245,4 @@ pie title Time Spent in Render Pipeline
 
 ---
 
-*This document itself is a demo of CollabMD's rendering capabilities — Mermaid diagrams, wiki-links, Excalidraw embeds, and standard markdown all working together.*
+*This document itself is a demo of CollabMD's rendering capabilities — Mermaid diagrams, wiki-links, Excalidraw embeds, PlantUML embeds, and standard markdown all working together.*
