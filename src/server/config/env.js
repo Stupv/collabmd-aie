@@ -45,8 +45,8 @@ export function loadConfig(overrides = {}) {
     wsBasePath: normalizeBasePath(process.env.WS_BASE_PATH || '/ws'),
     wsMaxBufferedAmountBytes: parsePositiveInt(
       process.env.WS_MAX_BUFFERED_AMOUNT_BYTES,
-      1_048_576,
+      16_777_216,
     ),
-    wsMaxPayloadBytes: parsePositiveInt(process.env.WS_MAX_PAYLOAD_BYTES, 4_194_304),
+    wsMaxPayloadBytes: parsePositiveInt(process.env.WS_MAX_PAYLOAD_BYTES, 16_777_216),
   };
 }

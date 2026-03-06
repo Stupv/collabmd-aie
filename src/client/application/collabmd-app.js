@@ -103,6 +103,7 @@ export class CollabMdApp {
     });
     this.scrollSyncController = new ScrollSyncController({
       getEditorLineNumber: () => this.session?.getTopVisibleLineNumber(0.35) ?? 1,
+      onEditorScrollActivityChange: (isActive) => this.handleEditorScrollActivityChange(isActive),
       previewContainer: this.elements.previewContainer,
       previewElement: this.elements.previewContent,
       scrollEditorToLine: (lineNumber, viewportRatio) => this.session?.scrollToLine(lineNumber, viewportRatio),
@@ -119,6 +120,8 @@ export class CollabMdApp {
       toastController: this.toastController,
     });
     this._backlinkRefreshTimer = null;
+    this._previewHydrationPaused = false;
+    this._pendingPreviewLayoutSync = false;
     this._previewLayoutResizeObserver = null;
     this._previewLayoutSyncTimer = null;
   }
@@ -218,6 +221,11 @@ export class CollabMdApp {
   }
 
   schedulePreviewLayoutSync({ delayMs = 120 } = {}) {
+    if (this._previewHydrationPaused) {
+      this._pendingPreviewLayoutSync = true;
+      return;
+    }
+
     clearTimeout(this._previewLayoutSyncTimer);
 
     this._previewLayoutSyncTimer = setTimeout(() => {
@@ -231,7 +239,11 @@ export class CollabMdApp {
         return;
       }
 
-      this.session.requestMeasure();
+      if (this._previewHydrationPaused) {
+        this._pendingPreviewLayoutSync = true;
+        return;
+      }
+
       this.scrollSyncController.invalidatePreviewBlocks();
       this.scrollSyncController.warmPreviewBlocks({
         onReady: () => {
@@ -244,6 +256,24 @@ export class CollabMdApp {
         },
       });
     }, delayMs);
+  }
+
+  handleEditorScrollActivityChange(isActive) {
+    this._previewHydrationPaused = Boolean(isActive);
+    this.previewRenderer.setHydrationPaused(this._previewHydrationPaused);
+    this.excalidrawEmbed.setHydrationPaused(this._previewHydrationPaused);
+
+    if (this._previewHydrationPaused) {
+      clearTimeout(this._previewLayoutSyncTimer);
+      this._previewLayoutSyncTimer = null;
+      this._pendingPreviewLayoutSync = true;
+      return;
+    }
+
+    if (this._pendingPreviewLayoutSync) {
+      this._pendingPreviewLayoutSync = false;
+      this.schedulePreviewLayoutSync({ delayMs: 0 });
+    }
   }
 
   async handleHashChange() {
@@ -269,6 +299,10 @@ export class CollabMdApp {
     this.elements.previewContent.innerHTML = '';
     this.elements.previewContent.dataset.renderPhase = 'ready';
     clearTimeout(this._previewLayoutSyncTimer);
+    this._pendingPreviewLayoutSync = false;
+    this._previewHydrationPaused = false;
+    this.previewRenderer.setHydrationPaused(false);
+    this.excalidrawEmbed.setHydrationPaused(false);
     this.scrollSyncController.setLargeDocumentMode(false);
     this.scrollSyncController.invalidatePreviewBlocks();
 
@@ -364,6 +398,10 @@ export class CollabMdApp {
     this.followedCursorSignature = '';
     clearTimeout(this._backlinkRefreshTimer);
     clearTimeout(this._previewLayoutSyncTimer);
+    this._pendingPreviewLayoutSync = false;
+    this._previewHydrationPaused = false;
+    this.previewRenderer.setHydrationPaused(false);
+    this.excalidrawEmbed.setHydrationPaused(false);
   }
 
   handleWikiLinkClick(target) {

@@ -55,6 +55,7 @@ export class ExcalidrawEmbedController {
     this.embedEntries = new Map();
     this.hydrationQueue = [];
     this.hydrationIdleId = null;
+    this.hydrationPaused = false;
     this.hydrationInProgress = false;
     this.instanceCounter = 0;
     this.isLargeDocument = false;
@@ -104,6 +105,19 @@ export class ExcalidrawEmbedController {
     });
   }
 
+  setHydrationPaused(paused) {
+    this.hydrationPaused = Boolean(paused);
+
+    if (this.hydrationPaused) {
+      cancelIdleRender(this.hydrationIdleId);
+      this.hydrationIdleId = null;
+      return;
+    }
+
+    this.hydrateVisibleEmbeds();
+    this._scheduleHydration();
+  }
+
   reconcileEmbeds(previewElement, { isLargeDocument = false } = {}) {
     this.isLargeDocument = Boolean(isLargeDocument);
     this._disconnectPlaceholderObserver();
@@ -140,10 +154,16 @@ export class ExcalidrawEmbedController {
       this.placeholderObserver?.observe(entry.placeholder);
     });
 
-    this.hydrateVisibleEmbeds();
+    if (!this.hydrationPaused) {
+      this.hydrateVisibleEmbeds();
+    }
   }
 
   hydrateVisibleEmbeds() {
+    if (this.hydrationPaused) {
+      return;
+    }
+
     const margin = this.isLargeDocument ? 180 : 420;
     this.embedEntries.forEach((entry) => {
       if (entry.wrapper || !entry.placeholder?.isConnected) {
@@ -209,11 +229,15 @@ export class ExcalidrawEmbedController {
       this.hydrationQueue.push(entry.key);
     }
 
+    if (this.hydrationPaused) {
+      return;
+    }
+
     this._scheduleHydration();
   }
 
   _scheduleHydration() {
-    if (this.hydrationInProgress || this.hydrationIdleId !== null) {
+    if (this.hydrationPaused || this.hydrationInProgress || this.hydrationIdleId !== null) {
       return;
     }
 
@@ -224,7 +248,7 @@ export class ExcalidrawEmbedController {
   }
 
   async _flushHydrationQueue() {
-    if (this.hydrationInProgress) {
+    if (this.hydrationPaused || this.hydrationInProgress) {
       return;
     }
 

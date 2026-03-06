@@ -38,7 +38,9 @@ function sendMessage(ws, payload, { maxBufferedAmountBytes, name }) {
     return false;
   }
 
-  if (ws.bufferedAmount > maxBufferedAmountBytes) {
+  const bufferedAmountBeforeSend = ws.bufferedAmount;
+
+  if (bufferedAmountBeforeSend > maxBufferedAmountBytes) {
     return closeSlowClient(ws, { maxBufferedAmountBytes, name });
   }
 
@@ -48,7 +50,7 @@ function sendMessage(ws, payload, { maxBufferedAmountBytes, name }) {
     }
   });
 
-  if (ws.bufferedAmount > maxBufferedAmountBytes) {
+  if (bufferedAmountBeforeSend > 0 && ws.bufferedAmount > maxBufferedAmountBytes) {
     return closeSlowClient(ws, { maxBufferedAmountBytes, name });
   }
 

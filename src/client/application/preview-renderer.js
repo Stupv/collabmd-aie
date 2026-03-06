@@ -166,6 +166,7 @@ export class PreviewRenderer {
     this.mermaidObserver = null;
     this.mermaidIdleId = null;
     this.pendingMermaidShells = [];
+    this.hydrationPaused = false;
     this.mermaidHydrationInProgress = false;
 
     this.handlePreviewClick = (event) => {
@@ -352,6 +353,20 @@ export class PreviewRenderer {
     this.mermaidHydrationInProgress = false;
   }
 
+  setHydrationPaused(paused) {
+    this.hydrationPaused = Boolean(paused);
+
+    if (this.hydrationPaused) {
+      cancelIdleRender(this.mermaidIdleId);
+      this.mermaidIdleId = null;
+      return;
+    }
+
+    this.hydrateVisibleMermaids();
+    this.scheduleMermaidHydration();
+    this.updateHydrationPhase();
+  }
+
   resetWorker(reason, { disable = false } = {}) {
     if (this.workerJob) {
       this.workerJob.reject(new Error(reason));
@@ -472,14 +487,21 @@ export class PreviewRenderer {
         return;
       }
 
-      const margin = this.isLargeDocument ? 180 : 420;
-      shells.forEach((shell) => {
-        if (isNearViewport(shell, this.previewContainer, margin)) {
-          this.enqueueMermaidShell(shell, { prioritize: true });
-        }
-      });
-
+      this.hydrateVisibleMermaids();
       this.updateHydrationPhase();
+    });
+  }
+
+  hydrateVisibleMermaids() {
+    if (this.hydrationPaused || !this.previewElement || !this.previewContainer) {
+      return;
+    }
+
+    const margin = this.isLargeDocument ? 180 : 420;
+    Array.from(this.previewElement.querySelectorAll('.mermaid-shell')).forEach((shell) => {
+      if (isNearViewport(shell, this.previewContainer, margin)) {
+        this.enqueueMermaidShell(shell, { prioritize: true });
+      }
     });
   }
 
@@ -495,12 +517,16 @@ export class PreviewRenderer {
       this.pendingMermaidShells.push(shell);
     }
 
+    if (this.hydrationPaused) {
+      return;
+    }
+
     this.updateHydrationPhase();
     this.scheduleMermaidHydration();
   }
 
   scheduleMermaidHydration() {
-    if (this.mermaidHydrationInProgress || this.mermaidIdleId !== null) {
+    if (this.hydrationPaused || this.mermaidHydrationInProgress || this.mermaidIdleId !== null) {
       return;
     }
 
@@ -511,7 +537,7 @@ export class PreviewRenderer {
   }
 
   async flushMermaidHydrationQueue() {
-    if (this.mermaidHydrationInProgress) {
+    if (this.hydrationPaused || this.mermaidHydrationInProgress) {
       return;
     }
 
@@ -616,6 +642,13 @@ export class PreviewRenderer {
   }
 
   updateHydrationPhase() {
+    if (this.hydrationPaused) {
+      if (this.pendingMermaidShells.length > 0 || this.mermaidHydrationInProgress) {
+        this.setPhase('base');
+        return;
+      }
+    }
+
     if (this.mermaidHydrationInProgress || this.pendingMermaidShells.length > 0) {
       this.setPhase('hydrating');
       return;

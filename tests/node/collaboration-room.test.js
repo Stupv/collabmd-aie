@@ -78,6 +78,32 @@ test('CollaborationRoom closes slow clients when buffered writes exceed the limi
   });
 });
 
+test('CollaborationRoom allows a single oversized initial sync frame from an empty buffer', async () => {
+  const room = new CollaborationRoom({
+    maxBufferedAmountBytes: 4,
+    name: 'initial-sync-room',
+    onEmpty: () => {},
+    vaultFileStore: {
+      async readMarkdownFile() {
+        return 'x'.repeat(2048);
+      },
+      async writeMarkdownFile() {},
+    },
+  });
+
+  const client = createSocket();
+  client.send = function send(payload, callback) {
+    this.sent.push(payload);
+    this.bufferedAmount = payload.byteLength;
+    callback?.();
+  };
+
+  await room.addClient(client);
+
+  assert.equal(client.sent.length, 1);
+  assert.equal(client.closeCalls.length, 0);
+});
+
 test('CollaborationRoom hydrates and persists excalidraw rooms via excalidraw file APIs', async () => {
   const initialScene = JSON.stringify({
     appState: { gridSize: null, viewBackgroundColor: '#ffffff' },

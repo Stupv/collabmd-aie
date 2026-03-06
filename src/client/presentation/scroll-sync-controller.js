@@ -1,6 +1,7 @@
 import { clamp } from '../domain/vault-utils.js';
 
 const VIEWPORT_FOCUS_RATIO = 0.35;
+const LARGE_DOCUMENT_EDITOR_IDLE_MS = 120;
 const MIN_VIEWPORT_FOCUS_OFFSET = 12;
 
 function getScrollableRange(element) {
@@ -54,15 +55,19 @@ function cancelIdleWork(id) {
 export class ScrollSyncController {
   constructor({
     getEditorLineNumber,
+    onEditorScrollActivityChange,
     previewContainer,
     previewElement,
     scrollEditorToLine,
   }) {
     this.getEditorLineNumber = getEditorLineNumber;
+    this.onEditorScrollActivityChange = onEditorScrollActivityChange;
     this.previewContainer = previewContainer;
     this.previewElement = previewElement;
     this.scrollEditorToLine = scrollEditorToLine;
     this.editorScroller = null;
+    this.editorScrollActive = false;
+    this.editorScrollIdleTimer = null;
     this.lockedElements = new Set();
     this.pendingSync = null;
     this.frameId = null;
@@ -79,6 +84,15 @@ export class ScrollSyncController {
       }
 
       this.lastInteractionSource = 'editor';
+      if (this.largeDocumentMode) {
+        this.setEditorScrollActive(true);
+        this.scheduleEditorScrollIdle();
+        this.scheduleSync(this.editorScroller, this.previewContainer, {
+          preferApproximateMapping: true,
+        });
+        return;
+      }
+
       this.scheduleSync(this.editorScroller, this.previewContainer);
     };
 
@@ -120,12 +134,15 @@ export class ScrollSyncController {
     this.previewContainer?.removeEventListener('scroll', this.handlePreviewScroll);
     this.editorScroller?.removeEventListener('scroll', this.handleEditorScroll);
     this.editorScroller = null;
+    clearTimeout(this.editorScrollIdleTimer);
+    this.editorScrollIdleTimer = null;
     this.pendingSync = null;
     this.previewBlocks = null;
     cancelIdleWork(this.previewBlocksWarmId);
     this.previewBlocksWarmId = null;
     this.previewBlocksReadyCallbacks = [];
     this.lockedElements.clear();
+    this.editorScrollActive = false;
     this.lastInteractionSource = 'editor';
     this.suspendedUntil = 0;
 
@@ -135,12 +152,12 @@ export class ScrollSyncController {
     }
   }
 
-  scheduleSync(source, target) {
+  scheduleSync(source, target, { preferApproximateMapping = false } = {}) {
     if (!source || !target || this.lockedElements.has(source) || this.isSuspended()) {
       return;
     }
 
-    this.pendingSync = { source, target };
+    this.pendingSync = { preferApproximateMapping, source, target };
     if (this.frameId) {
       return;
     }
@@ -152,9 +169,15 @@ export class ScrollSyncController {
         return;
       }
 
-      const { source: pendingSource, target: pendingTarget } = this.pendingSync;
+      const {
+        preferApproximateMapping: pendingPreferApproximateMapping,
+        source: pendingSource,
+        target: pendingTarget,
+      } = this.pendingSync;
       this.pendingSync = null;
-      this.sync(pendingSource, pendingTarget);
+      this.sync(pendingSource, pendingTarget, {
+        preferApproximateMapping: pendingPreferApproximateMapping,
+      });
     });
   }
 
@@ -167,6 +190,11 @@ export class ScrollSyncController {
 
   setLargeDocumentMode(enabled) {
     this.largeDocumentMode = Boolean(enabled);
+    if (!this.largeDocumentMode) {
+      clearTimeout(this.editorScrollIdleTimer);
+      this.editorScrollIdleTimer = null;
+      this.setEditorScrollActive(false);
+    }
   }
 
   warmPreviewBlocks({ onReady } = {}) {
@@ -241,12 +269,30 @@ export class ScrollSyncController {
     });
   }
 
-  sync(source, target) {
+  setEditorScrollActive(active) {
+    if (this.editorScrollActive === active) {
+      return;
+    }
+
+    this.editorScrollActive = active;
+    this.onEditorScrollActivityChange?.(active);
+  }
+
+  scheduleEditorScrollIdle() {
+    clearTimeout(this.editorScrollIdleTimer);
+    this.editorScrollIdleTimer = setTimeout(() => {
+      this.editorScrollIdleTimer = null;
+      this.setEditorScrollActive(false);
+      this.syncPreviewToEditor();
+    }, LARGE_DOCUMENT_EDITOR_IDLE_MS);
+  }
+
+  sync(source, target, { preferApproximateMapping = false } = {}) {
     if (!source || !target || this.lockedElements.has(source) || this.isSuspended()) {
       return;
     }
 
-    if (source === this.editorScroller && target === this.previewContainer) {
+    if (!preferApproximateMapping && source === this.editorScroller && target === this.previewContainer) {
       const nextScrollTop = this.getPreviewScrollTopForEditorLine();
       if (nextScrollTop !== null) {
         this.setScrollTop(target, nextScrollTop);

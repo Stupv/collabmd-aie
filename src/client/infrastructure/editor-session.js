@@ -255,21 +255,16 @@ export class EditorSession {
     }
 
     const scrollerRect = this.editorView.scrollDOM.getBoundingClientRect();
-    const contentRect = this.editorView.contentDOM.getBoundingClientRect();
-    const x = Math.min(
-      Math.max(contentRect.left + 24, scrollerRect.left + 24),
-      scrollerRect.right - 24,
+    const viewportOffset = Math.max(scrollerRect.height * viewportRatio, 8);
+    const visibleBlock = this.editorView.lineBlockAtHeight(
+      (scrollerRect.top + viewportOffset) - this.editorView.documentTop,
     );
-    const position = this.editorView.posAtCoords({
-      x,
-      y: scrollerRect.top + Math.max(scrollerRect.height * viewportRatio, 8),
-    });
 
-    if (typeof position === 'number') {
-      return this.editorView.state.doc.lineAt(position).number;
+    if (!visibleBlock) {
+      return 1;
     }
 
-    return 1;
+    return this.editorView.state.doc.lineAt(visibleBlock.from).number;
   }
 
   getLocalUser() {

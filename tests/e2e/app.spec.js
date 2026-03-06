@@ -347,6 +347,42 @@ test('hydrates more mermaid and excalidraw content as the heavy preview scrolls'
   expect(mermaidIncreased || excalidrawIncreased).toBeTruthy();
 });
 
+test('defers heavy preview hydration while the editor is actively scrolling', async ({ page }) => {
+  test.slow();
+
+  await openFile(page, 'full-markdown.md');
+  await waitForHeavyPreviewContent(page);
+  await expect.poll(async () => (
+    page.locator('#previewContent').getAttribute('data-render-phase')
+  ), { timeout: 60000 }).toBe('ready');
+
+  const before = await getHeavyPreviewCounts(page);
+
+  await page.locator('.cm-scroller').evaluate(async (scroller) => {
+    await new Promise((resolve) => {
+      let steps = 0;
+      const timer = window.setInterval(() => {
+        scroller.scrollTop += 320;
+        steps += 1;
+        if (steps >= 4) {
+          window.clearInterval(timer);
+          resolve();
+        }
+      }, 20);
+    });
+  });
+
+  const during = await getHeavyPreviewCounts(page);
+  expect(during.mermaidSvgs).toBe(before.mermaidSvgs);
+  expect(during.excalidrawIframes).toBe(before.excalidrawIframes);
+
+  await page.waitForTimeout(500);
+
+  const after = await getHeavyPreviewCounts(page);
+  expect(after.mermaidSvgs >= during.mermaidSvgs).toBeTruthy();
+  expect(after.excalidrawIframes >= during.excalidrawIframes).toBeTruthy();
+});
+
 test('keeps editor, preview, and outline aligned in heavy documents after lazy hydration changes layout', async ({ page }) => {
   test.slow();
 
