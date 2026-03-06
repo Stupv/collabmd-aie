@@ -1,6 +1,67 @@
 # CollabMD
 
-Collaborative markdown vault — like Obsidian, but online. Run the CLI in any directory to serve it as a realtime collaborative editing environment with live preview, Mermaid and PlantUML diagrams, and `[[wiki-links]]`.
+Collaborative markdown vault, like Obsidian but online.
+
+<p align="center">
+  <img src="./docs/assets/collabmd-hero.png" alt="CollabMD showing a file tree, markdown editor, live preview, and collaborator presence." width="100%">
+</p>
+
+<p align="center">
+  <strong>Serve any markdown folder as a realtime collaborative workspace.</strong>
+</p>
+
+<p align="center">
+  Local files stay on disk. Markdown stays plain text. Collaborators get live editing, preview, comments, chat, diagrams, and shareable sessions in the browser.
+</p>
+
+## See it in action
+
+![CollabMD live demo](./docs/assets/collabmd-demo.gif)
+
+Prefer video? [Open the WebM demo](./docs/assets/collabmd-demo.webm).
+
+## Why CollabMD
+
+- **Local-files-first** — your filesystem is the source of truth
+- **Realtime collaboration** — multiple people can edit the same file at the same time via Yjs
+- **Markdown with context** — live preview, wiki-links, backlinks, outline, quick switcher, and scroll sync
+- **Review built in** — inline comments, collaborator presence, follow mode, and team chat
+- **Diagram-friendly** — Mermaid, PlantUML, standalone `.puml`, and `.excalidraw` support
+- **Easy sharing** — Cloudflare Tunnel starts by default so collaborators can join over the internet
+
+## Quick Start
+
+### Requirements
+
+- Node.js >= 20
+- npm
+
+### From source
+
+```bash
+git clone https://github.com/andes90/collabmd.git
+cd collabmd
+npm install
+npm run build
+npm link       # optional: makes `collabmd` available globally
+collabmd ~/my-vault
+```
+
+Open `http://localhost:1234`, or share the tunnel URL that CollabMD prints on startup.
+
+## Good fit for
+
+- Collaborating on an existing Obsidian-style vault without migrating files
+- Reviewing RFCs, product docs, and architecture notes in real time
+- Sharing markdown-heavy knowledge bases with remote teammates
+- Editing notes and diagrams together while keeping everything as plain files on disk
+
+## Safety
+
+- CollabMD does not include authentication or authorization.
+- Anyone with the URL can edit the vault.
+- Cloudflare Tunnel starts by default unless you pass `--no-tunnel`.
+- Use it only on trusted networks or behind your own access layer.
 
 ## How it works
 
@@ -12,53 +73,14 @@ collabmd
 CollabMD starts a local server, scans for markdown files, and opens a browser-based editor with:
 
 - **File explorer sidebar** — browse, create, rename, and delete `.md`, `.puml`, and `.excalidraw` files plus folders
-- **Realtime collaboration** — multiple people can edit the same file at the same time via Yjs
 - **Live preview** — rendered as you type, with syntax-highlighted code blocks plus Mermaid and PlantUML diagrams
-- **`[[wiki-links]]`** — click a wiki-link in the preview to jump to that file
+- **`[[wiki-links]]` + backlinks** — jump between notes and inspect linked mentions
+- **Comments + room chat** — review content in context without leaving the document
+- **Presence + follow mode** — see who is online and follow another collaborator's active cursor
+- **Quick switcher + outline** — move around large vaults and long documents faster
 - **Standalone diagram files** — open `.puml` files in side-by-side editor + preview, or `.excalidraw` files in direct preview mode
-- **Cloudflare Tunnel** — auto-starts by default so collaborators can reach your vault over the internet
 
-Your filesystem is the source of truth. CollabMD reads `.md` files from disk, uses Yjs for the realtime collaboration layer, and writes plain text back to disk when the last editor disconnects.
-
-## Architecture
-
-```text
-bin/
-  collabmd.js              CLI entry point
-src/
-  client/
-    application/           app orchestration, preview rendering, wiki-links
-    domain/                room/user generators
-    infrastructure/        runtime config, collaborative editor session
-    presentation/          file explorer, theme, layout, outline, scroll sync, toast
-  server/
-    config/                environment loading
-    domain/                collaboration room model and registry
-    infrastructure/        HTTP request handler, vault file store, WebSocket gateway
-public/
-  assets/css/              static styles
-  index.html               app shell
-scripts/
-  build-client.mjs         client bundling and vendored browser assets
-  cloudflare-tunnel.mjs    Cloudflare quick tunnel helper
-```
-
-## Requirements
-
-- Node.js >= 20
-- npm
-
-## Install
-
-### From source
-
-```bash
-git clone https://github.com/andes90/collabmd.git
-cd collabmd
-npm install
-npm run build
-npm link       # optional: makes `collabmd` available globally
-```
+Your filesystem is the source of truth. CollabMD reads files from disk, uses Yjs for the realtime collaboration layer, and writes plain text back to disk when the last editor disconnects.
 
 ## Usage
 
@@ -68,20 +90,20 @@ collabmd [directory] [options]
 
 ### Arguments
 
-| Argument    | Description                                          |
-|-------------|------------------------------------------------------|
+| Argument | Description |
+|----------|-------------|
 | `directory` | Path to the vault directory (default: current directory) |
 
 ### Options
 
-| Option          | Description                            | Default      |
-|-----------------|----------------------------------------|--------------|
-| `-p, --port`    | Port to listen on                      | `1234`       |
-| `--host`        | Host to bind to                        | `127.0.0.1`  |
+| Option | Description | Default |
+|--------|-------------|---------|
+| `-p, --port` | Port to listen on | `1234` |
+| `--host` | Host to bind to | `127.0.0.1` |
 | `--local-plantuml` | Start the bundled local docker-compose PlantUML service | off |
-| `--no-tunnel`   | Don't start Cloudflare Tunnel          | tunnel on    |
-| `-v, --version` | Show version                           |              |
-| `-h, --help`    | Show help                              |              |
+| `--no-tunnel` | Don't start Cloudflare Tunnel | tunnel on |
+| `-v, --version` | Show version | |
+| `-h, --help` | Show help | |
 
 ### Examples
 
@@ -100,63 +122,6 @@ collabmd --local-plantuml
 
 # Serve an Obsidian vault
 collabmd ~/Documents/Obsidian/MyVault
-```
-
-## Development
-
-Install dependencies:
-
-```bash
-npm install
-```
-
-Build and run:
-
-```bash
-npm start
-```
-
-Open `http://localhost:1234`.
-
-Useful commands:
-
-```bash
-npm run build          # Build client bundle
-npm run check          # Syntax check all entry points
-npm run start          # Build + start server
-npm run start:local-plantuml  # Build + start server with local docker-compose PlantUML
-npm run start:prod     # Start server (expects previous build)
-npm run test           # Run unit + e2e tests
-npm run test:unit      # Fast Node-based unit tests
-npm run test:e2e       # Playwright browser tests
-npm run tunnel         # Start only the Cloudflare tunnel
-npm run plantuml:up    # Start only the local docker-compose PlantUML service
-npm run plantuml:down  # Stop only the local docker-compose PlantUML service
-```
-
-## Testing
-
-### Unit tests
-
-```bash
-npm run test:unit
-```
-
-Covers the vault file store, HTTP endpoints, collaboration room, and WebSocket integration behavior.
-
-### End-to-end tests
-
-```bash
-npx playwright install chromium    # first time only
-npm run test:e2e
-```
-
-Playwright boots the full app against the `test-vault/` directory and verifies the file explorer, editor, preview, collaboration, outline, and scroll sync flows.
-
-### All tests
-
-```bash
-npm run test
 ```
 
 ## Cloudflare Tunnel
@@ -229,12 +194,100 @@ Recommended Coolify setup:
 1. Use the included `Dockerfile`.
 2. Expose port `1234`.
 3. Mount a persistent volume to `/data` containing your markdown files.
-4. Run a single replica only — room state is in-process and not shared across instances.
+4. Run a single replica only because room state is in-process and not shared across instances.
 5. Set `PUBLIC_WS_BASE_URL` only if your WebSocket endpoint differs from the app origin.
 
 Health check: `GET /health`
 
-## Environment variables
+## Development
+
+Install dependencies:
+
+```bash
+npm install
+```
+
+Build and run:
+
+```bash
+npm start
+```
+
+Open `http://localhost:1234`.
+
+Useful commands:
+
+```bash
+npm run build                 # Build client bundle
+npm run check                 # Syntax check all entry points
+npm run start                 # Build + start server
+npm run start:local-plantuml  # Build + start server with local docker-compose PlantUML
+npm run start:prod            # Start server (expects previous build)
+npm run test                  # Run unit + e2e tests
+npm run test:unit             # Fast Node-based unit tests
+npm run test:e2e              # Playwright browser tests
+npm run tunnel                # Start only the Cloudflare tunnel
+npm run plantuml:up           # Start only the local docker-compose PlantUML service
+npm run plantuml:down         # Stop only the local docker-compose PlantUML service
+npm run capture:readme-assets # Regenerate the README screenshot and demo assets
+```
+
+## Testing
+
+### Unit tests
+
+```bash
+npm run test:unit
+```
+
+Covers the vault file store, HTTP endpoints, collaboration room, WebSocket integration behavior, and supporting domain logic.
+
+### End-to-end tests
+
+```bash
+npx playwright install chromium    # first time only
+npm run test:e2e
+```
+
+Playwright boots the full app against the `test-vault/` directory and verifies the file explorer, editor, preview, comments, collaboration, chat, outline, and scroll sync flows.
+
+### All tests
+
+```bash
+npm run test
+```
+
+<details>
+<summary>Architecture</summary>
+
+```text
+bin/
+  collabmd.js              CLI entry point
+src/
+  client/
+    application/           app orchestration, preview rendering, wiki-links
+    domain/                room/user generators
+    infrastructure/        runtime config, collaborative editor session
+    presentation/          file explorer, comments, backlinks, quick switcher, outline, scroll sync, theme, layout
+  domain/                  shared comment and wiki-link helpers
+  server/
+    config/                environment loading
+    domain/                collaboration room model, registry, backlink index, PlantUML renderer
+    infrastructure/        HTTP request handler, vault file store, WebSocket gateway
+public/
+  assets/css/              static styles
+  index.html               app shell
+scripts/
+  build-client.mjs         client bundling and vendored browser assets
+  cloudflare-tunnel.mjs    Cloudflare quick tunnel helper
+  local-plantuml-compose.mjs
+  capture-readme-assets.mjs
+```
+
+</details>
+
+<details>
+<summary>Environment variables</summary>
 
 | Variable | Description | Default |
 |----------|-------------|---------|
@@ -262,11 +315,12 @@ Copy the example file:
 cp .env.example .env
 ```
 
+</details>
+
 ## Notes
 
-- No authentication or authorization layer — anyone with the URL can edit.
 - The filesystem is the source of truth; Yjs is the collaboration layer on top.
-- CollabMD assumes it is the only writer while a file is open — no live `fs.watch` reconciliation.
+- CollabMD assumes it is the only writer while a file is open; there is no live `fs.watch` reconciliation.
 - `.obsidian`, `.git`, `.trash`, and `node_modules` directories are ignored.
 - Only `.md`, `.markdown`, and `.mdx` files are indexed.
 - PlantUML preview rendering is server-side and uses `PLANTUML_SERVER_URL`; point it at a self-hosted renderer if you do not want to use the public PlantUML service.
