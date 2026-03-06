@@ -88,6 +88,20 @@ test('VaultFileStore creates and deletes files', async (t) => {
   assert.equal(deleted, null);
 });
 
+test('VaultFileStore includes empty directories in the file tree', async (t) => {
+  const { store, cleanup } = await createVaultStore();
+  t.after(cleanup);
+
+  const result = await store.createDirectory('drafts');
+  assert.equal(result.ok, true);
+
+  const tree = await store.tree();
+  const drafts = tree.find((node) => node.name === 'drafts');
+  assert.ok(drafts);
+  assert.equal(drafts.type, 'directory');
+  assert.deepEqual(drafts.children, []);
+});
+
 test('VaultFileStore rejects non-markdown delete and rename source paths', async (t) => {
   const { store, cleanup, vaultDir } = await createVaultStore();
   t.after(cleanup);

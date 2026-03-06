@@ -254,6 +254,25 @@
     </form>
   </dialog>
 
+  <dialog class="app-dialog" id="fileActionDialog">
+    <form class="app-dialog-form" id="fileActionForm" method="dialog">
+      <div class="app-dialog-header">
+        <h2 class="app-dialog-title" id="fileActionTitle">Create file</h2>
+        <p class="app-dialog-copy" id="fileActionCopy">Add a new file to the vault.</p>
+      </div>
+      <label class="app-dialog-field" id="fileActionField" for="fileActionInput">
+        <span class="app-dialog-label" id="fileActionLabel">Path</span>
+        <input type="text" class="input" id="fileActionInput" name="fileActionValue" autocomplete="off" spellcheck="false" required>
+        <span class="app-dialog-hint" id="fileActionHint" hidden></span>
+      </label>
+      <p class="app-dialog-note" id="fileActionNote" hidden></p>
+      <div class="app-dialog-actions">
+        <button type="button" class="btn btn-secondary" id="fileActionCancel">Cancel</button>
+        <button type="submit" class="btn btn-primary" id="fileActionSubmit">Create</button>
+      </div>
+    </form>
+  </dialog>
+
   <!-- Toast notifications -->
   <div class="toast-container" id="toastContainer"></div>
 

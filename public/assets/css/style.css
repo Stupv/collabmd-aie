@@ -181,6 +181,12 @@
 }
 .btn-secondary:hover { background: var(--color-surface-dynamic); }
 
+.btn-danger {
+  background: var(--color-error);
+  color: var(--color-text-inverse);
+}
+.btn-danger:hover { filter: brightness(0.95); }
+
 .btn-ghost {
   background: transparent;
   color: var(--color-text-muted);
@@ -934,6 +940,27 @@
   color: var(--color-text-muted);
   text-transform: uppercase;
   letter-spacing: 0.08em;
+}
+.app-dialog-hint {
+  color: var(--color-text-muted);
+  font-size: var(--text-xs);
+  line-height: 1.5;
+}
+.app-dialog-note {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-offset);
+  color: var(--color-text);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: var(--text-xs);
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+  padding: var(--space-3);
+}
+.app-dialog-note.is-danger {
+  background: var(--color-error-highlight);
+  border-color: oklch(from var(--color-error) l c h / 0.35);
+  color: var(--color-error);
 }
 .app-dialog-actions {
   display: flex;

@@ -189,6 +189,113 @@ test('opens a file by clicking the sidebar', async ({ page }) => {
   await expect(page.locator('#activeFileName')).toContainText('README');
 });
 
+test('creates files from the sidebar with the custom dialog', async ({ page }) => {
+  await page.goto('/');
+
+  await page.locator('#newFileBtn').click();
+  await expect(page.locator('#fileActionDialog')).toBeVisible();
+  await expect(page.locator('#fileActionTitle')).toHaveText('Create markdown file');
+
+  await page.locator('#fileActionInput').fill('plans/q1-roadmap');
+  await page.locator('#fileActionSubmit').click();
+
+  await waitForEditor(page);
+  await expect(page.locator('#activeFileName')).toContainText('q1-roadmap');
+  await expect(page.locator('#fileTree')).toContainText('plans');
+  await expect(page.locator('#fileTree')).toContainText('q1-roadmap');
+});
+
+test('creates empty folders from the sidebar with the custom dialog', async ({ page }) => {
+  await page.goto('/');
+
+  await page.locator('#newFolderBtn').click();
+  await expect(page.locator('#fileActionDialog')).toBeVisible();
+
+  await page.locator('#fileActionInput').fill('plans/archive');
+  await page.locator('#fileActionSubmit').click();
+
+  await expect(page.locator('#fileTree')).toContainText('plans');
+  await expect(page.locator('#fileTree')).toContainText('archive');
+});
+
+test('creates files inside a folder from the tree context menu', async ({ page }) => {
+  await page.goto('/');
+
+  const dailyFolder = page.locator('#fileTree .file-tree-dir', { hasText: 'daily' }).first();
+  await dailyFolder.click({ button: 'right' });
+  await expect(page.locator('.file-context-menu')).toBeVisible();
+  await page.locator('.file-context-menu').getByRole('button', { name: 'New markdown file' }).click();
+
+  await expect(page.locator('#fileActionDialog')).toBeVisible();
+  await expect(page.locator('#fileActionNote')).toContainText('Parent folder: daily');
+  await page.locator('#fileActionInput').fill('meeting-notes');
+  await page.locator('#fileActionSubmit').click();
+
+  await waitForEditor(page);
+  await expect(page.locator('#activeFileName')).toContainText('meeting-notes');
+  await expect(page.locator('#fileTree')).toContainText('daily');
+  await expect(page.locator('#fileTree')).toContainText('meeting-notes');
+});
+
+test('creates root files from empty tree space context menu', async ({ page }) => {
+  await page.goto('/');
+
+  await page.locator('#fileSearchInput').fill('zzzz-no-match');
+  await expect(page.locator('#fileTree')).toContainText('No matches');
+
+  await page.locator('#fileTree').click({ button: 'right', position: { x: 24, y: 24 } });
+  await expect(page.locator('.file-context-menu')).toBeVisible();
+  await page.locator('.file-context-menu').getByRole('button', { name: 'New PlantUML diagram' }).click();
+
+  await expect(page.locator('#fileActionDialog')).toBeVisible();
+  await expect(page.locator('#fileActionNote')).toHaveAttribute('hidden', '');
+  await page.locator('#fileActionInput').fill('quick-diagram');
+  await page.locator('#fileActionSubmit').click();
+
+  await waitForEditor(page);
+  await expect(page.locator('#activeFileName')).toContainText('quick-diagram');
+
+  await page.locator('#fileSearchInput').fill('');
+  await expect(page.locator('#fileTree')).toContainText('quick-diagram');
+});
+
+test('renames and deletes files from the sidebar with the custom dialog', async ({ page }) => {
+  await page.goto('/');
+
+  await page.locator('#newFileBtn').click();
+  await expect(page.locator('#fileActionDialog')).toBeVisible();
+  await page.locator('#fileActionInput').fill('scratchpad');
+  await page.locator('#fileActionSubmit').click();
+
+  await waitForEditor(page);
+  const scratchpadItem = page.locator('#fileTree .file-tree-item', { hasText: 'scratchpad' }).first();
+  await scratchpadItem.click({ button: 'right' });
+  await expect(page.locator('.file-context-menu')).toBeVisible();
+  await page.locator('.file-context-menu').getByRole('button', { name: 'Rename' }).click();
+
+  await expect(page.locator('#fileActionDialog')).toBeVisible();
+  await expect(page.locator('#fileActionLabel')).toHaveText('Name');
+  await page.locator('#fileActionInput').fill('release-notes');
+  await page.locator('#fileActionSubmit').click();
+
+  await expect(page.locator('#activeFileName')).toContainText('release-notes');
+  await expect(page.locator('#fileTree')).toContainText('release-notes');
+  await expect(page.locator('#fileTree')).not.toContainText('scratchpad');
+
+  const renamedItem = page.locator('#fileTree .file-tree-item', { hasText: 'release-notes' }).first();
+  await renamedItem.click({ button: 'right' });
+  await expect(page.locator('.file-context-menu')).toBeVisible();
+  await page.locator('.file-context-menu').getByRole('button', { name: 'Delete' }).click();
+
+  await expect(page.locator('#fileActionDialog')).toBeVisible();
+  await expect(page.locator('#fileActionField')).toHaveAttribute('hidden', '');
+  await expect(page.locator('#fileActionNote')).toContainText('release-notes.md');
+  await page.locator('#fileActionSubmit').click();
+
+  await expect(page.locator('#emptyState')).toBeVisible();
+  await expect(page.locator('#fileTree')).not.toContainText('release-notes');
+});
+
 test('opens excalidraw files with a direct iframe preview', async ({ page }) => {
   await page.goto('/');
   await expect(page.locator('#fileTree')).toBeVisible();

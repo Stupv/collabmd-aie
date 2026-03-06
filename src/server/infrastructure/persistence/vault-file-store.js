@@ -72,14 +72,12 @@ export class VaultFileStore {
 
       if (entry.isDirectory()) {
         const children = await this.readDirectory(fullPath);
-        if (children.length > 0) {
-          entries.push({
-            name: entry.name,
-            path: relativePath,
-            type: 'directory',
-            children,
-          });
-        }
+        entries.push({
+          name: entry.name,
+          path: relativePath,
+          type: 'directory',
+          children,
+        });
       } else if (isVaultFile(entry.name)) {
         entries.push({
           name: entry.name,

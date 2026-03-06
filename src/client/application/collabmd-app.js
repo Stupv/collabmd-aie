@@ -91,6 +91,7 @@ export class CollabMdApp {
     this.fileExplorer = new FileExplorerController({
       onFileSelect: (filePath) => this.handleFileSelection(filePath, { closeSidebarOnMobile: true }),
       onFileDelete: () => navigateToFile(null),
+      toastController: this.toastController,
     });
     this.outlineController = new OutlineController({
       onNavigateToHeading: ({ sourceLine }) => {
