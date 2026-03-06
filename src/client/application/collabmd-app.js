@@ -86,13 +86,10 @@ export class CollabMdApp {
           isLargeDocument: stats.isLargeDocument,
         });
         this.scrollSyncController.setLargeDocumentMode(stats.isLargeDocument);
-        this.scrollSyncController.invalidatePreviewBlocks();
-        this.scrollSyncController.warmPreviewBlocks();
+        this.schedulePreviewLayoutSync({ delayMs: 0 });
       },
       onRenderComplete: () => {
-        requestAnimationFrame(() => {
-          this.scrollSyncController.syncPreviewToEditor();
-        });
+        this.schedulePreviewLayoutSync({ delayMs: 0 });
       },
       outlineController: this.outlineController,
       previewContainer: this.elements.previewContainer,
@@ -122,6 +119,8 @@ export class CollabMdApp {
       toastController: this.toastController,
     });
     this._backlinkRefreshTimer = null;
+    this._previewLayoutResizeObserver = null;
+    this._previewLayoutSyncTimer = null;
   }
 
   initialize() {
@@ -131,6 +130,7 @@ export class CollabMdApp {
     this.layoutController.initialize();
     this.scrollSyncController.initialize();
     this.fileExplorer.initialize();
+    this.initializePreviewLayoutObserver();
     this.syncCurrentUserName();
     this.syncWrapToggle();
     this.bindEvents();
@@ -200,11 +200,50 @@ export class CollabMdApp {
     return () => {
       clearTimeout(resizeTimer);
       resizeTimer = setTimeout(() => {
-        this.session?.requestMeasure();
-        this.scrollSyncController.invalidatePreviewBlocks();
-        this.scrollSyncController.syncPreviewToEditor();
+        this.schedulePreviewLayoutSync({ delayMs: 0 });
       }, 100);
     };
+  }
+
+  initializePreviewLayoutObserver() {
+    if (typeof ResizeObserver !== 'function' || !this.elements.previewContent) {
+      return;
+    }
+
+    this._previewLayoutResizeObserver?.disconnect();
+    this._previewLayoutResizeObserver = new ResizeObserver(() => {
+      this.schedulePreviewLayoutSync();
+    });
+    this._previewLayoutResizeObserver.observe(this.elements.previewContent);
+  }
+
+  schedulePreviewLayoutSync({ delayMs = 120 } = {}) {
+    clearTimeout(this._previewLayoutSyncTimer);
+
+    this._previewLayoutSyncTimer = setTimeout(() => {
+      this._previewLayoutSyncTimer = null;
+
+      if (!this.session || !this.elements.previewContent) {
+        return;
+      }
+
+      if (this.elements.previewContent.dataset.renderPhase === 'shell') {
+        return;
+      }
+
+      this.session.requestMeasure();
+      this.scrollSyncController.invalidatePreviewBlocks();
+      this.scrollSyncController.warmPreviewBlocks({
+        onReady: () => {
+          if (!this.session) {
+            return;
+          }
+
+          this.scrollSyncController.realignAfterLayoutChange();
+          this.outlineController.scheduleActiveHeadingUpdate();
+        },
+      });
+    }, delayMs);
   }
 
   async handleHashChange() {
@@ -229,7 +268,9 @@ export class CollabMdApp {
     this.elements.editorPage?.classList.add('hidden');
     this.elements.previewContent.innerHTML = '';
     this.elements.previewContent.dataset.renderPhase = 'ready';
+    clearTimeout(this._previewLayoutSyncTimer);
     this.scrollSyncController.setLargeDocumentMode(false);
+    this.scrollSyncController.invalidatePreviewBlocks();
 
     // Re-render global presence (users are still visible on the empty state)
     this.renderAvatars();
@@ -317,10 +358,12 @@ export class CollabMdApp {
     this.session = null;
     this.scrollSyncController.attachEditorScroller(null);
     this.scrollSyncController.setLargeDocumentMode(false);
+    this.scrollSyncController.invalidatePreviewBlocks();
     this.outlineController.cleanup();
     // Keep followedUserClientId — follow persists across file switches
     this.followedCursorSignature = '';
     clearTimeout(this._backlinkRefreshTimer);
+    clearTimeout(this._previewLayoutSyncTimer);
   }
 
   handleWikiLinkClick(target) {

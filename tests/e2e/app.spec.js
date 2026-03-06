@@ -52,6 +52,28 @@ async function getHeavyPreviewCounts(page) {
   }));
 }
 
+async function getVisibleEditorLineNumbers(page) {
+  return page.evaluate(() => (
+    Array.from(document.querySelectorAll('.cm-lineNumbers .cm-gutterElement'))
+      .map((element) => Number.parseInt(element.textContent || '', 10))
+      .filter((lineNumber) => Number.isFinite(lineNumber))
+  ));
+}
+
+async function getPreviewHeadingOffset(page, sourceLine) {
+  return page.evaluate((line) => {
+    const container = document.getElementById('previewContainer');
+    const heading = document.querySelector(`#previewContent h2[data-source-line="${line}"]`);
+    if (!container || !heading) {
+      return Number.POSITIVE_INFINITY;
+    }
+
+    const containerRect = container.getBoundingClientRect();
+    const headingRect = heading.getBoundingClientRect();
+    return Math.abs(headingRect.top - containerRect.top);
+  }, sourceLine);
+}
+
 function createLongMarkdownDocument(lineCount = 80) {
   const lines = ['# Follow Target', ''];
 
@@ -323,6 +345,28 @@ test('hydrates more mermaid and excalidraw content as the heavy preview scrolls'
   const excalidrawIncreased = middle.excalidrawIframes > before.excalidrawIframes || after.excalidrawIframes > middle.excalidrawIframes;
 
   expect(mermaidIncreased || excalidrawIncreased).toBeTruthy();
+});
+
+test('keeps editor, preview, and outline aligned in heavy documents after lazy hydration changes layout', async ({ page }) => {
+  test.slow();
+
+  await openFile(page, 'full-markdown.md');
+  await page.locator('#outlineToggle').click();
+
+  const targetOutlineItem = page.locator('#outlineNav .outline-item[data-source-line="682"]').first();
+  await expect(targetOutlineItem).toBeVisible({ timeout: 60000 });
+  await targetOutlineItem.click();
+
+  await page.waitForTimeout(1500);
+
+  await expect.poll(async () => {
+    const lineNumbers = await getVisibleEditorLineNumbers(page);
+    return lineNumbers.includes(682);
+  }, { timeout: 60000 }).toBeTruthy();
+
+  await expect.poll(async () => (
+    getPreviewHeadingOffset(page, 682)
+  ), { timeout: 60000 }).toBeLessThan(260);
 });
 
 test.describe('mobile outline', () => {

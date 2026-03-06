@@ -68,12 +68,13 @@ export class OutlineController {
       return {
         id: heading.id,
         level: Number.parseInt(heading.tagName[1], 10),
+        sourceLine: Number.parseInt(heading.getAttribute('data-source-line') || '', 10),
         text: heading.textContent.trim(),
       };
     });
 
     this.navigation.innerHTML = items.map((item) => (
-      `<button class="outline-item" data-level="${item.level}" data-target="${item.id}" title="${item.text.replace(/"/g, '&quot;')}">${item.text}</button>`
+      `<button class="outline-item" data-level="${item.level}" data-target="${item.id}"${Number.isFinite(item.sourceLine) ? ` data-source-line="${item.sourceLine}"` : ''} title="${item.text.replace(/"/g, '&quot;')}">${item.text}</button>`
     )).join('');
 
     this.navigation.querySelectorAll('.outline-item').forEach((button) => {

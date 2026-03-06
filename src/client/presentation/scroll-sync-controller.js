@@ -68,14 +68,26 @@ export class ScrollSyncController {
     this.frameId = null;
     this.previewBlocks = null;
     this.previewBlocksWarmId = null;
+    this.previewBlocksReadyCallbacks = [];
     this.largeDocumentMode = false;
+    this.lastInteractionSource = 'editor';
     this.suspendedUntil = 0;
 
     this.handleEditorScroll = () => {
+      if (!this.editorScroller || this.lockedElements.has(this.editorScroller) || this.isSuspended()) {
+        return;
+      }
+
+      this.lastInteractionSource = 'editor';
       this.scheduleSync(this.editorScroller, this.previewContainer);
     };
 
     this.handlePreviewScroll = () => {
+      if (!this.previewContainer || this.lockedElements.has(this.previewContainer) || this.isSuspended()) {
+        return;
+      }
+
+      this.lastInteractionSource = 'preview';
       this.scheduleSync(this.previewContainer, this.editorScroller);
     };
   }
@@ -95,10 +107,12 @@ export class ScrollSyncController {
   }
 
   syncPreviewToEditor() {
+    this.lastInteractionSource = 'editor';
     this.sync(this.editorScroller, this.previewContainer);
   }
 
   syncEditorToPreview() {
+    this.lastInteractionSource = 'preview';
     this.sync(this.previewContainer, this.editorScroller);
   }
 
@@ -110,7 +124,9 @@ export class ScrollSyncController {
     this.previewBlocks = null;
     cancelIdleWork(this.previewBlocksWarmId);
     this.previewBlocksWarmId = null;
+    this.previewBlocksReadyCallbacks = [];
     this.lockedElements.clear();
+    this.lastInteractionSource = 'editor';
     this.suspendedUntil = 0;
 
     if (this.frameId) {
@@ -146,21 +162,60 @@ export class ScrollSyncController {
     this.previewBlocks = null;
     cancelIdleWork(this.previewBlocksWarmId);
     this.previewBlocksWarmId = null;
+    this.previewBlocksReadyCallbacks = [];
   }
 
   setLargeDocumentMode(enabled) {
     this.largeDocumentMode = Boolean(enabled);
   }
 
-  warmPreviewBlocks() {
-    if (!this.largeDocumentMode || this.previewBlocks || this.previewBlocksWarmId !== null) {
+  warmPreviewBlocks({ onReady } = {}) {
+    if (typeof onReady === 'function') {
+      if (this.previewBlocks) {
+        onReady(this.previewBlocks);
+      } else {
+        this.previewBlocksReadyCallbacks.push(onReady);
+      }
+    }
+
+    if (!this.largeDocumentMode) {
+      if (!this.previewBlocks) {
+        this.previewBlocks = this.buildPreviewBlocks();
+      }
+
+      this.flushPreviewBlocksReadyCallbacks();
+      return;
+    }
+
+    if (this.previewBlocks || this.previewBlocksWarmId !== null) {
       return;
     }
 
     this.previewBlocksWarmId = requestIdleWork(() => {
       this.previewBlocksWarmId = null;
       this.previewBlocks = this.buildPreviewBlocks();
+      this.flushPreviewBlocksReadyCallbacks();
     });
+  }
+
+  realignAfterLayoutChange() {
+    const runRealignment = () => {
+      if (this.lastInteractionSource === 'preview') {
+        this.syncEditorToPreview();
+        return;
+      }
+
+      this.syncPreviewToEditor();
+    };
+
+    if (this.largeDocumentMode && !this.previewBlocks) {
+      this.warmPreviewBlocks({
+        onReady: () => runRealignment(),
+      });
+      return;
+    }
+
+    runRealignment();
   }
 
   suspendSync(durationMs = 250) {
@@ -169,6 +224,21 @@ export class ScrollSyncController {
 
   isSuspended() {
     return performance.now() < this.suspendedUntil;
+  }
+
+  flushPreviewBlocksReadyCallbacks() {
+    if (this.previewBlocksReadyCallbacks.length === 0) {
+      return;
+    }
+
+    const callbacks = this.previewBlocksReadyCallbacks.splice(0);
+    callbacks.forEach((callback) => {
+      try {
+        callback(this.previewBlocks ?? []);
+      } catch (error) {
+        console.warn('[scroll-sync] Preview block callback failed:', error);
+      }
+    });
   }
 
   sync(source, target) {
