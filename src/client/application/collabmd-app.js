@@ -40,6 +40,7 @@ export class CollabMdApp {
       sidebar: document.getElementById('sidebar'),
       emptyState: document.getElementById('emptyState'),
       backlinksPanel: document.getElementById('backlinksPanel'),
+      outlineToggle: document.getElementById('outlineToggle'),
     };
 
     this.session = null;
@@ -124,6 +125,63 @@ export class CollabMdApp {
     this._pendingPreviewLayoutSync = false;
     this._previewLayoutResizeObserver = null;
     this._previewLayoutSyncTimer = null;
+  }
+
+  isExcalidrawFile(filePath) {
+    return typeof filePath === 'string' && filePath.toLowerCase().endsWith('.excalidraw');
+  }
+
+  getDisplayName(filePath) {
+    return String(filePath ?? '')
+      .split('/')
+      .pop()
+      .replace(/\.(?:md|markdown|mdx|excalidraw)$/i, '');
+  }
+
+  resetPreviewMode() {
+    this.elements.previewContent?.classList.remove('is-excalidraw-file-preview');
+  }
+
+  syncFileChrome(filePath) {
+    const isExcalidraw = this.isExcalidrawFile(filePath);
+    this.elements.outlineToggle?.classList.toggle('hidden', isExcalidraw);
+
+    if (isExcalidraw) {
+      this.layoutController.setView('preview');
+      this.outlineController.close();
+      this.backlinksPanel.clear();
+    }
+  }
+
+  renderExcalidrawFilePreview(filePath) {
+    const previewElement = this.elements.previewContent;
+    if (!previewElement) {
+      return;
+    }
+
+    this.excalidrawEmbed.detachForCommit();
+    this.resetPreviewMode();
+    previewElement.classList.add('is-excalidraw-file-preview');
+    previewElement.replaceChildren();
+
+    const placeholder = document.createElement('div');
+    placeholder.className = 'excalidraw-embed-placeholder';
+    placeholder.dataset.embedKey = `${filePath}#file-preview`;
+    placeholder.dataset.embedLabel = this.getDisplayName(filePath);
+    placeholder.dataset.embedTarget = filePath;
+    const loadingShell = document.createElement('div');
+    loadingShell.className = 'preview-shell';
+    loadingShell.textContent = 'Loading Excalidraw preview…';
+    placeholder.appendChild(loadingShell);
+    previewElement.appendChild(placeholder);
+
+    previewElement.dataset.renderPhase = 'ready';
+    this.outlineController.refresh();
+    this.scrollSyncController.setLargeDocumentMode(false);
+    this.scrollSyncController.invalidatePreviewBlocks();
+    this.excalidrawEmbed.reconcileEmbeds(previewElement, { isLargeDocument: false });
+    this.excalidrawEmbed.hydrateVisibleEmbeds();
+    this.schedulePreviewLayoutSync({ delayMs: 0 });
   }
 
   initialize() {
@@ -290,6 +348,8 @@ export class CollabMdApp {
   showEmptyState() {
     this.sessionLoadToken += 1;
     this.cleanupSession();
+    this.resetPreviewMode();
+    this.elements.outlineToggle?.classList.remove('hidden');
     this.currentFilePath = null;
     this.lobby.setCurrentFile(null);
     this.fileExplorer.setActiveFile(null);
@@ -319,20 +379,23 @@ export class CollabMdApp {
   async openFile(filePath) {
     const loadToken = this.sessionLoadToken + 1;
     this.sessionLoadToken = loadToken;
+    const isExcalidraw = this.isExcalidrawFile(filePath);
 
     this.cleanupSession();
     this.layoutController.reset();
+    this.resetPreviewMode();
     this.connectionHelpShown = false;
     this.connectionState = { status: 'connecting', unreachable: false };
     this.currentFilePath = filePath;
     this.lobby.setCurrentFile(filePath);
 
     this.fileExplorer.setActiveFile(filePath);
+    this.syncFileChrome(filePath);
 
     this.elements.emptyState?.classList.add('hidden');
     this.elements.editorPage?.classList.remove('hidden');
 
-    const displayName = filePath.split('/').pop().replace(/\.md$/i, '');
+    const displayName = this.getDisplayName(filePath);
     if (this.elements.activeFileName) {
       this.elements.activeFileName.textContent = displayName;
     }
@@ -349,6 +412,10 @@ export class CollabMdApp {
       onAwarenessChange: (users) => this.updateFileAwareness(users),
       onConnectionChange: (state) => this.handleConnectionChange(state),
       onContentChange: () => {
+        if (isExcalidraw) {
+          return;
+        }
+
         this.previewRenderer.queueRender();
         this.scheduleBacklinkRefresh();
       },
@@ -369,8 +436,15 @@ export class CollabMdApp {
 
       this.scrollSyncController.attachEditorScroller(session.getScrollContainer());
       session.applyTheme(this.themeController.getTheme());
+      if (isExcalidraw) {
+        this.renderExcalidrawFilePreview(filePath);
+      }
       this.syncWrapToggle();
-      this.backlinksPanel.load(filePath);
+      if (isExcalidraw) {
+        this.backlinksPanel.clear();
+      } else {
+        this.backlinksPanel.load(filePath);
+      }
     } catch (error) {
       console.error('[app] Failed to initialize editor:', error);
       session.destroy();
@@ -533,7 +607,9 @@ export class CollabMdApp {
 
   handleThemeChange(theme) {
     this.previewRenderer.applyTheme(theme);
-    this.previewRenderer.queueRender();
+    if (!this.isExcalidrawFile(this.currentFilePath)) {
+      this.previewRenderer.queueRender();
+    }
     this.session?.applyTheme(theme);
     this.excalidrawEmbed.updateTheme(theme);
   }
@@ -846,7 +922,7 @@ export class CollabMdApp {
   scheduleBacklinkRefresh() {
     clearTimeout(this._backlinkRefreshTimer);
     this._backlinkRefreshTimer = setTimeout(() => {
-      if (this.currentFilePath) {
+      if (this.currentFilePath && !this.isExcalidrawFile(this.currentFilePath)) {
         this.backlinksPanel.load(this.currentFilePath);
       }
     }, 2000);

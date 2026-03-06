@@ -147,6 +147,54 @@ test('opens a file by clicking the sidebar', async ({ page }) => {
   await expect(page.locator('#activeFileName')).toContainText('README');
 });
 
+test('opens excalidraw files with a direct iframe preview', async ({ page }) => {
+  await page.goto('/');
+  await expect(page.locator('#fileTree')).toBeVisible();
+
+  await page.locator('#fileTree .file-tree-item', { hasText: 'system-architecture' }).first().click();
+
+  const iframe = page.locator('#previewContent .excalidraw-embed iframe').first();
+  await expect(iframe).toBeVisible();
+  await expect(iframe).toHaveAttribute('src', /file=system-architecture\.excalidraw/);
+  await expect(page.locator('#previewContent .excalidraw-embed-label')).toHaveText('system-architecture');
+  await expect(page.locator('#editorLayout')).toHaveAttribute('data-view', 'preview');
+  await expect(page.locator('#editorPane')).not.toBeVisible();
+  await expect(page.locator('#backlinksPanel')).toHaveClass(/hidden/);
+
+  const initialWidths = await page.evaluate(() => {
+    const container = document.getElementById('previewContainer');
+    const embed = document.querySelector('#previewContent .excalidraw-embed');
+    if (!container || !embed) {
+      return null;
+    }
+
+    return {
+      containerWidth: container.getBoundingClientRect().width,
+      embedWidth: embed.getBoundingClientRect().width,
+    };
+  });
+  expect(initialWidths).not.toBeNull();
+  expect(initialWidths.embedWidth).toBeGreaterThan(initialWidths.containerWidth - 48);
+
+  await page.locator('#previewContent .excalidraw-embed-btn', { hasText: 'Max' }).click();
+  await expect(page.locator('#previewContent .excalidraw-embed')).toHaveClass(/is-maximized/);
+
+  const maximizedWidths = await page.evaluate(() => {
+    const container = document.getElementById('previewContainer');
+    const embed = document.querySelector('#previewContent .excalidraw-embed.is-maximized');
+    if (!container || !embed) {
+      return null;
+    }
+
+    return {
+      containerWidth: container.getBoundingClientRect().width,
+      embedWidth: embed.getBoundingClientRect().width,
+    };
+  });
+  expect(maximizedWidths).not.toBeNull();
+  expect(maximizedWidths.embedWidth).toBeGreaterThan(maximizedWidths.containerWidth - 48);
+});
+
 test('creates and opens unresolved wiki-link targets', async ({ page }) => {
   await openFile(page, 'README.md');
 

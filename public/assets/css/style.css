@@ -890,6 +890,63 @@
 .preview-content[data-render-phase="shell"] {
   color: var(--color-text-muted);
 }
+
+.preview-content.is-excalidraw-file-preview {
+  display: flex;
+  width: 100%;
+  min-height: 100%;
+  height: 100%;
+  margin: 0;
+  padding: var(--space-3);
+  position: relative;
+  box-sizing: border-box;
+  max-width: none;
+}
+
+.preview-content.is-excalidraw-file-preview .excalidraw-embed,
+.preview-content.is-excalidraw-file-preview .excalidraw-embed-placeholder {
+  margin: 0;
+  width: 100%;
+  min-height: 100%;
+}
+
+.preview-content.is-excalidraw-file-preview .excalidraw-embed {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.preview-content.is-excalidraw-file-preview .excalidraw-embed-placeholder {
+  display: flex;
+  align-items: stretch;
+}
+
+.preview-content.is-excalidraw-file-preview .preview-shell {
+  width: 100%;
+  min-height: 100%;
+}
+
+.preview-content.is-excalidraw-file-preview .excalidraw-embed-iframe {
+  flex: 1;
+  min-height: 0;
+  height: 100% !important;
+}
+
+.preview-content.is-excalidraw-file-preview .excalidraw-embed-resizer {
+  display: none;
+}
+
+.preview-content.is-excalidraw-file-preview .excalidraw-embed.is-maximized {
+  position: absolute;
+  inset: var(--space-3);
+  margin: 0;
+  z-index: 2;
+}
+
+.preview-content.is-excalidraw-file-preview .excalidraw-embed.is-maximized .excalidraw-embed-iframe {
+  height: 100% !important;
+}
+
 .preview-shell {
   min-height: 60vh;
   display: flex;
@@ -1440,6 +1497,9 @@ body.mermaid-maximized-open::before {
 }
 .editor-layout[data-view="preview"] .preview-content {
   max-width: 1080px;
+}
+.editor-layout[data-view="preview"] .preview-content.is-excalidraw-file-preview {
+  max-width: none;
 }
 .editor-layout[data-view="preview"] .preview-content p {
   max-width: 84ch;
