@@ -1280,18 +1280,30 @@ export class CollabMdApp {
 
     avatars.innerHTML = '';
     const visibleUsers = [...this.globalUsers];
-    const followedIndex = visibleUsers.findIndex((u) => u.clientId === this.followedUserClientId);
-    if (followedIndex > 0) {
+    const localIndex = visibleUsers.findIndex((u) => u.isLocal);
+    if (localIndex > 0) {
+      const [localUser] = visibleUsers.splice(localIndex, 1);
+      visibleUsers.unshift(localUser);
+    }
+
+    const followedIndex = visibleUsers.findIndex((u) => !u.isLocal && u.clientId === this.followedUserClientId);
+    const followedInsertIndex = visibleUsers[0]?.isLocal ? 1 : 0;
+    if (followedIndex > followedInsertIndex) {
       const [followed] = visibleUsers.splice(followedIndex, 1);
-      visibleUsers.unshift(followed);
+      visibleUsers.splice(followedInsertIndex, 0, followed);
     }
 
     visibleUsers.slice(0, 5).forEach((user) => {
       const avatar = document.createElement(user.isLocal ? 'div' : 'button');
       avatar.className = 'user-avatar';
+      avatar.classList.toggle('is-local', user.isLocal);
       avatar.style.backgroundColor = user.color;
-      avatar.textContent = user.name.charAt(0).toUpperCase();
       avatar.classList.toggle('is-following', user.clientId === this.followedUserClientId);
+
+      const initial = document.createElement('span');
+      initial.className = 'user-avatar-initial';
+      initial.textContent = user.name.charAt(0).toUpperCase();
+      avatar.appendChild(initial);
 
       // Show which file the user is in, and whether they're on the same file
       const sameFile = user.currentFile && user.currentFile === this.currentFilePath;
@@ -1300,18 +1312,26 @@ export class CollabMdApp {
         : 'No file';
 
       if (user.isLocal) {
+        const selfLabel = document.createElement('span');
+        selfLabel.className = 'user-avatar-self-label';
+        selfLabel.textContent = 'You';
+        avatar.appendChild(selfLabel);
         avatar.title = `${user.name} (you) — ${fileLabel}`;
+        avatar.setAttribute('role', 'img');
+        avatar.setAttribute('aria-label', `${user.name} (you) — ${fileLabel}`);
       } else {
         avatar.type = 'button';
         avatar.classList.add('user-avatar-button');
         if (!sameFile) {
           avatar.classList.add('different-file');
         }
-        avatar.title = user.clientId === this.followedUserClientId
+        const avatarLabel = user.clientId === this.followedUserClientId
           ? `Stop following ${user.name}`
           : sameFile
             ? `Follow ${user.name}`
             : `Follow ${user.name} — ${fileLabel}`;
+        avatar.title = avatarLabel;
+        avatar.setAttribute('aria-label', avatarLabel);
         avatar.addEventListener('click', () => this.toggleFollowUser(user.clientId));
       }
 
@@ -1323,7 +1343,10 @@ export class CollabMdApp {
       overflow.className = 'user-avatar';
       overflow.style.backgroundColor = 'var(--color-surface-dynamic)';
       overflow.style.color = 'var(--color-text-muted)';
-      overflow.textContent = `+${visibleUsers.length - 5}`;
+      const overflowLabel = document.createElement('span');
+      overflowLabel.className = 'user-avatar-initial';
+      overflowLabel.textContent = `+${visibleUsers.length - 5}`;
+      overflow.appendChild(overflowLabel);
       avatars.appendChild(overflow);
     }
   }

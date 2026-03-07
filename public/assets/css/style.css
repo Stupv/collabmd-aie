@@ -674,8 +674,43 @@
   z-index: 1;
   flex-shrink: 0;
 }
+.user-avatar-initial {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
 .user-avatar:first-child {
   margin-left: 0;
+}
+.user-avatar.is-local {
+  width: auto;
+  min-width: 44px;
+  padding: 0 8px 0 6px;
+  gap: 4px;
+  border-radius: var(--radius-full);
+  margin-right: 6px;
+  box-shadow:
+    0 0 0 2px var(--color-surface),
+    0 0 0 4px oklch(from var(--color-primary) l c h / 0.18);
+  z-index: 5;
+}
+.user-avatar.is-local + .user-avatar {
+  margin-left: 0;
+}
+.user-avatar.is-local .user-avatar-initial {
+  width: 14px;
+  height: 14px;
+  border-radius: var(--radius-full);
+  background: rgb(255 255 255 / 0.22);
+  font-size: 9px;
+}
+.user-avatar-self-label {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  line-height: 1;
+  text-transform: uppercase;
 }
 .user-avatar-button {
   cursor: pointer;

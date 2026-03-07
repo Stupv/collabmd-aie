@@ -18,8 +18,8 @@ async function waitForEditor(page) {
   await expect(page.locator('.cm-editor')).toBeVisible();
 }
 
-async function openFile(page, filePath) {
-  await seedStoredUserName(page);
+async function openFile(page, filePath, { userName = E2E_USER_NAME } = {}) {
+  await seedStoredUserName(page, userName);
   await page.goto(`/#file=${encodeURIComponent(filePath)}`);
   await waitForEditor(page);
 }
@@ -812,6 +812,25 @@ test('follows another user to their current cursor position', async ({ browser }
 
   await followerPage.close();
   await targetPage.close();
+});
+
+test('pins and labels the current user in the header avatar list', async ({ browser }) => {
+  const localPage = await browser.newPage();
+  const remotePage = await browser.newPage();
+
+  await openFile(localPage, 'README.md', { userName: 'Owner' });
+  await openFile(remotePage, 'README.md', { userName: 'Teammate' });
+
+  await expect(localPage.locator('#userCount')).toHaveText('2 online');
+
+  const localAvatar = localPage.locator('#userAvatars > .user-avatar').first();
+  await expect(localAvatar).toHaveClass(/is-local/);
+  await expect(localAvatar).toContainText('You');
+  await expect(localAvatar).toHaveAttribute('aria-label', /Owner \(you\) — README/);
+  await expect(localPage.locator('#userAvatars .user-avatar-button')).toHaveCount(1);
+
+  await localPage.close();
+  await remotePage.close();
 });
 
 test('keeps preview and outline aligned when scrolling list-heavy editor content', async ({ page }) => {
