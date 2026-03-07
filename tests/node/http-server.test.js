@@ -86,6 +86,54 @@ test('HTTP server serves health, runtime config, and static assets', async (t) =
   assert.equal(assetHeadResponse.headers['cache-control'], 'no-store');
 });
 
+test('HTTP server proxies esm.sh modules through a same-origin path', async (t) => {
+  const originalFetch = globalThis.fetch;
+  const upstreamRequests = [];
+  globalThis.fetch = async (url) => {
+    upstreamRequests.push(String(url));
+    return new Response('export * from "/react@19.2.0/es2022/react.mjs";\n', {
+      headers: {
+        'Cache-Control': 'public, max-age=60',
+        'Content-Type': 'application/javascript; charset=utf-8',
+      },
+      status: 200,
+    });
+  };
+  t.after(() => {
+    globalThis.fetch = originalFetch;
+  });
+
+  const app = await startTestServer();
+  t.after(() => app.close());
+
+  const response = await httpRequest(`${app.baseUrl}/_esm/test-module`);
+  assert.equal(response.statusCode, 200);
+  assert.equal(response.headers['cache-control'], 'public, max-age=60');
+  assert.match(response.body, /"\/_esm\/react@19\.2\.0\/es2022\/react\.mjs"/);
+  assert.deepEqual(upstreamRequests, ['https://esm.sh/test-module']);
+});
+
+test('HTTP server rejects invalid HTML payloads from esm.sh module requests', async (t) => {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async () => new Response('<!DOCTYPE html><html><body>bad edge cache</body></html>', {
+    headers: {
+      'Content-Type': 'application/javascript; charset=utf-8',
+    },
+    status: 200,
+  });
+  t.after(() => {
+    globalThis.fetch = originalFetch;
+  });
+
+  const app = await startTestServer();
+  t.after(() => app.close());
+
+  const response = await httpRequest(`${app.baseUrl}/_esm/d3-fetch@3?target=es2022`);
+  assert.equal(response.statusCode, 502);
+  assert.equal(response.body, 'Bad Gateway');
+  assert.equal(response.headers['cache-control'], 'no-store');
+});
+
 test('HTTP server rejects unsupported methods and missing files', async (t) => {
   const app = await startTestServer();
   t.after(() => app.close());

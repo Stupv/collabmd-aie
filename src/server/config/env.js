@@ -43,6 +43,7 @@ export function loadConfig(overrides = {}) {
     vaultDir,
     publicWsBaseUrl: process.env.PUBLIC_WS_BASE_URL || '',
     wsHeartbeatIntervalMs: parsePositiveInt(process.env.WS_HEARTBEAT_INTERVAL_MS, 30_000),
+    wsRoomIdleGraceMs: parsePositiveInt(process.env.WS_ROOM_IDLE_GRACE_MS, 15_000),
     wsBasePath: normalizeBasePath(process.env.WS_BASE_PATH || '/ws'),
     wsMaxBufferedAmountBytes: parsePositiveInt(
       process.env.WS_MAX_BUFFERED_AMOUNT_BYTES,

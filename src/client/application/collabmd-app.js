@@ -530,6 +530,15 @@ export class CollabMdApp {
       return;
     }
 
+    // Re-dispatching the same hash can otherwise tear down and recreate the
+    // active Yjs session for the same file, which opens a reconnect window
+    // where multiple same-tab sessions briefly overlap.
+    if (filePath === this.currentFilePath && this.session) {
+      this.fileExplorer.setActiveFile(filePath);
+      this.lobby.setCurrentFile(filePath);
+      return;
+    }
+
     const loadToken = this.sessionLoadToken + 1;
     this.sessionLoadToken = loadToken;
     const isExcalidraw = this.isExcalidrawFile(filePath);

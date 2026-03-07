@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Excalidraw — CollabMD</title>
-  <link rel="stylesheet" href="https://esm.sh/@excalidraw/excalidraw@0.18.0/dist/prod/index.css">
+  <link rel="stylesheet" href="/_esm/@excalidraw/excalidraw@0.18.0/dist/prod/index.css">
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     html, body { width: 100%; height: 100%; overflow: hidden; background: transparent; }
@@ -21,20 +21,20 @@
     .loading-state.error { color: #e55; }
   </style>
   <script>
-    window.EXCALIDRAW_ASSET_PATH = 'https://esm.sh/@excalidraw/excalidraw@0.18.0/dist/prod/';
+    window.EXCALIDRAW_ASSET_PATH = '/_esm/@excalidraw/excalidraw@0.18.0/dist/prod/';
   </script>
-  <link rel="modulepreload" href="https://esm.sh/react@19.2.0">
-  <link rel="modulepreload" href="https://esm.sh/react-dom@19.2.0/client">
-  <link rel="modulepreload" href="https://esm.sh/@excalidraw/excalidraw@0.18.0?bundle&external=react,react-dom,react-dom/client">
+  <link rel="modulepreload" href="/_esm/react@19.2.0">
+  <link rel="modulepreload" href="/_esm/react-dom@19.2.0/client">
+  <link rel="modulepreload" href="/_esm/@excalidraw/excalidraw@0.18.0?bundle&external=react,react-dom,react-dom/client">
   <script type="importmap">
   {
     "imports": {
-      "react": "https://esm.sh/react@19.2.0",
-      "react/jsx-runtime": "https://esm.sh/react@19.2.0/jsx-runtime",
-      "react-dom": "https://esm.sh/react-dom@19.2.0",
-      "react-dom/client": "https://esm.sh/react-dom@19.2.0/client",
-      "yjs": "https://esm.sh/yjs@13.6.18",
-      "y-websocket": "https://esm.sh/y-websocket@3.0.0?external=yjs"
+      "react": "/_esm/react@19.2.0",
+      "react/jsx-runtime": "/_esm/react@19.2.0/jsx-runtime",
+      "react-dom": "/_esm/react-dom@19.2.0",
+      "react-dom/client": "/_esm/react-dom@19.2.0/client",
+      "yjs": "/_esm/yjs@13.6.18",
+      "y-websocket": "/_esm/y-websocket@3.0.0?external=yjs"
     }
   }
   </script>
@@ -65,8 +65,8 @@
       reactDomClient: 'react-dom/client',
       yjs: 'yjs',
       yWebsocket: 'y-websocket',
-      excalidraw: 'https://esm.sh/@excalidraw/excalidraw@0.18.0?bundle&external=react,react-dom,react-dom/client',
-      assetPath: 'https://esm.sh/@excalidraw/excalidraw@0.18.0/dist/prod/',
+      excalidraw: '/_esm/@excalidraw/excalidraw@0.18.0?bundle&external=react,react-dom,react-dom/client',
+      assetPath: '/_esm/@excalidraw/excalidraw@0.18.0/dist/prod/',
     };
 
     let excalidrawAPI = null;

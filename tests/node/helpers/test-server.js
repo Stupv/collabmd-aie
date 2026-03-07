@@ -5,6 +5,22 @@ import { tmpdir } from 'os';
 import { loadConfig } from '../../../src/server/config/env.js';
 import { createAppServer } from '../../../src/server/create-app-server.js';
 
+async function removeTempRoot(tempRoot, attempts = 5) {
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
+    try {
+      await rm(tempRoot, { force: true, recursive: true });
+      return;
+    } catch (error) {
+      const isRetriable = error?.code === 'ENOTEMPTY' || error?.code === 'EBUSY';
+      if (!isRetriable || attempt === attempts) {
+        throw error;
+      }
+
+      await new Promise((resolve) => setTimeout(resolve, 50 * attempt));
+    }
+  }
+}
+
 export async function startTestServer(overrides = {}) {
   const tempRoot = await mkdtemp(join(tmpdir(), 'collabmd-test-'));
   const vaultDir = join(tempRoot, 'vault');
@@ -19,6 +35,7 @@ export async function startTestServer(overrides = {}) {
     nodeEnv: 'test',
     vaultDir,
     port: 0,
+    wsRoomIdleGraceMs: 0,
     ...overrides,
   };
   const server = createAppServer(config);
@@ -28,7 +45,7 @@ export async function startTestServer(overrides = {}) {
     baseUrl: `http://${config.host}:${port}`,
     close: async () => {
       await server.close();
-      await rm(tempRoot, { force: true, recursive: true });
+      await removeTempRoot(tempRoot);
     },
     port,
     server,

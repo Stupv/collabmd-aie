@@ -1,12 +1,12 @@
 import { mkdir, readFile, readdir, rename, rm, stat, writeFile } from 'fs/promises';
 import { basename, dirname, extname, join, normalize, relative, resolve } from 'path';
-
 const MARKDOWN_EXTENSIONS = new Set(['.md', '.markdown', '.mdx']);
 const EXCALIDRAW_EXTENSION = '.excalidraw';
 const PLANTUML_EXTENSION = '.puml';
 const VAULT_FILE_EXTENSIONS = new Set([...MARKDOWN_EXTENSIONS, EXCALIDRAW_EXTENSION, PLANTUML_EXTENSION]);
 const IGNORED_DIRECTORIES = new Set(['.git', '.obsidian', '.trash', 'node_modules', '.DS_Store']);
 const COMMENT_STORAGE_ROOT = '.collabmd/comments';
+const YJS_SNAPSHOT_STORAGE_ROOT = '.collabmd/yjs';
 
 function isMarkdownFile(filePath) {
   return MARKDOWN_EXTENSIONS.has(extname(filePath).toLowerCase());
@@ -48,6 +48,16 @@ function getCommentThreadPath(vaultDir, filePath) {
 
   const relativeVaultPath = relative(vaultDir, absoluteVaultPath);
   return resolve(vaultDir, COMMENT_STORAGE_ROOT, `${relativeVaultPath}.json`);
+}
+
+function getYjsSnapshotPath(vaultDir, filePath) {
+  const absoluteVaultPath = sanitizePath(vaultDir, filePath);
+  if (!absoluteVaultPath || !isVaultFile(absoluteVaultPath)) {
+    return null;
+  }
+
+  const relativeVaultPath = relative(vaultDir, absoluteVaultPath);
+  return resolve(vaultDir, YJS_SNAPSHOT_STORAGE_ROOT, `${relativeVaultPath}.bin`);
 }
 
 export class VaultFileStore {
@@ -144,6 +154,24 @@ export class VaultFileStore {
     }
   }
 
+  async readCollaborationSnapshot(filePath) {
+    const absolute = getYjsSnapshotPath(this.vaultDir, filePath);
+    if (!absolute) {
+      return null;
+    }
+
+    try {
+      const content = await readFile(absolute);
+      return new Uint8Array(content);
+    } catch (error) {
+      if (error.code === 'ENOENT') {
+        return null;
+      }
+
+      throw error;
+    }
+  }
+
   async writeCommentThreads(filePath, threads = []) {
     const absolute = getCommentThreadPath(this.vaultDir, filePath);
     if (!absolute) {
@@ -183,7 +211,11 @@ export class VaultFileStore {
     }
   }
 
-  async writeExcalidrawFile(filePath, content) {
+  async writeExcalidrawFile(
+    filePath,
+    content,
+    { invalidateCollaborationSnapshot = true } = {},
+  ) {
     const absolute = sanitizePath(this.vaultDir, filePath);
     if (!absolute || !isExcalidrawFile(absolute)) {
       return { ok: false, error: 'Invalid file path — must end in .excalidraw' };
@@ -193,6 +225,9 @@ export class VaultFileStore {
       const dir = dirname(absolute);
       await mkdir(dir, { recursive: true });
       await writeFile(absolute, content, 'utf-8');
+      if (invalidateCollaborationSnapshot) {
+        await this.deleteCollaborationSnapshot(filePath);
+      }
       return { ok: true };
     } catch (error) {
       return { ok: false, error: error.message };
@@ -214,7 +249,11 @@ export class VaultFileStore {
     }
   }
 
-  async writePlantUmlFile(filePath, content) {
+  async writePlantUmlFile(
+    filePath,
+    content,
+    { invalidateCollaborationSnapshot = true } = {},
+  ) {
     const absolute = sanitizePath(this.vaultDir, filePath);
     if (!absolute || !isPlantUmlFile(absolute)) {
       return { ok: false, error: 'Invalid file path — must end in .puml' };
@@ -224,13 +263,20 @@ export class VaultFileStore {
       const dir = dirname(absolute);
       await mkdir(dir, { recursive: true });
       await writeFile(absolute, content, 'utf-8');
+      if (invalidateCollaborationSnapshot) {
+        await this.deleteCollaborationSnapshot(filePath);
+      }
       return { ok: true };
     } catch (error) {
       return { ok: false, error: error.message };
     }
   }
 
-  async writeMarkdownFile(filePath, content) {
+  async writeMarkdownFile(
+    filePath,
+    content,
+    { invalidateCollaborationSnapshot = true } = {},
+  ) {
     const absolute = sanitizePath(this.vaultDir, filePath);
     if (!absolute || !isMarkdownFile(absolute)) {
       return { ok: false, error: 'Invalid file path' };
@@ -240,6 +286,39 @@ export class VaultFileStore {
       const dir = dirname(absolute);
       await mkdir(dir, { recursive: true });
       await writeFile(absolute, content, 'utf-8');
+      if (invalidateCollaborationSnapshot) {
+        await this.deleteCollaborationSnapshot(filePath);
+      }
+      return { ok: true };
+    } catch (error) {
+      return { ok: false, error: error.message };
+    }
+  }
+
+  async writeCollaborationSnapshot(filePath, snapshot) {
+    const absolute = getYjsSnapshotPath(this.vaultDir, filePath);
+    if (!absolute) {
+      return { ok: false, error: 'Invalid file path' };
+    }
+
+    try {
+      const dir = dirname(absolute);
+      await mkdir(dir, { recursive: true });
+      await writeFile(absolute, Buffer.from(snapshot));
+      return { ok: true };
+    } catch (error) {
+      return { ok: false, error: error.message };
+    }
+  }
+
+  async deleteCollaborationSnapshot(filePath) {
+    const absolute = getYjsSnapshotPath(this.vaultDir, filePath);
+    if (!absolute) {
+      return { ok: false, error: 'Invalid file path' };
+    }
+
+    try {
+      await rm(absolute, { force: true });
       return { ok: true };
     } catch (error) {
       return { ok: false, error: error.message };
@@ -262,6 +341,7 @@ export class VaultFileStore {
     const dir = dirname(absolute);
     await mkdir(dir, { recursive: true });
     await writeFile(absolute, content, 'utf-8');
+    await this.deleteCollaborationSnapshot(filePath);
     return { ok: true };
   }
 
@@ -276,6 +356,10 @@ export class VaultFileStore {
       const commentPath = getCommentThreadPath(this.vaultDir, filePath);
       if (commentPath) {
         await rm(commentPath, { force: true });
+      }
+      const snapshotPath = getYjsSnapshotPath(this.vaultDir, filePath);
+      if (snapshotPath) {
+        await rm(snapshotPath, { force: true });
       }
       return { ok: true };
     } catch (error) {
@@ -311,6 +395,20 @@ export class VaultFileStore {
           await stat(oldCommentPath);
           await mkdir(dirname(newCommentPath), { recursive: true });
           await rename(oldCommentPath, newCommentPath);
+        } catch (error) {
+          if (error.code !== 'ENOENT') {
+            throw error;
+          }
+        }
+      }
+
+      const oldSnapshotPath = getYjsSnapshotPath(this.vaultDir, oldPath);
+      const newSnapshotPath = getYjsSnapshotPath(this.vaultDir, newPath);
+      if (oldSnapshotPath && newSnapshotPath) {
+        try {
+          await stat(oldSnapshotPath);
+          await mkdir(dirname(newSnapshotPath), { recursive: true });
+          await rename(oldSnapshotPath, newSnapshotPath);
         } catch (error) {
           if (error.code !== 'ENOENT') {
             throw error;

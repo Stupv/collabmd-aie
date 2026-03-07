@@ -38,6 +38,7 @@ export function createAppServer(config = loadConfig()) {
   });
   const roomRegistry = new RoomRegistry({
     createRoom: ({ name, onEmpty }) => new CollaborationRoom({
+      idleGraceMs: config.wsRoomIdleGraceMs,
       maxBufferedAmountBytes: config.wsMaxBufferedAmountBytes,
       name,
       onEmpty,

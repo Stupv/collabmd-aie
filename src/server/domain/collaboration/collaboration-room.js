@@ -79,8 +79,16 @@ function readAwarenessEntries(update) {
 }
 
 export class CollaborationRoom {
-  constructor({ name, maxBufferedAmountBytes, vaultFileStore, backlinkIndex, onEmpty }) {
+  constructor({
+    name,
+    idleGraceMs = 0,
+    maxBufferedAmountBytes,
+    vaultFileStore,
+    backlinkIndex,
+    onEmpty,
+  }) {
     this.name = name;
+    this.idleGraceMs = idleGraceMs;
     this.maxBufferedAmountBytes = maxBufferedAmountBytes;
     this.vaultFileStore = vaultFileStore;
     this.backlinkIndex = backlinkIndex;
@@ -94,6 +102,7 @@ export class CollaborationRoom {
     this.deleted = false;
     this.shutdownGeneration = 0;
     this.finalizePromise = null;
+    this.destroyTimer = null;
 
     this.awareness.setLocalState(null);
     this.registerDocListeners();
@@ -108,6 +117,12 @@ export class CollaborationRoom {
       this.hydratePromise = (async () => {
         try {
           if (this.vaultFileStore) {
+            const snapshot = await this.readPersistedSnapshot();
+            if (snapshot) {
+              Y.applyUpdate(this.doc, snapshot, 'hydrate');
+              return;
+            }
+
             const [content, commentThreads] = await Promise.all([
               this.readPersistedContent(),
               this.readPersistedCommentThreads(),
@@ -201,6 +216,7 @@ export class CollaborationRoom {
     const commentThreads = serializeCommentThreads(this.doc.getArray('comments'));
     await this.writePersistedContent(content);
     await this.writePersistedCommentThreads(commentThreads);
+    await this.writePersistedSnapshot(Y.encodeStateAsUpdate(this.doc));
 
     // Keep the backlink index in sync with every save
     if (this.backlinkIndex && !isExcalidrawRoom(this.name) && !isPlantUmlRoom(this.name)) {
@@ -224,22 +240,44 @@ export class CollaborationRoom {
     return this.vaultFileStore.readMarkdownFile(this.name);
   }
 
+  async readPersistedSnapshot() {
+    if (!this.vaultFileStore || typeof this.vaultFileStore.readCollaborationSnapshot !== 'function') {
+      return null;
+    }
+
+    return this.vaultFileStore.readCollaborationSnapshot(this.name);
+  }
+
   async writePersistedContent(content) {
     if (!this.vaultFileStore) {
       return;
     }
 
     if (isExcalidrawRoom(this.name) && typeof this.vaultFileStore.writeExcalidrawFile === 'function') {
-      await this.vaultFileStore.writeExcalidrawFile(this.name, content);
+      await this.vaultFileStore.writeExcalidrawFile(this.name, content, {
+        invalidateCollaborationSnapshot: false,
+      });
       return;
     }
 
     if (isPlantUmlRoom(this.name) && typeof this.vaultFileStore.writePlantUmlFile === 'function') {
-      await this.vaultFileStore.writePlantUmlFile(this.name, content);
+      await this.vaultFileStore.writePlantUmlFile(this.name, content, {
+        invalidateCollaborationSnapshot: false,
+      });
       return;
     }
 
-    await this.vaultFileStore.writeMarkdownFile(this.name, content);
+    await this.vaultFileStore.writeMarkdownFile(this.name, content, {
+      invalidateCollaborationSnapshot: false,
+    });
+  }
+
+  async writePersistedSnapshot(snapshot) {
+    if (!this.vaultFileStore || typeof this.vaultFileStore.writeCollaborationSnapshot !== 'function') {
+      return;
+    }
+
+    await this.vaultFileStore.writeCollaborationSnapshot(this.name, snapshot);
   }
 
   async readPersistedCommentThreads() {
@@ -269,6 +307,7 @@ export class CollaborationRoom {
   markDeleted() {
     this.deleted = true;
     clearTimeout(this.persistTimer);
+    clearTimeout(this.destroyTimer);
   }
 
   unmarkDeleted() {
@@ -277,6 +316,8 @@ export class CollaborationRoom {
 
   async addClient(ws) {
     this.shutdownGeneration += 1;
+    clearTimeout(this.destroyTimer);
+    this.destroyTimer = null;
     await this.hydrate();
 
     ws.controlledClientIds = new Set();
@@ -338,9 +379,16 @@ export class CollaborationRoom {
         return;
       }
 
-      this.awareness.destroy();
-      this.doc.destroy();
-      this.onEmpty?.(this.name);
+      this.destroyTimer = setTimeout(() => {
+        if (this.clients.size > 0 || generation !== this.shutdownGeneration) {
+          return;
+        }
+
+        this.awareness.destroy();
+        this.doc.destroy();
+        this.onEmpty?.(this.name);
+      }, this.idleGraceMs);
+      this.destroyTimer.unref?.();
     })().finally(() => {
       this.finalizePromise = null;
     });

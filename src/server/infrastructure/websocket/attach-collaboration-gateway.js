@@ -59,26 +59,60 @@ export function attachCollaborationGateway({
     void (async () => {
       const roomName = extractRoomName(requestUrl.pathname, wsBasePath);
       const room = roomRegistry.getOrCreate(roomName);
+      const pendingMessages = [];
+      let initialized = false;
+      let closedBeforeReady = false;
+      const handleMessage = (payload) => {
+        if (!initialized) {
+          pendingMessages.push(payload);
+          return;
+        }
+
+        room.handleMessage(ws, payload);
+      };
+      const handleClose = () => {
+        if (!initialized) {
+          closedBeforeReady = true;
+          pendingMessages.length = 0;
+          return;
+        }
+
+        room.removeClient(ws);
+        const remaining = roomRegistry.rooms.get(roomName)?.clients.size ?? 0;
+        console.log(`[ws] "${roomName}" disconnected (${remaining} active client(s))`);
+      };
+      const handleError = (error) => {
+        console.error(`[ws] "${roomName}" socket error:`, error.message);
+      };
+
+      ws.on('message', handleMessage);
+      ws.on('close', handleClose);
+      ws.on('error', handleError);
 
       try {
         await room.addClient(ws);
       } catch (error) {
+        ws.off('message', handleMessage);
+        ws.off('close', handleClose);
+        ws.off('error', handleError);
         console.error(`[ws] Failed to initialize room "${roomName}":`, error.message);
         ws.close(1011, 'Room initialization failed');
         return;
       }
 
-      console.log(`[ws] "${roomName}" connected (${room.clients.size} active client(s))`);
+      initialized = true;
+      while (pendingMessages.length > 0) {
+        room.handleMessage(ws, pendingMessages.shift());
+      }
 
-      ws.on('message', (payload) => room.handleMessage(ws, payload));
-      ws.on('close', () => {
+      if (closedBeforeReady) {
         room.removeClient(ws);
         const remaining = roomRegistry.rooms.get(roomName)?.clients.size ?? 0;
         console.log(`[ws] "${roomName}" disconnected (${remaining} active client(s))`);
-      });
-      ws.on('error', (error) => {
-        console.error(`[ws] "${roomName}" socket error:`, error.message);
-      });
+        return;
+      }
+
+      console.log(`[ws] "${roomName}" connected (${room.clients.size} active client(s))`);
     })();
   });
 

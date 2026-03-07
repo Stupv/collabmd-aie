@@ -9,6 +9,7 @@ import * as awarenessProtocol from 'y-protocols/awareness';
 import * as syncProtocol from 'y-protocols/sync';
 import * as encoding from 'lib0/encoding';
 import * as decoding from 'lib0/decoding';
+import { WebsocketProvider } from 'y-websocket';
 
 import { MSG_AWARENESS, MSG_SYNC } from '../../src/server/domain/collaboration/protocol.js';
 import { startTestServer, waitForCondition } from './helpers/test-server.js';
@@ -80,6 +81,49 @@ function encodeSyncUpdateMessage(update) {
   return Buffer.from(encoding.toUint8Array(encoder));
 }
 
+function encodeSyncStep1Message(doc) {
+  const encoder = encoding.createEncoder();
+  encoding.writeVarUint(encoder, MSG_SYNC);
+  syncProtocol.writeSyncStep1(encoder, doc);
+  return Buffer.from(encoding.toUint8Array(encoder));
+}
+
+async function syncClientDocWithRoom(socket, doc) {
+  let handledSyncMessage = false;
+  await new Promise((resolve, reject) => {
+    const timer = setTimeout(() => {
+      socket.off('message', handleMessage);
+      reject(new Error('Timed out while syncing client doc with room'));
+    }, 5000);
+
+    function finish() {
+      clearTimeout(timer);
+      socket.off('message', handleMessage);
+      resolve();
+    }
+
+    function handleMessage(payload) {
+      const data = payload instanceof Buffer ? new Uint8Array(payload) : new Uint8Array(payload);
+      if (getMessageType(data) !== MSG_SYNC) {
+        return;
+      }
+
+      handledSyncMessage = true;
+      const reply = applySyncMessageToDoc(data, doc, socket);
+      if (reply) {
+        socket.send(reply);
+      }
+
+      setTimeout(finish, 50);
+    }
+
+    socket.on('message', handleMessage);
+    socket.send(encodeSyncStep1Message(doc));
+  });
+
+  assert.equal(handledSyncMessage, true);
+}
+
 function applySyncMessageToDoc(message, doc, origin = 'test') {
   const decoder = decoding.createDecoder(message);
   const messageType = decoding.readVarUint(decoder);
@@ -91,6 +135,31 @@ function applySyncMessageToDoc(message, doc, origin = 'test') {
 
   const reply = encoding.toUint8Array(encoder);
   return reply.length > 1 ? Buffer.from(reply) : null;
+}
+
+function waitForProviderSync(provider, timeoutMs = 5000) {
+  if (provider.synced) {
+    return Promise.resolve();
+  }
+
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => {
+      provider.off('sync', handleSync);
+      reject(new Error(`Timed out after ${timeoutMs}ms waiting for provider sync`));
+    }, timeoutMs);
+
+    const handleSync = (isSynced) => {
+      if (!isSynced) {
+        return;
+      }
+
+      clearTimeout(timer);
+      provider.off('sync', handleSync);
+      resolve();
+    };
+
+    provider.on('sync', handleSync);
+  });
 }
 
 async function fileExists(filePath) {
@@ -192,6 +261,48 @@ test('WebSocket server rejects oversized payloads', async (t) => {
 
   const closeEvent = await waitForClose(ws);
   assert.equal(closeEvent.code, 1009);
+});
+
+test('WebSocket collaboration preserves Yjs history across short reconnect gaps', async (t) => {
+  const app = await startTestServer({
+    wsRoomIdleGraceMs: 1_000,
+  });
+  t.after(() => app.close());
+
+  const serverUrl = `ws://127.0.0.1:${app.port}${app.server.config.wsBasePath}`;
+  const filePath = 'test.md';
+  const sharedDoc = new Y.Doc();
+
+  const providerA = new WebsocketProvider(serverUrl, filePath, sharedDoc, {
+    WebSocketPolyfill: WebSocket,
+    disableBc: true,
+  });
+  t.after(() => providerA.destroy());
+
+  await waitForProviderSync(providerA);
+  assert.equal(sharedDoc.getText('codemirror').toString(), '# Test\n\nHello from test vault.\n');
+
+  providerA.destroy();
+  await waitForCondition(() => app.server.roomRegistry.get(filePath), { timeoutMs: 2_000 });
+
+  const providerB = new WebsocketProvider(serverUrl, filePath, sharedDoc, {
+    WebSocketPolyfill: WebSocket,
+    disableBc: true,
+  });
+  t.after(() => providerB.destroy());
+
+  await waitForProviderSync(providerB);
+  sharedDoc.transact(() => {
+    const ytext = sharedDoc.getText('codemirror');
+    ytext.insert(ytext.length, '\nReconnect-safe edit.\n');
+  }, 'test-reconnect-edit');
+
+  const diskContent = await waitForCondition(async () => {
+    const content = await readFile(join(app.vaultDir, filePath), 'utf-8');
+    return content.includes('Reconnect-safe edit.') ? content : null;
+  }, { timeoutMs: 5_000 });
+
+  assert.equal(diskContent, '# Test\n\nHello from test vault.\n\nReconnect-safe edit.\n');
 });
 
 test('Renaming an active room keeps persistence on the new path', async (t) => {
@@ -322,4 +433,35 @@ test('WebSocket collaboration persists excalidraw room content to .excalidraw fi
   });
 
   assert.ok(diskContent.includes('"shape-1"'));
+});
+
+test('WebSocket room rehydration does not duplicate markdown content on reconnect with the same Yjs doc', async (t) => {
+  const app = await startTestServer();
+  t.after(() => app.close());
+
+  const filePath = 'test.md';
+  const diskPath = join(app.vaultDir, filePath);
+  const originalContent = await readFile(diskPath, 'utf-8');
+  const clientDoc = new Y.Doc();
+
+  const ws1 = new WebSocket(app.wsUrl(filePath));
+  await waitForOpen(ws1);
+  await syncClientDocWithRoom(ws1, clientDoc);
+  ws1.close();
+  await waitForClose(ws1);
+  await waitForCondition(() => app.server.roomRegistry.rooms.size === 0);
+
+  const ws2 = new WebSocket(app.wsUrl(filePath));
+  await waitForOpen(ws2);
+  await syncClientDocWithRoom(ws2, clientDoc);
+  ws2.close();
+  await waitForClose(ws2);
+  await waitForCondition(() => app.server.roomRegistry.rooms.size === 0);
+
+  const diskContent = await waitForCondition(async () => {
+    const content = await readFile(diskPath, 'utf-8');
+    return content.length === originalContent.length ? content : null;
+  });
+
+  assert.equal(diskContent, originalContent);
 });

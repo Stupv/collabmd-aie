@@ -618,6 +618,37 @@ test('opens excalidraw files with a direct iframe preview', async ({ page }) => 
   expect(maximizedWidths.right).toBeLessThanOrEqual(maximizedWidths.innerWidth);
 });
 
+test('redundant hashchange events do not reopen the same markdown file into overlapping sessions', async ({ page }) => {
+  await openSampleFull(page);
+  await waitForHeavyPreviewContent(page);
+
+  await page.evaluate(() => {
+    for (let index = 0; index < 10; index += 1) {
+      window.dispatchEvent(new HashChangeEvent('hashchange'));
+    }
+  });
+
+  await waitForEditor(page);
+  await appendEditorContent(page, 'hashchange marker');
+
+  await expect.poll(async () => (
+    page.evaluate(async () => {
+      const response = await fetch('/api/file?path=sample-full.md');
+      const data = await response.json();
+      return data.content || '';
+    })
+  )).toContain('hashchange marker');
+
+  const persistedContent = await page.evaluate(async () => {
+    const response = await fetch('/api/file?path=sample-full.md');
+    const data = await response.json();
+    return data.content || '';
+  });
+
+  expect((persistedContent.match(/hashchange marker/g) || []).length).toBe(1);
+  expect((persistedContent.match(/CollabMD — Technical Design Document/g) || []).length).toBe(1);
+});
+
 test('markdown excalidraw embeds stay on the editable editor path', async ({ page }) => {
   test.slow();
 
@@ -633,7 +664,15 @@ test('markdown excalidraw embeds stay on the editable editor path', async ({ pag
 test('sample-full renders embedded PlantUML files', async ({ page }) => {
   await openSampleFull(page);
 
-  await page.locator('#previewContent .plantuml-placeholder-btn').first().click();
+  await expect(page.locator('#previewContent .plantuml-placeholder-btn').first()).toBeVisible();
+  await page.evaluate(() => {
+    const button = document.querySelector('#previewContent .plantuml-placeholder-btn');
+    if (!(button instanceof HTMLButtonElement)) {
+      throw new Error('Missing PlantUML placeholder button');
+    }
+
+    button.click();
+  });
 
   await expect(page.locator('#previewContent .plantuml-frame svg').first()).toBeVisible();
   await expect(page.locator('#previewContent .plantuml-frame').first()).toContainText('sample-full-plantuml');

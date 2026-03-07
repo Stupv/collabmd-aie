@@ -150,8 +150,8 @@ test('CollaborationRoom hydrates and persists markdown comment threads', async (
         commentWrites.push({ path, threads });
         return { ok: true };
       },
-      async writeMarkdownFile(path, content) {
-        writes.push({ content, path });
+      async writeMarkdownFile(path, content, options) {
+        writes.push({ content, options, path });
         return { ok: true };
       },
     },
@@ -199,6 +199,7 @@ test('CollaborationRoom hydrates and persists markdown comment threads', async (
 
   assert.equal(writes.length, 1);
   assert.equal(writes[0].path, 'notes.md');
+  assert.equal(writes[0].options?.invalidateCollaborationSnapshot, false);
   assert.equal(commentWrites.length, 1);
   assert.equal(commentWrites[0].path, 'notes.md');
   assert.equal(commentWrites[0].threads.length, 2);

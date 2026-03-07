@@ -50,6 +50,27 @@ test('VaultFileStore reads and writes markdown files', async (t) => {
   assert.equal(updated, '# Updated\n');
 });
 
+test('VaultFileStore can preserve the current collaboration snapshot during room-owned file persists', async (t) => {
+  const { store, cleanup } = await createVaultStore();
+  t.after(cleanup);
+
+  const snapshot = Uint8Array.from([1, 2, 3, 4]);
+  const snapshotWrite = await store.writeCollaborationSnapshot('README.md', snapshot);
+  assert.equal(snapshotWrite.ok, true);
+
+  const writeResult = await store.writeMarkdownFile('README.md', '# Updated via room\n', {
+    invalidateCollaborationSnapshot: false,
+  });
+  assert.equal(writeResult.ok, true);
+
+  const preservedSnapshot = await store.readCollaborationSnapshot('README.md');
+  assert.deepEqual(Array.from(preservedSnapshot ?? []), Array.from(snapshot));
+
+  const invalidatingWrite = await store.writeMarkdownFile('README.md', '# Updated via API\n');
+  assert.equal(invalidatingWrite.ok, true);
+  assert.equal(await store.readCollaborationSnapshot('README.md'), null);
+});
+
 test('VaultFileStore persists hidden comment sidecars alongside vault files', async (t) => {
   const { store, cleanup } = await createVaultStore();
   t.after(cleanup);
