@@ -229,7 +229,7 @@ test('HTTP server enforces markdown-only /api/file mutations', async (t) => {
     method: 'DELETE',
   });
   assert.equal(deleteResponse.statusCode, 400);
-  assert.match(deleteResponse.body, /must end in \.md, \.excalidraw, or \.puml/i);
+  assert.match(deleteResponse.body, /must end in \.md, \.excalidraw, \.puml, or \.plantuml/i);
 
   const renameResponse = await httpRequest(`${app.baseUrl}/api/file`, {
     method: 'PATCH',
@@ -242,7 +242,44 @@ test('HTTP server enforces markdown-only /api/file mutations', async (t) => {
     }),
   });
   assert.equal(renameResponse.statusCode, 400);
-  assert.match(renameResponse.body, /Old path must be a vault file \(\.md, \.excalidraw, or \.puml\)/i);
+  assert.match(renameResponse.body, /Old path must be a vault file \(\.md, \.excalidraw, \.puml, or \.plantuml\)/i);
+});
+
+test('HTTP server reads and writes .plantuml files through /api/file', async (t) => {
+  const app = await startTestServer();
+  t.after(() => app.close());
+
+  const createResponse = await httpRequest(`${app.baseUrl}/api/file`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      path: 'architecture.plantuml',
+      content: '@startuml\nAlice -> Bob: Hi\n@enduml\n',
+    }),
+  });
+  assert.equal(createResponse.statusCode, 201);
+
+  const readResponse = await httpRequest(`${app.baseUrl}/api/file?path=${encodeURIComponent('architecture.plantuml')}`);
+  assert.equal(readResponse.statusCode, 200);
+  assert.match(readResponse.body, /Alice -> Bob: Hi/);
+
+  const updateResponse = await httpRequest(`${app.baseUrl}/api/file`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      path: 'architecture.plantuml',
+      content: '@startuml\nBob -> Alice: Ack\n@enduml\n',
+    }),
+  });
+  assert.equal(updateResponse.statusCode, 200);
+
+  const updatedReadResponse = await httpRequest(`${app.baseUrl}/api/file?path=${encodeURIComponent('architecture.plantuml')}`);
+  assert.equal(updatedReadResponse.statusCode, 200);
+  assert.match(updatedReadResponse.body, /Bob -> Alice: Ack/);
 });
 
 test('HTTP server proxies PlantUML renders through the configured renderer', async (t) => {

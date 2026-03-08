@@ -12,7 +12,7 @@ function isExcalidrawRoom(name) {
 }
 
 function isPlantUmlRoom(name) {
-  return typeof name === 'string' && name.toLowerCase().endsWith('.puml');
+  return typeof name === 'string' && /\.(?:puml|plantuml)$/i.test(name);
 }
 
 function closeSlowClient(ws, { maxBufferedAmountBytes, name }) {

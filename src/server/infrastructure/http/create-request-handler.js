@@ -20,7 +20,7 @@ function isExcalidrawPath(filePath) {
 }
 
 function isPlantUmlPath(filePath) {
-  return typeof filePath === 'string' && filePath.toLowerCase().endsWith('.puml');
+  return typeof filePath === 'string' && /\.(?:puml|plantuml)$/i.test(filePath);
 }
 
 const SECURITY_HEADERS = {

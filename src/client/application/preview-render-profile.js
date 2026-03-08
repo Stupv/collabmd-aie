@@ -10,7 +10,7 @@ function countMatches(source, pattern) {
 export function analyzeMarkdownComplexity(markdownText = '') {
   const source = String(markdownText);
   const plantUmlFences = countMatches(source, /(^|\n)```(?:plantuml|puml)\b/gi);
-  const plantUmlEmbeds = countMatches(source, /!\[\[[^\]]+\.puml(?:\|[^\]]+)?\]\]/gi);
+  const plantUmlEmbeds = countMatches(source, /!\[\[[^\]]+\.(?:puml|plantuml)(?:\|[^\]]+)?\]\]/gi);
 
   return {
     chars: source.length,
@@ -37,7 +37,7 @@ export function getRenderProfile(markdownText = '') {
   const hasMermaid = /(^|\n)```mermaid\b/i.test(source);
   const hasExcalidrawEmbed = /!\[\[[^\]]+\.excalidraw(?:\|[^\]]+)?\]\]/i.test(source);
   const hasPlantUml = /(^|\n)```(?:plantuml|puml)\b/i.test(source)
-    || /!\[\[[^\]]+\.puml(?:\|[^\]]+)?\]\]/i.test(source);
+    || /!\[\[[^\]]+\.(?:puml|plantuml)(?:\|[^\]]+)?\]\]/i.test(source);
   const isLargeByLength = source.length >= LARGE_DOCUMENT_CHAR_THRESHOLD;
 
   if (isLargeByLength) {

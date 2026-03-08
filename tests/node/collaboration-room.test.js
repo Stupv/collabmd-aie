@@ -408,3 +408,53 @@ test('CollaborationRoom hydrates and persists PlantUML rooms via PlantUML file A
   assert.equal(writes[0].content, `${initialDiagram}' comment\n`);
   assert.equal(backlinkUpdates, 0);
 });
+
+test('CollaborationRoom hydrates and persists .plantuml rooms via PlantUML file APIs', async () => {
+  const initialDiagram = '@startuml\nAlice -> Bob: Hello\n@enduml\n';
+  let readPlantUmlCount = 0;
+  const writes = [];
+
+  const room = new CollaborationRoom({
+    maxBufferedAmountBytes: 1024,
+    name: 'diagram.plantuml',
+    onEmpty: () => {},
+    backlinkIndex: {
+      updateFile() {
+        throw new Error('backlink index should not be updated for PlantUML files');
+      },
+    },
+    vaultFileStore: {
+      async readPlantUmlFile(path) {
+        readPlantUmlCount += 1;
+        assert.equal(path, 'diagram.plantuml');
+        return initialDiagram;
+      },
+      async readMarkdownFile() {
+        throw new Error('readMarkdownFile should not be called for .plantuml rooms');
+      },
+      async writePlantUmlFile(path, content) {
+        writes.push({ content, path });
+        return { ok: true };
+      },
+      async writeMarkdownFile() {
+        throw new Error('writeMarkdownFile should not be called for .plantuml rooms');
+      },
+    },
+  });
+
+  await room.hydrate();
+  assert.equal(readPlantUmlCount, 1);
+  assert.equal(room.doc.getText('codemirror').toString(), initialDiagram);
+
+  room.doc.transact(() => {
+    const text = room.doc.getText('codemirror');
+    text.delete(0, text.length);
+    text.insert(0, `${initialDiagram}' comment\n`);
+  }, 'test');
+
+  await room.persist();
+
+  assert.equal(writes.length, 1);
+  assert.equal(writes[0].path, 'diagram.plantuml');
+  assert.equal(writes[0].content, `${initialDiagram}' comment\n`);
+});

@@ -87,6 +87,22 @@ test('compilePreviewDocument emits stable PlantUML embed shell keys', () => {
   assert.equal(stats.plantumlBlocks, 2);
 });
 
+test('compilePreviewDocument emits stable .plantuml embed shell keys', () => {
+  const markdown = [
+    '![[architecture.plantuml]]',
+    '',
+    '![[architecture.plantuml|Sequence flow]]',
+  ].join('\n');
+
+  const { html, stats } = compilePreviewDocument({ markdownText: markdown });
+
+  assert.match(html, /data-plantuml-key="architecture\.plantuml#0"/);
+  assert.match(html, /data-plantuml-key="architecture\.plantuml#1"/);
+  assert.match(html, /data-plantuml-target="architecture\.plantuml"/);
+  assert.match(html, /<strong>Sequence flow<\/strong>/);
+  assert.equal(stats.plantumlBlocks, 2);
+});
+
 test('large-document classification triggers on any configured threshold', () => {
   const largeByChars = analyzeMarkdownComplexity('a'.repeat(LARGE_DOCUMENT_CHAR_THRESHOLD));
   assert.equal(isLargeDocumentStats(largeByChars), true);
@@ -102,4 +118,7 @@ test('large-document classification triggers on any configured threshold', () =>
 
   const largeByPlantUmlEmbed = analyzeMarkdownComplexity('![[diagram.puml]]\n'.repeat(12));
   assert.equal(isLargeDocumentStats(largeByPlantUmlEmbed), true);
+
+  const largeByPlantUmlLongEmbed = analyzeMarkdownComplexity('![[diagram.plantuml]]\n'.repeat(12));
+  assert.equal(isLargeDocumentStats(largeByPlantUmlLongEmbed), true);
 });

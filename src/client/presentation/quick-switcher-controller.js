@@ -3,7 +3,7 @@ import { escapeHtml } from '../domain/vault-utils.js';
 const MAX_VISIBLE_RESULTS = 12;
 
 function stripDisplayExtension(filePath) {
-  return String(filePath ?? '').replace(/\.(?:md|markdown|mdx|excalidraw|puml)$/i, '');
+  return String(filePath ?? '').replace(/\.(?:md|markdown|mdx|excalidraw|puml|plantuml)$/i, '');
 }
 
 export class QuickSwitcherController {

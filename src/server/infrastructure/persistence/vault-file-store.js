@@ -2,8 +2,8 @@ import { mkdir, readFile, readdir, rename, rm, stat, writeFile } from 'fs/promis
 import { basename, dirname, extname, join, normalize, relative, resolve } from 'path';
 const MARKDOWN_EXTENSIONS = new Set(['.md', '.markdown', '.mdx']);
 const EXCALIDRAW_EXTENSION = '.excalidraw';
-const PLANTUML_EXTENSION = '.puml';
-const VAULT_FILE_EXTENSIONS = new Set([...MARKDOWN_EXTENSIONS, EXCALIDRAW_EXTENSION, PLANTUML_EXTENSION]);
+const PLANTUML_EXTENSIONS = new Set(['.puml', '.plantuml']);
+const VAULT_FILE_EXTENSIONS = new Set([...MARKDOWN_EXTENSIONS, EXCALIDRAW_EXTENSION, ...PLANTUML_EXTENSIONS]);
 const IGNORED_DIRECTORIES = new Set(['.git', '.obsidian', '.trash', 'node_modules', '.DS_Store']);
 const COMMENT_STORAGE_ROOT = '.collabmd/comments';
 const YJS_SNAPSHOT_STORAGE_ROOT = '.collabmd/yjs';
@@ -17,7 +17,7 @@ function isExcalidrawFile(filePath) {
 }
 
 function isPlantUmlFile(filePath) {
-  return extname(filePath).toLowerCase() === PLANTUML_EXTENSION;
+  return PLANTUML_EXTENSIONS.has(extname(filePath).toLowerCase());
 }
 
 function isVaultFile(filePath) {
@@ -256,7 +256,7 @@ export class VaultFileStore {
   ) {
     const absolute = sanitizePath(this.vaultDir, filePath);
     if (!absolute || !isPlantUmlFile(absolute)) {
-      return { ok: false, error: 'Invalid file path — must end in .puml' };
+      return { ok: false, error: 'Invalid file path — must end in .puml or .plantuml' };
     }
 
     try {
@@ -328,7 +328,7 @@ export class VaultFileStore {
   async createFile(filePath, content = '') {
     const absolute = sanitizePath(this.vaultDir, filePath);
     if (!absolute || !isVaultFile(absolute)) {
-      return { ok: false, error: 'Invalid file path — must end in .md, .excalidraw, or .puml' };
+      return { ok: false, error: 'Invalid file path — must end in .md, .excalidraw, .puml, or .plantuml' };
     }
 
     try {
@@ -348,7 +348,7 @@ export class VaultFileStore {
   async deleteFile(filePath) {
     const absolute = sanitizePath(this.vaultDir, filePath);
     if (!absolute || !isVaultFile(absolute)) {
-      return { ok: false, error: 'Invalid file path — must end in .md, .excalidraw, or .puml' };
+      return { ok: false, error: 'Invalid file path — must end in .md, .excalidraw, .puml, or .plantuml' };
     }
 
     try {
@@ -376,11 +376,11 @@ export class VaultFileStore {
     }
 
     if (!isVaultFile(absoluteOld)) {
-      return { ok: false, error: 'Old path must be a vault file (.md, .excalidraw, or .puml)' };
+      return { ok: false, error: 'Old path must be a vault file (.md, .excalidraw, .puml, or .plantuml)' };
     }
 
     if (!isVaultFile(absoluteNew)) {
-      return { ok: false, error: 'New path must be a vault file (.md, .excalidraw, or .puml)' };
+      return { ok: false, error: 'New path must be a vault file (.md, .excalidraw, .puml, or .plantuml)' };
     }
 
     try {

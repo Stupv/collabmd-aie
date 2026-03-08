@@ -39,7 +39,7 @@ function renderInlineWikiText(content, {
   fileList,
   plantUmlEmbedCounts,
 }) {
-  const regex = /!\[\[([^\]|]+\.(?:excalidraw|puml))(?:\|([^\]]+))?\]\]|\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/gi;
+  const regex = /!\[\[([^\]|]+\.(?:excalidraw|puml|plantuml))(?:\|([^\]]+))?\]\]|\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/gi;
   let lastIndex = 0;
   let html = '';
   let match;
@@ -66,7 +66,7 @@ function renderInlineWikiText(content, {
         plantUmlEmbedCounts.set(target, occurrenceIndex + 1);
         html += createPlantUmlEmbedShell({
           embedKey: `${target}#${occurrenceIndex}`,
-          label: label.replace(/\.puml$/i, ''),
+          label: label.replace(/\.(?:puml|plantuml)$/i, ''),
           target,
         });
       }

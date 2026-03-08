@@ -1,7 +1,8 @@
 import { escapeHtml } from '../domain/vault-utils.js';
 
 const MARKDOWN_EXTENSION_PATTERN = /\.(?:md|markdown|mdx)$/i;
-const DISPLAY_NAME_EXTENSION_PATTERN = /\.(?:md|markdown|mdx|excalidraw|puml)$/i;
+const DISPLAY_NAME_EXTENSION_PATTERN = /\.(?:md|markdown|mdx|excalidraw|puml|plantuml)$/i;
+const PLANTUML_EXTENSION_PATTERN = /\.(?:puml|plantuml)$/i;
 
 function stripVaultExtension(name) {
   return String(name ?? '').replace(DISPLAY_NAME_EXTENSION_PATTERN, '');
@@ -183,7 +184,7 @@ export class FileExplorerController {
       return 'excalidraw';
     }
 
-    if (normalized.endsWith('.puml')) {
+    if (PLANTUML_EXTENSION_PATTERN.test(normalized)) {
       return 'plantuml';
     }
 
@@ -196,6 +197,10 @@ export class FileExplorerController {
 
     if (lower.endsWith('.excalidraw')) {
       return '.excalidraw';
+    }
+
+    if (lower.endsWith('.plantuml')) {
+      return '.plantuml';
     }
 
     if (lower.endsWith('.puml')) {
@@ -874,10 +879,10 @@ export class FileExplorerController {
     this.openActionDialog({
       title: 'Create PlantUML diagram',
       copy: context.normalizedParentDir
-        ? 'Create a new `.puml` file inside the selected folder.'
-        : 'Create a new `.puml` file with starter diagram content.',
+        ? 'Create a new `.puml` or `.plantuml` file inside the selected folder.'
+        : 'Create a new `.puml` or `.plantuml` file with starter diagram content.',
       label: `Diagram ${context.inputLabelSuffix}`,
-      hint: `${context.hintPrefix} ".puml" is added automatically.`,
+      hint: `${context.hintPrefix} ".puml" is added automatically unless you enter ".plantuml".`,
       note: context.note,
       placeholder: context.normalizedParentDir ? 'sequence-flow' : 'diagrams/sequence-flow',
       submitLabel: 'Create diagram',
@@ -889,7 +894,10 @@ export class FileExplorerController {
           return false;
         }
 
-        const filePath = this.ensureExtension(composeChildPath(context.normalizedParentDir, normalizedPath), '.puml');
+        const composedPath = composeChildPath(context.normalizedParentDir, normalizedPath);
+        const filePath = PLANTUML_EXTENSION_PATTERN.test(composedPath)
+          ? composedPath
+          : `${composedPath}.puml`;
         const starter = [
           '@startuml',
           'Alice -> Bob: Hello',

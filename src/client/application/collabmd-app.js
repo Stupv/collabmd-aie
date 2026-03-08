@@ -193,7 +193,7 @@ export class CollabMdApp {
   }
 
   isPlantUmlFile(filePath) {
-    return typeof filePath === 'string' && filePath.toLowerCase().endsWith('.puml');
+    return typeof filePath === 'string' && /\.(?:puml|plantuml)$/i.test(filePath);
   }
 
   createPlantUmlPreviewDocument(source = '') {
@@ -216,7 +216,7 @@ export class CollabMdApp {
     return String(filePath ?? '')
       .split('/')
       .pop()
-      .replace(/\.(?:md|markdown|mdx|excalidraw|puml)$/i, '');
+      .replace(/\.(?:md|markdown|mdx|excalidraw|puml|plantuml)$/i, '');
   }
 
   resetPreviewMode() {
