@@ -18,7 +18,7 @@
     "test": "npm run test:unit && npm run test:e2e",
     "test:e2e": "playwright test",
     "test:e2e:headed": "playwright test --headed",
-    "test:unit": "node --test --test-force-exit tests/node/*.test.js",
+    "test:unit": "npm run build && node --test --test-force-exit tests/node/*.test.js",
     "tunnel": "node scripts/cloudflare-tunnel.mjs"
   },
   "keywords": [

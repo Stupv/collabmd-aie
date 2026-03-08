@@ -663,7 +663,7 @@ export class PreviewRenderer {
     }
 
     try {
-      this.worker = new Worker(new URL('./preview-render-worker.js', import.meta.url), { type: 'module' });
+      this.worker = new Worker(new URL('./application/preview-render-worker.js', import.meta.url), { type: 'module' });
       this.worker.addEventListener('message', this.handleWorkerMessage);
       this.worker.addEventListener('error', this.handleWorkerError);
       return this.worker;

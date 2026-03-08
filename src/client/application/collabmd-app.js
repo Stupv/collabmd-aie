@@ -398,6 +398,7 @@ export class CollabMdApp {
     return () => {
       clearTimeout(resizeTimer);
       resizeTimer = setTimeout(() => {
+        this.restoreSidebarState();
         this.schedulePreviewLayoutSync({ delayMs: 0 });
       }, 100);
     };
@@ -755,19 +756,14 @@ export class CollabMdApp {
     if (!sidebar || !this.isMobileViewport()) return;
     if (sidebar.classList.contains('collapsed')) return;
 
-    sidebar.classList.add('collapsed');
-    try {
-      localStorage.setItem(this.sidebarVisibleKey, 'false');
-    } catch {
-      // Ignore storage errors in private browsing modes.
-    }
+    this.setSidebarVisibility(false);
   }
 
   toggleSidebar() {
     const sidebar = this.elements.sidebar;
     if (!sidebar) return;
-    const isHidden = sidebar.classList.toggle('collapsed');
-    localStorage.setItem(this.sidebarVisibleKey, isHidden ? 'false' : 'true');
+    const isHidden = sidebar.classList.contains('collapsed');
+    this.setSidebarVisibility(isHidden);
   }
 
   restoreSidebarState() {
@@ -793,7 +789,30 @@ export class CollabMdApp {
       }
     }
 
-    sidebar.classList.toggle('collapsed', !showSidebar);
+    this.applySidebarVisibility(showSidebar);
+  }
+
+  setSidebarVisibility(showSidebar) {
+    this.applySidebarVisibility(showSidebar);
+
+    try {
+      localStorage.setItem(this.sidebarVisibleKey, showSidebar ? 'true' : 'false');
+    } catch {
+      // Ignore storage errors in private browsing modes.
+    }
+  }
+
+  applySidebarVisibility(showSidebar) {
+    const sidebar = this.elements.sidebar;
+    if (!sidebar) return;
+
+    const isCollapsed = !showSidebar;
+    const hideForMobile = isCollapsed && this.isMobileViewport();
+
+    sidebar.classList.toggle('collapsed', isCollapsed);
+    sidebar.toggleAttribute('hidden', hideForMobile);
+    sidebar.setAttribute('aria-hidden', hideForMobile ? 'true' : 'false');
+    sidebar.inert = isCollapsed;
   }
 
   // Line wrapping
