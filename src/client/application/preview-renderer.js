@@ -239,6 +239,7 @@ export class PreviewRenderer {
     this.worker = null;
     this.workerDisabled = false;
     this.workerJob = null;
+    this.workerPrewarmId = null;
 
     this.mermaidObserver = null;
     this.mermaidIdleId = null;
@@ -376,7 +377,9 @@ export class PreviewRenderer {
     this.readyRenderVersion = 0;
     this.currentStats = null;
     this.isLargeDocument = false;
-    this.resetWorker('Document changed');
+    if (this.workerJob) {
+      this.resetWorker('Document changed');
+    }
     const renderHost = this.ensureRenderHost();
     this.normalizePreviewChildren(renderHost);
     const reservedHeight = this.getReservedPreviewHeight();
@@ -517,6 +520,8 @@ export class PreviewRenderer {
     this.cancelScheduledRender();
     this.cancelMermaidHydration();
     this.cancelPlantUmlHydration();
+    cancelIdleRender(this.workerPrewarmId);
+    this.workerPrewarmId = null;
     this.preservedMermaidShells.clear();
     this.preservedPlantUmlShells.clear();
     this.clearActivePlantUmlShell();
@@ -621,10 +626,7 @@ export class PreviewRenderer {
   }
 
   resetWorker(reason, { disable = false } = {}) {
-    if (this.workerJob) {
-      this.workerJob.reject(new Error(reason));
-      this.workerJob = null;
-    }
+    this.cancelWorkerJob(reason);
 
     if (this.worker) {
       this.worker.removeEventListener('message', this.handleWorkerMessage);
@@ -636,6 +638,26 @@ export class PreviewRenderer {
     if (disable) {
       this.workerDisabled = true;
     }
+  }
+
+  cancelWorkerJob(reason) {
+    if (!this.workerJob) {
+      return;
+    }
+
+    this.workerJob.reject(new Error(reason));
+    this.workerJob = null;
+  }
+
+  scheduleWorkerPrewarm({ timeout = IDLE_RENDER_TIMEOUT_MS } = {}) {
+    if (this.workerDisabled || this.worker || this.workerPrewarmId !== null || typeof Worker !== 'function') {
+      return;
+    }
+
+    this.workerPrewarmId = requestIdleRender(() => {
+      this.workerPrewarmId = null;
+      this.ensureWorker();
+    }, timeout);
   }
 
   ensureWorker() {

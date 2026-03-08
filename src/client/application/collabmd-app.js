@@ -283,6 +283,7 @@ export class CollabMdApp {
   initialize() {
     this.themeController.initialize();
     this.previewRenderer.applyTheme(this.themeController.getTheme());
+    this.previewRenderer.scheduleWorkerPrewarm();
     this.outlineController.initialize();
     this.layoutController.initialize();
     this.scrollSyncController.initialize();
