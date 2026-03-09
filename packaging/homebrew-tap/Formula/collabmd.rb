@@ -34,13 +34,13 @@ class Collabmd < Formula
 
     Timeout.timeout(15) do
       loop do
-        begin
-          output = shell_output("curl -fsS http://127.0.0.1:#{port}/health").strip
-          break if output == "ok"
-        rescue ErrorDuringExecution
+        output = shell_output("curl -fsS http://127.0.0.1:#{port}/health", 2).strip
+        break if output == "ok"
+      rescue ErrorDuringExecution
+        sleep 1
+      else
+        if output != "ok"
           sleep 1
-        else
-          sleep 1 if output != "ok"
         end
       end
     end
