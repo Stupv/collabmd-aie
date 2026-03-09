@@ -1,6 +1,6 @@
 # CollabMD
 
-Collaborative markdown vault, like Obsidian but online.
+Collaborative markdown workspace for local folders, like Obsidian but online.
 
 <p align="center">
   <img src="./docs/assets/collabmd-hero.png" alt="CollabMD showing a file tree, markdown editor, live preview, and collaborator presence." width="100%">
@@ -11,7 +11,7 @@ Collaborative markdown vault, like Obsidian but online.
 </p>
 
 <p align="center">
-  Local files stay on disk. Markdown stays plain text. Collaborators get live editing, preview, comments, chat, diagrams, and shareable sessions in the browser.
+  Local files stay on disk. Markdown stays plain text. Collaborators get live editing, preview, comments, chat, diagrams, and browser-based sessions.
 </p>
 
 ## See it in action
@@ -27,16 +27,33 @@ Prefer video? [Open the WebM demo](./docs/assets/collabmd-demo.webm).
 - **Markdown with context** — live preview, wiki-links, backlinks, outline, quick switcher, and scroll sync
 - **Review built in** — inline comments, collaborator presence, follow mode, and team chat
 - **Diagram-friendly** — Mermaid fences and standalone `.mmd` / `.mermaid` files, PlantUML `.puml` / `.plantuml`, and `.excalidraw` support
-- **Easy sharing** — Cloudflare Tunnel starts by default so collaborators can join over the internet
+- **Easy sharing** — optional Cloudflare Tunnel support makes it easy to share a running session
 
 ## Quick Start
 
 ### Requirements
 
-- Node.js 24
-- npm
+- macOS or Linux
+- Node.js 24 if installing from source
 
-### From source
+### Install with Homebrew
+
+```bash
+brew tap andes90/tap
+brew install collabmd
+collabmd ~/my-vault
+```
+
+Or in a single command:
+
+```bash
+brew install andes90/tap/collabmd
+collabmd ~/my-vault
+```
+
+Open `http://localhost:1234`.
+
+### Install from source
 
 ```bash
 git clone https://github.com/andes90/collabmd.git
@@ -47,7 +64,15 @@ npm link       # optional: makes `collabmd` available globally
 collabmd ~/my-vault
 ```
 
-Open `http://localhost:1234`, or share the tunnel URL that CollabMD prints on startup.
+Open `http://localhost:1234`.
+
+If you want local-only access, start with:
+
+```bash
+collabmd ~/my-vault --no-tunnel
+```
+
+If you want to share the session over the internet, install `cloudflared` and CollabMD will start a quick tunnel by default.
 
 ## Good fit for
 
@@ -61,17 +86,16 @@ Open `http://localhost:1234`, or share the tunnel URL that CollabMD prints on st
 - Authentication defaults to `none`, so anyone with the URL can edit the vault unless you enable an auth strategy.
 - `--auth password` protects `/api/*` and `/ws/*` with a host password and a signed session cookie.
 - If you omit auth, treat the URL as write access to the vault.
-- Cloudflare Tunnel starts by default unless you pass `--no-tunnel`.
+- Cloudflare Tunnel starts by default when `cloudflared` is installed, unless you pass `--no-tunnel`.
 - `oidc` is reserved for a future implementation and is not usable yet.
 
 ## How it works
 
-```text
-cd ~/my-vault
-collabmd
+```bash
+collabmd ~/my-vault
 ```
 
-CollabMD starts a local server, scans for markdown files, and opens a browser-based editor with:
+CollabMD starts a local server, scans the vault, and opens a browser-based editor with:
 
 - **File explorer sidebar** — browse, create, rename, and delete `.md`, `.mmd`, `.mermaid`, `.puml`, `.plantuml`, and `.excalidraw` files plus folders
 - **Live preview** — rendered as you type, with syntax-highlighted code blocks plus Mermaid and PlantUML diagrams
@@ -81,7 +105,7 @@ CollabMD starts a local server, scans for markdown files, and opens a browser-ba
 - **Quick switcher + outline** — move around large vaults and long documents faster
 - **Standalone diagram files** — open `.mmd` / `.mermaid` or `.puml` / `.plantuml` files in side-by-side editor + preview, or `.excalidraw` files in direct preview mode
 
-Your filesystem is the source of truth. CollabMD reads files from disk, uses Yjs for the realtime collaboration layer, and writes plain text back to disk when the last editor disconnects.
+Your filesystem is the source of truth. CollabMD reads files from disk, uses Yjs for realtime collaboration, and writes plain text back to disk when the last editor disconnects.
 
 ## Usage
 
@@ -135,11 +159,11 @@ collabmd ~/Documents/Obsidian/MyVault
 
 ## Cloudflare Tunnel
 
-By default, the CLI starts a [Cloudflare Quick Tunnel](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/) so your vault is accessible from the internet. Since the editor uses same-origin WebSocket routing (`/ws/:file`), the tunnel works for both HTTP and collaboration traffic.
+When `cloudflared` is available, the CLI starts a [Cloudflare Quick Tunnel](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/) by default so your vault is accessible from the internet. Since the editor uses same-origin WebSocket routing (`/ws/:file`), the tunnel works for both HTTP and collaboration traffic.
 
-If you are exposing the app through the tunnel, `collabmd --auth password` is the intended first-line protection. When you do not pass `--auth-password`, CollabMD generates a new password for that host run and prints it in the terminal. Restarting the app rotates that password and the signed session secret.
+If you are exposing the app through the tunnel, `collabmd --auth password` is the intended first-line protection. When you do not pass `--auth-password`, CollabMD generates a password for that host run and prints it in the terminal. Restarting the app rotates that password and the signed session secret.
 
-Install `cloudflared`:
+`cloudflared` is optional. Install it only if you want public tunnel access:
 
 - macOS: `brew install cloudflared`
 - Linux/Windows: [official installer](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/downloads/)
@@ -263,7 +287,7 @@ npm run capture:readme-assets # Regenerate the README screenshot and demo assets
 npm run test:unit
 ```
 
-Covers the vault file store, HTTP endpoints, collaboration room, WebSocket integration behavior, and supporting domain logic.
+Covers the vault file store, HTTP endpoints, collaboration room behavior, WebSocket integration, and supporting domain logic.
 
 ### End-to-end tests
 
@@ -347,7 +371,7 @@ cp .env.example .env
 
 ## Notes
 
-- The filesystem is the source of truth; Yjs is the collaboration layer on top.
+- The filesystem is the source of truth; Yjs provides the collaboration layer.
 - CollabMD assumes it is the only writer while a file is open; there is no live `fs.watch` reconciliation.
 - `.obsidian`, `.git`, `.trash`, and `node_modules` directories are ignored.
 - Only `.md`, `.markdown`, and `.mdx` files are indexed.
