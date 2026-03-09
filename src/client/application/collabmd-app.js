@@ -1611,8 +1611,11 @@ export class CollabMdApp {
     const enabled = state ?? this.session?.isLineWrappingEnabled() ?? this.getStoredLineWrapping();
     const label = this.elements.wrapToggleLabel;
     const button = this.elements.toggleWrapButton;
-    if (label) label.textContent = enabled ? 'Wrap on' : 'Wrap off';
-    if (button) button.setAttribute('aria-label', enabled ? 'Disable line wrap' : 'Enable line wrap');
+    const nextLabel = enabled ? 'Wrap on' : 'Wrap off';
+    if (label) label.textContent = nextLabel;
+    if (button) {
+      button.setAttribute('aria-label', `${nextLabel}. ${enabled ? 'Disable line wrap' : 'Enable line wrap'}`);
+    }
   }
 
   // Backlinks
@@ -1635,6 +1638,7 @@ export class CollabMdApp {
 
   showEditorLoading() {
     if (!this.elements.editorContainer) return;
+    this.elements.editorContainer.classList.add('is-loading-editor');
     this.elements.editorContainer.innerHTML = `
       <div class="editor-loading" id="editorLoading">
         <div class="loading-spinner"></div>
@@ -1642,11 +1646,22 @@ export class CollabMdApp {
       </div>`;
   }
 
+  hideEditorLoading() {
+    if (!this.elements.editorContainer) return;
+    this.elements.editorContainer.classList.remove('is-loading-editor');
+    this.elements.editorContainer.querySelector('#editorLoading')?.remove();
+  }
+
   showEditorLoadError() {
     if (!this.elements.editorContainer) return;
+    this.elements.editorContainer.classList.remove('is-loading-editor');
     this.elements.editorContainer.innerHTML = `
       <div class="editor-loading" id="editorLoading">
         <span class="loading-text">Failed to load file</span>
       </div>`;
+  }
+
+  clearInitialFileBootstrap() {
+    document.documentElement.removeAttribute('data-initial-file-requested');
   }
 }

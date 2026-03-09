@@ -595,7 +595,7 @@ function disconnectRealtimeRoom() {
   waitingForAuthoritativeSync = false;
 }
 
-window.addEventListener('beforeunload', () => {
+window.addEventListener('pagehide', () => {
   disconnectRealtimeRoom();
 });
 

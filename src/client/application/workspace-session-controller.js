@@ -19,10 +19,19 @@ export class WorkspaceSessionController {
     return this.editorSessionModulePromise;
   }
 
+  waitForNextPaint() {
+    return new Promise((resolve) => {
+      requestAnimationFrame(() => {
+        requestAnimationFrame(resolve);
+      });
+    });
+  }
+
   showEmptyState() {
     const app = this.app;
 
     app.sessionLoadToken += 1;
+    app.clearInitialFileBootstrap();
     this.cleanupSession();
     app.resetPreviewMode();
     app.elements.outlineToggle?.classList.remove('hidden');
@@ -90,6 +99,7 @@ export class WorkspaceSessionController {
 
     app.elements.emptyState?.classList.add('hidden');
     app.elements.editorPage?.classList.remove('hidden');
+    app.clearInitialFileBootstrap();
     app.elements.markdownToolbar?.classList.toggle('hidden', !isMarkdownFilePath(filePath));
 
     const displayName = app.getDisplayName(filePath);
@@ -140,6 +150,15 @@ export class WorkspaceSessionController {
 
       app.scrollSyncController.attachEditorScroller(session.getScrollContainer());
       session.applyTheme(app.themeController.getTheme());
+      session.requestMeasure();
+      await this.waitForNextPaint();
+
+      if (loadToken !== app.sessionLoadToken) {
+        session.destroy();
+        return;
+      }
+
+      app.hideEditorLoading();
       if (isExcalidraw) {
         app.renderExcalidrawFilePreview(filePath);
       }

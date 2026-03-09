@@ -48,7 +48,6 @@ export class TabActivityLock {
   initialize() {
     window.addEventListener('storage', this.handleStorageEvent);
     window.addEventListener('pagehide', this.handlePageHide);
-    window.addEventListener('beforeunload', this.handlePageHide);
 
     if ('BroadcastChannel' in globalThis) {
       this.channel = new BroadcastChannel(CHANNEL_NAME);
@@ -62,7 +61,6 @@ export class TabActivityLock {
     this.release();
     window.removeEventListener('storage', this.handleStorageEvent);
     window.removeEventListener('pagehide', this.handlePageHide);
-    window.removeEventListener('beforeunload', this.handlePageHide);
     this.channel?.close();
     this.channel = null;
   }

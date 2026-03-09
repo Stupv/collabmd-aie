@@ -79,7 +79,7 @@ function createEditorTheme(theme) {
     '.cm-gutters': {
       backgroundColor: 'var(--color-surface)',
       borderRight: '1px solid var(--color-divider)',
-      color: 'var(--color-text-faint)',
+      color: 'var(--color-text-muted)',
       minWidth: '44px',
     },
     '.cm-line': {
@@ -223,7 +223,13 @@ export class EditorSession {
       }
     });
 
-    this.editorContainer.innerHTML = '';
+    const loadingIndicator = this.editorContainer.querySelector('#editorLoading');
+    Array.from(this.editorContainer.children).forEach((child) => {
+      if (child !== loadingIndicator) {
+        child.remove();
+      }
+    });
+
     this.editorView = new EditorView({
       parent: this.editorContainer,
       state: EditorState.create({
@@ -255,6 +261,9 @@ export class EditorSession {
             ...foldKeymap,
             indentWithTab,
           ]),
+          EditorView.contentAttributes.of({
+            'aria-label': 'Markdown editor',
+          }),
           createLanguageExtension(filePath),
           this.themeCompartment.of(createEditorTheme(this.initialTheme)),
           this.syntaxThemeCompartment.of(this.initialTheme === 'dark' ? oneDark : []),
