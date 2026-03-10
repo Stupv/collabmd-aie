@@ -13,12 +13,14 @@ import {
 import { USER_NAME_MAX_LENGTH, normalizeUserName } from '../domain/room.js';
 import { resolveWikiTarget } from '../domain/vault-utils.js';
 import { LOBBY_CHAT_MESSAGE_MAX_LENGTH, LobbyPresence } from '../infrastructure/lobby-presence.js';
-import { getFileFromHash, navigateToFile } from '../infrastructure/runtime-config.js';
+import { getHashRoute, getRuntimeConfig, navigateToFile, navigateToGitDiff } from '../infrastructure/runtime-config.js';
 import { TabActivityLock } from '../infrastructure/tab-activity-lock.js';
 import { BacklinksPanel } from '../presentation/backlinks-panel.js';
 import { CommentsPanel } from '../presentation/comments-panel.js';
 import { ExcalidrawEmbedController } from '../presentation/excalidraw-embed-controller.js';
 import { FileExplorerController } from '../presentation/file-explorer-controller.js';
+import { GitDiffViewController } from '../presentation/git-diff-view-controller.js';
+import { GitPanelController } from '../presentation/git-panel-controller.js';
 import { LayoutController } from '../presentation/layout-controller.js';
 import { OutlineController } from '../presentation/outline-controller.js';
 import { ScrollSyncController } from '../presentation/scroll-sync-controller.js';
@@ -51,7 +53,14 @@ export class CollabMdApp {
       editorContainer: document.getElementById('editorContainer'),
       markdownToolbar: document.getElementById('markdownToolbar'),
       editorPage: document.getElementById('editor-page'),
+      diffPage: document.getElementById('diff-page'),
+      fileSearch: document.getElementById('fileSearch'),
+      filesSidebarTab: document.getElementById('filesSidebarTab'),
+      gitSearch: document.getElementById('gitSearch'),
+      gitSearchInput: document.getElementById('gitSearchInput'),
+      gitSidebarTab: document.getElementById('gitSidebarTab'),
       lineInfo: document.getElementById('lineInfo'),
+      mobileViewToggle: document.getElementById('mobileViewToggle'),
       previewContent: document.getElementById('previewContent'),
       previewContainer: document.getElementById('previewContainer'),
       commentsPanel: document.getElementById('commentsPanel'),
@@ -73,8 +82,12 @@ export class CollabMdApp {
       tabLockOverlay: document.getElementById('tabLockOverlay'),
       tabLockTakeoverButton: document.getElementById('tabLockTakeoverBtn'),
       tabLockTitle: document.getElementById('tabLockTitle'),
+      toolbarCenter: document.getElementById('toolbarCenter'),
+      toolbarDiffBadge: document.getElementById('toolbarDiffBadge'),
+      sidebarTabs: document.getElementById('sidebarTabs'),
     };
 
+    this.runtimeConfig = getRuntimeConfig();
     this.session = null;
     this.currentFilePath = null;
     this.globalUsers = [];
@@ -103,6 +116,8 @@ export class CollabMdApp {
     this.isTabActive = false;
     this.fileExplorerReady = false;
     this.fileExplorerReadyPromise = Promise.resolve();
+    this.gitRepoAvailable = false;
+    this.activeSidebarTab = 'files';
 
     this.lobby = new LobbyPresence({
       preferredUserName: this.getStoredUserName(),
@@ -115,6 +130,20 @@ export class CollabMdApp {
     this.fileExplorer = new FileExplorerController({
       onFileSelect: (filePath) => this.handleFileSelection(filePath, { closeSidebarOnMobile: true }),
       onFileDelete: () => navigateToFile(null),
+      toastController: this.toastController,
+    });
+    this.gitPanel = new GitPanelController({
+      enabled: this.runtimeConfig.gitEnabled !== false,
+      onRepoChange: (isGitRepo, status) => this.handleGitRepoChange(isGitRepo, status),
+      onSelectDiff: (filePath, { scope }) => this.handleGitDiffSelection(filePath, {
+        closeSidebarOnMobile: true,
+        scope,
+      }),
+      onViewAllDiff: () => this.handleGitDiffSelection(null, {
+        closeSidebarOnMobile: true,
+        scope: 'all',
+      }),
+      searchInput: this.elements.gitSearchInput,
       toastController: this.toastController,
     });
     this.outlineController = new OutlineController({
@@ -180,6 +209,15 @@ export class CollabMdApp {
       getLocalUser: () => this.lobby.getLocalUser(),
       previewContainer: this.elements.previewContainer,
       previewElement: this.elements.previewContent,
+      toastController: this.toastController,
+    });
+    this.gitDiffView = new GitDiffViewController({
+      onOpenFile: (filePath) => {
+        if (!filePath) {
+          return;
+        }
+        navigateToFile(filePath);
+      },
       toastController: this.toastController,
     });
     this._backlinkRefreshTimer = null;
@@ -313,11 +351,14 @@ export class CollabMdApp {
     this.layoutController.initialize();
     this.scrollSyncController.initialize();
     this.fileExplorer.initialize();
+    this.gitPanel.initialize();
+    this.gitDiffView.initialize();
     this.initializePreviewLayoutObserver();
     this.syncCurrentUserName();
     this.syncWrapToggle();
     this.syncChatNotificationButton();
     this.renderChat();
+    void this.gitPanel.refresh({ force: true });
     this.elements.chatInput?.setAttribute('maxlength', String(LOBBY_CHAT_MESSAGE_MAX_LENGTH));
     this.bindEvents();
     this.restoreSidebarState();
@@ -408,6 +449,17 @@ export class CollabMdApp {
 
     this.elements.sidebarClose?.addEventListener('click', () => {
       this.closeSidebarOnMobile();
+    });
+
+    this.elements.filesSidebarTab?.addEventListener('click', () => {
+      this.setSidebarTab('files');
+    });
+
+    this.elements.gitSidebarTab?.addEventListener('click', () => {
+      if (!this.gitRepoAvailable) {
+        return;
+      }
+      this.setSidebarTab('git');
     });
 
     document.addEventListener('pointerdown', (event) => {
@@ -520,17 +572,26 @@ export class CollabMdApp {
       return;
     }
 
-    const filePath = getFileFromHash();
-
-    if (!filePath) {
+    const route = getHashRoute();
+    if (route.type === 'empty') {
+      this.gitPanel.setSelection();
       this.showEmptyState();
+      this.syncMainChrome({ mode: 'empty', title: 'CollabMD' });
       return;
     }
 
-    await this.openFile(filePath);
+    if (route.type === 'git-diff') {
+      this.setSidebarTab('git');
+      await this.showGitDiff(route);
+      return;
+    }
+
+    this.setSidebarTab('files');
+    await this.openFile(route.filePath);
   }
 
   showEmptyState() {
+    this.gitDiffView.hide();
     this.workspaceSession.showEmptyState();
   }
 
@@ -565,6 +626,9 @@ export class CollabMdApp {
   }
 
   async openFile(filePath) {
+    this.gitPanel.setSelection();
+    this.gitDiffView.hide();
+    this.syncMainChrome({ mode: 'editor' });
     await this.workspaceSession.openFile(filePath);
   }
 
@@ -634,6 +698,14 @@ export class CollabMdApp {
     navigateToFile(filePath);
   }
 
+  handleGitDiffSelection(filePath, { closeSidebarOnMobile = false, scope = 'working-tree' } = {}) {
+    if (closeSidebarOnMobile) {
+      this.closeSidebarOnMobile();
+    }
+
+    navigateToGitDiff({ filePath, scope });
+  }
+
   isMobileViewport() {
     return window.matchMedia('(max-width: 768px)').matches;
   }
@@ -700,6 +772,57 @@ export class CollabMdApp {
     sidebar.toggleAttribute('hidden', hideForMobile);
     sidebar.setAttribute('aria-hidden', hideForMobile ? 'true' : 'false');
     sidebar.inert = isCollapsed;
+  }
+
+  setSidebarTab(tab) {
+    const nextTab = tab === 'git' && this.gitRepoAvailable ? 'git' : 'files';
+    this.activeSidebarTab = nextTab;
+
+    this.elements.filesSidebarTab?.classList.toggle('active', nextTab === 'files');
+    this.elements.gitSidebarTab?.classList.toggle('active', nextTab === 'git');
+    document.getElementById('fileTree')?.classList.toggle('hidden', nextTab !== 'files');
+    this.elements.fileSearch?.classList.toggle('hidden', nextTab !== 'files');
+    this.elements.gitSearch?.classList.toggle('hidden', nextTab !== 'git');
+    document.getElementById('gitPanel')?.classList.toggle('active', nextTab === 'git');
+    document.getElementById('gitPanel')?.classList.toggle('hidden', nextTab !== 'git');
+    this.gitPanel.setActive(nextTab === 'git');
+  }
+
+  handleGitRepoChange(isGitRepo) {
+    this.gitRepoAvailable = Boolean(isGitRepo);
+    this.elements.sidebarTabs?.classList.toggle('hidden', !this.gitRepoAvailable);
+    this.elements.gitSidebarTab?.classList.toggle('hidden', !this.gitRepoAvailable);
+
+    if (!this.gitRepoAvailable && this.activeSidebarTab === 'git') {
+      this.setSidebarTab('files');
+      return;
+    }
+
+    if (this.gitRepoAvailable && getHashRoute().type === 'git-diff' && this.activeSidebarTab !== 'git') {
+      this.setSidebarTab('git');
+    }
+  }
+
+  syncMainChrome({ mode, title = null } = {}) {
+    const isDiffMode = mode === 'diff';
+    this.elements.toolbarCenter?.classList.toggle('hidden', isDiffMode);
+    this.elements.mobileViewToggle?.classList.toggle('hidden', isDiffMode);
+    this.elements.userCount?.classList.toggle('hidden', isDiffMode);
+    this.elements.toolbarDiffBadge?.classList.toggle('hidden', !isDiffMode);
+
+    if (title && this.elements.activeFileName) {
+      this.elements.activeFileName.textContent = title;
+    }
+  }
+
+  async showGitDiff({ filePath = null, scope = 'all' } = {}) {
+    this.gitPanel.setSelection(filePath ? { path: filePath, scope } : {});
+    this.workspaceSession.showDiffState();
+    this.syncMainChrome({
+      mode: 'diff',
+      title: this.gitDiffView.getToolbarTitle({ filePath, scope }),
+    });
+    await this.gitDiffView.open({ filePath, scope });
   }
 
   // Line wrapping

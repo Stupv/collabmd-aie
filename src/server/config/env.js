@@ -74,6 +74,7 @@ export function loadConfig(overrides = {}) {
     httpHeadersTimeoutMs: parsePositiveInt(process.env.HTTP_HEADERS_TIMEOUT_MS, 60_000),
     httpKeepAliveTimeoutMs: parsePositiveInt(process.env.HTTP_KEEP_ALIVE_TIMEOUT_MS, 5_000),
     httpRequestTimeoutMs: parsePositiveInt(process.env.HTTP_REQUEST_TIMEOUT_MS, 30_000),
+    gitEnabled: process.env.COLLABMD_GIT_ENABLED !== 'false',
     port: parsePort(process.env.PORT, 1234),
     nodeEnv,
     plantumlServerUrl: process.env.PLANTUML_SERVER_URL || 'https://www.plantuml.com/plantuml',

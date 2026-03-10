@@ -1,12 +1,16 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { execFile as execFileCallback } from 'node:child_process';
 import { createServer } from 'node:http';
 import { request } from 'node:http';
 import { writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
+import { promisify } from 'node:util';
 import { gunzipSync } from 'node:zlib';
 
 import { startTestServer } from './helpers/test-server.js';
+
+const execFile = promisify(execFileCallback);
 
 function httpRequest(url, { method = 'GET', headers = {}, body } = {}) {
   return new Promise((resolve, reject) => {
@@ -86,6 +90,7 @@ test('HTTP server serves health, runtime config, and static assets', async (t) =
   const runtimeConfigResponse = await httpRequest(`${app.baseUrl}/app-config.js`);
   assert.equal(runtimeConfigResponse.statusCode, 200);
   assert.match(runtimeConfigResponse.body, /window\.__COLLABMD_CONFIG__/);
+  assert.match(runtimeConfigResponse.body, /"gitEnabled":true/);
   assert.match(runtimeConfigResponse.body, /"strategy":"none"/);
   assert.equal(runtimeConfigResponse.headers['cache-control'], 'no-store');
 
@@ -106,6 +111,35 @@ test('HTTP server serves health, runtime config, and static assets', async (t) =
   assert.equal(compressedAssetResponse.statusCode, 200);
   assert.equal(compressedAssetResponse.headers['content-encoding'], 'gzip');
   assert.match(gunzipSync(compressedAssetResponse.bodyBuffer).toString('utf8'), /--color-bg/);
+});
+
+test('HTTP server exposes git status and diff endpoints for git-backed vaults', async (t) => {
+  const app = await startTestServer();
+  t.after(() => app.close());
+
+  const gitEnv = {
+    ...process.env,
+    GIT_AUTHOR_EMAIL: 'tests@example.com',
+    GIT_AUTHOR_NAME: 'CollabMD Tests',
+    GIT_COMMITTER_EMAIL: 'tests@example.com',
+    GIT_COMMITTER_NAME: 'CollabMD Tests',
+  };
+  await execFile('git', ['init'], { cwd: app.vaultDir, env: gitEnv });
+  await execFile('git', ['config', 'user.email', 'tests@example.com'], { cwd: app.vaultDir, env: gitEnv });
+  await execFile('git', ['config', 'user.name', 'CollabMD Tests'], { cwd: app.vaultDir, env: gitEnv });
+  await execFile('git', ['add', 'test.md'], { cwd: app.vaultDir, env: gitEnv });
+  await execFile('git', ['commit', '-m', 'Initial commit'], { cwd: app.vaultDir, env: gitEnv });
+  await writeFile(join(app.vaultDir, 'test.md'), '# Test\n\nHello from git.\n', 'utf8');
+
+  const statusResponse = await httpRequest(`${app.baseUrl}/api/git/status`);
+  assert.equal(statusResponse.statusCode, 200);
+  assert.match(statusResponse.body, /"isGitRepo":true/);
+  assert.match(statusResponse.body, /"workingTree":1/);
+
+  const diffResponse = await httpRequest(`${app.baseUrl}/api/git/diff?scope=all`);
+  assert.equal(diffResponse.statusCode, 200);
+  assert.match(diffResponse.body, /"filesChanged":1/);
+  assert.match(diffResponse.body, /"path":"test.md"/);
 });
 
 test('HTTP server supports password auth without blocking static assets', async (t) => {

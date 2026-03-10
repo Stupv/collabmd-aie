@@ -45,6 +45,7 @@ function getStaticCacheControl(pathname = '', extension = '') {
 
 function buildRuntimeConfig({
   auth,
+  gitEnabled,
   nodeEnv,
   publicWsBaseUrl,
   wsBasePath,
@@ -52,6 +53,7 @@ function buildRuntimeConfig({
   return `window.__COLLABMD_CONFIG__ = ${JSON.stringify({
     auth,
     environment: nodeEnv,
+    gitEnabled,
     publicWsBaseUrl,
     wsBasePath,
   })};\n`;

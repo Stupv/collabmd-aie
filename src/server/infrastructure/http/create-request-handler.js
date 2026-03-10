@@ -1,3 +1,4 @@
+import { createGitApiHandler } from './create-git-api-handler.js';
 import { createEsmProxyHandler } from './create-esm-proxy-handler.js';
 import { createStaticHandler } from './create-static-handler.js';
 import { createVaultApiHandler } from './create-vault-api-handler.js';
@@ -17,9 +18,11 @@ export function createRequestHandler(
   backlinkIndex,
   roomRegistry = null,
   plantUmlRenderer = null,
+  gitService = null,
 ) {
   const handleEsmProxy = createEsmProxyHandler();
   const handleStaticRequest = createStaticHandler(config, authService);
+  const handleGitApi = createGitApiHandler({ gitService });
   const handleVaultApi = createVaultApiHandler({
     backlinkIndex,
     plantUmlRenderer,
@@ -68,6 +71,10 @@ export function createRequestHandler(
     }
 
     if (await handleVaultApi(req, res, requestUrl)) {
+      return;
+    }
+
+    if (await handleGitApi(req, res, requestUrl)) {
       return;
     }
 

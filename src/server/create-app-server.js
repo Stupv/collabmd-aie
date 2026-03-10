@@ -5,6 +5,7 @@ import { createAuthService } from './auth/create-auth-service.js';
 import { BacklinkIndex } from './domain/backlink-index.js';
 import { CollaborationDocumentStore } from './domain/collaboration/collaboration-document-store.js';
 import { CollaborationRoom } from './domain/collaboration/collaboration-room.js';
+import { GitService } from './domain/git-service.js';
 import { PlantUmlRenderer } from './domain/plantuml-renderer.js';
 import { RoomRegistry } from './domain/collaboration/room-registry.js';
 import { createRequestHandler } from './infrastructure/http/create-request-handler.js';
@@ -39,6 +40,10 @@ export function createAppServer(config = loadConfig()) {
   const plantUmlRenderer = new PlantUmlRenderer({
     serverUrl: config.plantumlServerUrl,
   });
+  const gitService = new GitService({
+    enabled: config.gitEnabled,
+    vaultDir: config.vaultDir,
+  });
   const roomRegistry = new RoomRegistry({
     createRoom: ({ name, onEmpty }) => new CollaborationRoom({
       documentStore: new CollaborationDocumentStore({
@@ -59,6 +64,7 @@ export function createAppServer(config = loadConfig()) {
     backlinkIndex,
     roomRegistry,
     plantUmlRenderer,
+    gitService,
   );
   const httpServer = createServer((req, res) => {
     requestHandler(req, res).catch((error) => {
@@ -124,6 +130,7 @@ export function createAppServer(config = loadConfig()) {
     listen,
     roomRegistry,
     authService,
+    gitService,
     vaultFileStore,
     get vaultFileCount() { return vaultFileCount; },
   };

@@ -1,0 +1,115 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { execFile as execFileCallback } from 'node:child_process';
+import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { promisify } from 'node:util';
+
+import { GitService } from '../../src/server/domain/git-service.js';
+
+const execFile = promisify(execFileCallback);
+
+async function runGit(cwd, args) {
+  await execFile('git', args, {
+    cwd,
+    env: {
+      ...process.env,
+      GIT_AUTHOR_EMAIL: 'tests@example.com',
+      GIT_AUTHOR_NAME: 'CollabMD Tests',
+      GIT_COMMITTER_EMAIL: 'tests@example.com',
+      GIT_COMMITTER_NAME: 'CollabMD Tests',
+    },
+  });
+}
+
+async function createFixtureRepository() {
+  const repoDir = await mkdtemp(join(tmpdir(), 'collabmd-git-service-'));
+
+  await runGit(repoDir, ['init']);
+  await runGit(repoDir, ['config', 'user.email', 'tests@example.com']);
+  await runGit(repoDir, ['config', 'user.name', 'CollabMD Tests']);
+
+  await writeFile(join(repoDir, 'tracked.md'), '# Tracked\n\nbase\n', 'utf8');
+  await runGit(repoDir, ['add', 'tracked.md']);
+  await runGit(repoDir, ['commit', '-m', 'Initial commit']);
+
+  await writeFile(join(repoDir, 'tracked.md'), '# Tracked\n\nbase\nupdated\n', 'utf8');
+  await writeFile(join(repoDir, 'staged.md'), '# Staged\n\nready\n', 'utf8');
+  await runGit(repoDir, ['add', 'staged.md']);
+  await writeFile(join(repoDir, 'untracked.md'), '# Untracked\n\nscratch\n', 'utf8');
+
+  return repoDir;
+}
+
+test('GitService reports sections and diffs for staged, unstaged, and untracked files', async (t) => {
+  const repoDir = await createFixtureRepository();
+  t.after(async () => {
+    await rm(repoDir, { force: true, recursive: true });
+  });
+
+  const gitService = new GitService({ vaultDir: repoDir });
+  const status = await gitService.getStatus({ force: true });
+
+  assert.equal(status.isGitRepo, true);
+  assert.equal(status.summary.staged, 1);
+  assert.equal(status.summary.workingTree, 1);
+  assert.equal(status.summary.untracked, 1);
+  assert.equal(status.summary.additions > 0, true);
+
+  const stagedFile = status.sections.find((section) => section.key === 'staged')?.files[0];
+  const workingTreeFile = status.sections.find((section) => section.key === 'working-tree')?.files[0];
+  const untrackedFile = status.sections.find((section) => section.key === 'untracked')?.files[0];
+
+  assert.equal(stagedFile?.path, 'staged.md');
+  assert.equal(stagedFile?.status, 'added');
+  assert.equal(workingTreeFile?.path, 'tracked.md');
+  assert.equal(workingTreeFile?.status, 'modified');
+  assert.equal(untrackedFile?.path, 'untracked.md');
+  assert.equal(untrackedFile?.status, 'untracked');
+
+  const workingTreeDiff = await gitService.getDiff({ scope: 'working-tree' });
+  assert.deepEqual(
+    workingTreeDiff.files.map((file) => file.path).sort(),
+    ['tracked.md', 'untracked.md'],
+  );
+
+  const stagedDiff = await gitService.getDiff({ scope: 'staged' });
+  assert.deepEqual(stagedDiff.files.map((file) => file.path), ['staged.md']);
+  assert.equal(stagedDiff.files[0].status, 'added');
+
+  const fullDiff = await gitService.getDiff({ scope: 'all' });
+  assert.deepEqual(
+    fullDiff.files.map((file) => file.path).sort(),
+    ['staged.md', 'tracked.md', 'untracked.md'],
+  );
+  assert.equal(fullDiff.summary.filesChanged, 3);
+});
+
+test('GitService normalizes git paths that include spaces', async (t) => {
+  const repoDir = await mkdtemp(join(tmpdir(), 'collabmd-git-service-paths-'));
+  t.after(async () => {
+    await rm(repoDir, { force: true, recursive: true });
+  });
+
+  await runGit(repoDir, ['init']);
+  await runGit(repoDir, ['config', 'user.email', 'tests@example.com']);
+  await runGit(repoDir, ['config', 'user.name', 'CollabMD Tests']);
+
+  const filePath = 'BFI - Biller/sample flow.puml';
+  await mkdir(join(repoDir, 'BFI - Biller'), { recursive: true });
+  await writeFile(join(repoDir, filePath), '@startuml\nAlice -> Bob\n@enduml\n', 'utf8');
+  await runGit(repoDir, ['add', filePath]);
+  await runGit(repoDir, ['commit', '-m', 'Add flow']);
+  await writeFile(join(repoDir, filePath), '@startuml\nAlice -> Bob : updated\n@enduml\n', 'utf8');
+
+  const gitService = new GitService({ vaultDir: repoDir });
+  const status = await gitService.getStatus({ force: true });
+  const changedFile = status.sections.find((section) => section.key === 'working-tree')?.files[0];
+
+  assert.equal(changedFile?.path, filePath);
+
+  const diff = await gitService.getDiff({ path: filePath, scope: 'working-tree' });
+  assert.equal(diff.files.length, 1);
+  assert.equal(diff.files[0].path, filePath);
+});

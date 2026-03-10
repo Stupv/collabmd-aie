@@ -44,6 +44,7 @@ export class WorkspaceSessionController {
 
     app.elements.emptyState?.classList.remove('hidden');
     app.elements.editorPage?.classList.add('hidden');
+    app.elements.diffPage?.classList.add('hidden');
     app.elements.previewContent.innerHTML = '';
     app.elements.previewContent.dataset.renderPhase = 'ready';
     clearTimeout(app._previewLayoutSyncTimer);
@@ -63,6 +64,43 @@ export class WorkspaceSessionController {
     if (app.elements.activeFileName) {
       app.elements.activeFileName.textContent = 'CollabMD';
     }
+  }
+
+  showDiffState() {
+    const app = this.app;
+
+    app.sessionLoadToken += 1;
+    app.clearInitialFileBootstrap();
+    this.cleanupSession();
+    app.resetPreviewMode();
+    app.layoutController.reset();
+    app.currentFilePath = null;
+    app.lobby.setCurrentFile(null);
+    app.fileExplorer.setActiveFile(null);
+
+    app.elements.emptyState?.classList.add('hidden');
+    app.elements.editorPage?.classList.add('hidden');
+    app.elements.diffPage?.classList.remove('hidden');
+    app.elements.previewContent.innerHTML = '';
+    app.elements.previewContent.dataset.renderPhase = 'ready';
+    clearTimeout(app._previewLayoutSyncTimer);
+    app._pendingPreviewLayoutSync = false;
+    app._previewHydrationPaused = false;
+    app.previewRenderer.setHydrationPaused(false);
+    app.excalidrawEmbed.setHydrationPaused(false);
+    app.scrollSyncController.setLargeDocumentMode(false);
+    app.scrollSyncController.invalidatePreviewBlocks();
+
+    app.elements.outlineToggle?.classList.add('hidden');
+    app.elements.commentsToggle?.classList.add('hidden');
+    app.elements.commentSelectionButton?.classList.add('hidden');
+    app.elements.markdownToolbar?.classList.add('hidden');
+
+    app.renderAvatars();
+    app.renderPresence();
+    app.backlinksPanel.clear();
+    app.updateCommentThreads([]);
+    app.commentsPanel.setCurrentFile(null, { supported: false });
   }
 
   async openFile(filePath) {
@@ -99,6 +137,7 @@ export class WorkspaceSessionController {
 
     app.elements.emptyState?.classList.add('hidden');
     app.elements.editorPage?.classList.remove('hidden');
+    app.elements.diffPage?.classList.add('hidden');
     app.clearInitialFileBootstrap();
     app.elements.markdownToolbar?.classList.toggle('hidden', !isMarkdownFilePath(filePath));
 

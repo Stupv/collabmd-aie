@@ -13,21 +13,63 @@ export function getRuntimeConfig() {
       strategy: 'none',
     },
     environment: 'development',
+    gitEnabled: true,
     publicWsBaseUrl: '',
     wsBasePath: '/ws',
     ...(window.__COLLABMD_CONFIG__ ?? {}),
   };
 }
 
-export function getFileFromHash() {
-  const match = window.location.hash.match(/file=([^&]+)/);
-  return match ? decodeURIComponent(match[1]) : null;
+function getHashParams() {
+  const rawHash = window.location.hash.startsWith('#')
+    ? window.location.hash.slice(1)
+    : window.location.hash;
+  return new URLSearchParams(rawHash);
+}
+
+function normalizeDiffScope(scope) {
+  if (scope === 'staged' || scope === 'all' || scope === 'working-tree') {
+    return scope;
+  }
+
+  return 'all';
+}
+
+export function getHashRoute() {
+  const params = getHashParams();
+
+  if (params.has('git-diff')) {
+    const filePath = params.get('git-diff') || null;
+    return {
+      filePath,
+      scope: normalizeDiffScope(params.get('scope') || (filePath ? 'working-tree' : 'all')),
+      type: 'git-diff',
+    };
+  }
+
+  if (params.has('file')) {
+    return {
+      filePath: params.get('file'),
+      type: 'file',
+    };
+  }
+
+  return { type: 'empty' };
 }
 
 export function navigateToFile(filePath) {
-  window.location.hash = filePath
-    ? `file=${encodeURIComponent(filePath)}`
-    : '';
+  const params = new URLSearchParams();
+  if (filePath) {
+    params.set('file', filePath);
+  }
+  window.location.hash = params.toString();
+}
+
+export function navigateToGitDiff({ filePath = null, scope = 'all' } = {}) {
+  const params = new URLSearchParams();
+  params.set('git-diff', filePath ?? '');
+  params.set('scope', normalizeDiffScope(scope));
+  window.location.hash = params.toString();
 }
 
 export function resolveWsBaseUrl() {
