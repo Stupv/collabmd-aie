@@ -277,6 +277,67 @@ function parseNumstatOutput(output) {
     });
 }
 
+function parseNumstatEntries(output) {
+  return String(output ?? '')
+    .split(/\r?\n/u)
+    .filter(Boolean)
+    .map((line) => {
+      const [rawAdditions = '0', rawDeletions = '0', ...rest] = line.split('\t');
+      return {
+        additions: rawAdditions === '-' ? 0 : Number.parseInt(rawAdditions, 10) || 0,
+        deletions: rawDeletions === '-' ? 0 : Number.parseInt(rawDeletions, 10) || 0,
+        rawPath: rest.join('\t'),
+      };
+    });
+}
+
+function getStatusPriority(status) {
+  switch (status) {
+    case 'deleted':
+      return 5;
+    case 'added':
+    case 'untracked':
+      return 4;
+    case 'renamed':
+      return 3;
+    default:
+      return 2;
+  }
+}
+
+function mergeScopedFile(existingFile, nextFile, scope) {
+  if (!existingFile) {
+    return {
+      ...nextFile,
+      scope,
+      stats: {
+        additions: 0,
+        deletions: 0,
+      },
+    };
+  }
+
+  const nextPriority = getStatusPriority(nextFile.status);
+  const currentPriority = getStatusPriority(existingFile.status);
+  if (nextPriority > currentPriority) {
+    return {
+      ...existingFile,
+      ...nextFile,
+      scope,
+      stats: existingFile.stats ?? {
+        additions: 0,
+        deletions: 0,
+      },
+    };
+  }
+
+  return existingFile;
+}
+
+function countPatchLines(file = null) {
+  return (file?.hunks ?? []).reduce((total, hunk) => total + (hunk.lines?.length ?? 0), 0);
+}
+
 function parseUnifiedDiff(diffText) {
   if (!diffText) {
     return [];
@@ -481,11 +542,15 @@ export class GitService {
   constructor({
     enabled = true,
     execFileImpl = execFile,
+    maxInitialPatchBytes = 250_000,
+    maxInitialPatchLines = 1_500,
     statusCacheTtlMs = 2_000,
     vaultDir,
   }) {
     this.enabled = enabled;
     this.execFileImpl = execFileImpl;
+    this.maxInitialPatchBytes = maxInitialPatchBytes;
+    this.maxInitialPatchLines = maxInitialPatchLines;
     this.statusCacheTtlMs = statusCacheTtlMs;
     this.vaultDir = vaultDir;
     this.statusCache = {
@@ -614,12 +679,96 @@ export class GitService {
     };
   }
 
-  async getDiff({ path = null, scope = 'working-tree' } = {}) {
+  async buildDiffCommandArgs({ numstat = false, path = null, scope = 'working-tree' } = {}) {
+    const args = numstat
+      ? ['diff', '--numstat']
+      : ['diff', '--no-color', '--no-ext-diff', '--find-renames'];
+
+    if (scope === 'staged') {
+      args.push('--cached');
+    } else if (scope === 'all') {
+      if (await this.hasHeadCommit()) {
+        args.push('HEAD');
+      } else {
+        args.push('--cached');
+      }
+    }
+
+    if (path) {
+      args.push('--', path);
+    }
+
+    return args;
+  }
+
+  getScopedFiles(status, scope = 'working-tree', path = null) {
+    const orderedFiles = [];
+    const fileMap = new Map();
+    const candidateSections = scope === 'staged'
+      ? ['staged']
+      : scope === 'all'
+        ? ['staged', 'working-tree', 'untracked']
+        : ['working-tree', 'untracked'];
+
+    for (const sectionKey of candidateSections) {
+      const section = status.sections.find((entry) => entry.key === sectionKey);
+      for (const file of section?.files ?? []) {
+        if (path && file.path !== path) {
+          continue;
+        }
+
+        if (!fileMap.has(file.path)) {
+          const merged = mergeScopedFile(null, file, scope);
+          fileMap.set(file.path, merged);
+          orderedFiles.push(merged);
+          continue;
+        }
+
+        const merged = mergeScopedFile(fileMap.get(file.path), file, scope);
+        fileMap.set(file.path, merged);
+        const index = orderedFiles.findIndex((entry) => entry.path === file.path);
+        if (index >= 0) {
+          orderedFiles[index] = merged;
+        }
+      }
+    }
+
+    return orderedFiles;
+  }
+
+  async getScopeSummary({ files = [], path = null, scope = 'working-tree' } = {}) {
+    const trackedSummary = parseNumstatOutput(
+      await this.execGit(await this.buildDiffCommandArgs({
+        numstat: true,
+        path,
+        scope,
+      })),
+    );
+    let untrackedAdditions = 0;
+
+    for (const file of files.filter((entry) => entry.status === 'untracked')) {
+      try {
+        const content = await readFile(join(this.vaultDir, file.path), 'utf8');
+        untrackedAdditions += splitContentLines(content).length;
+      } catch {
+        // Ignore disappearing files between requests.
+      }
+    }
+
+    return {
+      additions: trackedSummary.additions + untrackedAdditions,
+      deletions: trackedSummary.deletions,
+      filesChanged: files.length,
+    };
+  }
+
+  async getDiff({ allowLargePatch = false, metaOnly = false, path = null, scope = 'working-tree' } = {}) {
     const isGitRepo = await this.isGitRepo();
     if (!isGitRepo) {
       return {
         files: [],
         isGitRepo: false,
+        metaOnly,
         scope,
         summary: {
           additions: 0,
@@ -630,30 +779,35 @@ export class GitService {
     }
 
     const normalizedPath = path ? normalizeRelativePath(path) : null;
-    const args = ['diff', '--no-color', '--no-ext-diff', '--find-renames'];
     const resolvedScope = scope === 'staged' || scope === 'all'
       ? scope
       : 'working-tree';
+    const status = await this.getStatus();
+    const scopedFiles = this.getScopedFiles(status, resolvedScope, normalizedPath);
+    const scopeSummary = await this.getScopeSummary({
+      files: scopedFiles,
+      path: normalizedPath,
+      scope: resolvedScope,
+    });
 
-    if (resolvedScope === 'staged') {
-      args.push('--cached');
-    } else if (resolvedScope === 'all') {
-      if (await this.hasHeadCommit()) {
-        args.push('HEAD');
-      } else {
-        args.push('--cached');
-      }
+    if (metaOnly) {
+      return {
+        files: scopedFiles,
+        isGitRepo: true,
+        metaOnly: true,
+        path: normalizedPath,
+        scope: resolvedScope,
+        summary: scopeSummary,
+      };
     }
 
-    if (normalizedPath) {
-      args.push('--', normalizedPath);
-    }
-
-    const diffText = await this.execGit(args);
+    const diffText = await this.execGit(await this.buildDiffCommandArgs({
+      path: normalizedPath,
+      scope: resolvedScope,
+    }));
     const parsedFiles = parseUnifiedDiff(diffText);
 
     if (resolvedScope !== 'staged') {
-      const status = await this.getStatus();
       const untrackedFiles = status.sections
         .find((section) => section.key === 'untracked')
         ?.files
@@ -670,6 +824,48 @@ export class GitService {
       }
     }
 
+    const mergedFiles = scopedFiles.map((file) => {
+      const detail = parsedFiles.find((entry) => entry.path === file.path) ?? null;
+      if (!detail) {
+        return {
+          ...file,
+          hunks: [],
+          stats: file.stats ?? {
+            additions: 0,
+            deletions: 0,
+          },
+        };
+      }
+
+      const patchLineCount = countPatchLines(detail);
+      if (
+        normalizedPath
+        && !allowLargePatch
+        && (
+          patchLineCount > this.maxInitialPatchLines
+          || diffText.length > this.maxInitialPatchBytes
+        )
+      ) {
+        return {
+          ...file,
+          byteLength: diffText.length,
+          canLoadFullPatch: true,
+          hunks: [],
+          patchLineCount,
+          stats: detail.stats,
+          tooLarge: true,
+        };
+      }
+
+      return {
+        ...file,
+        ...detail,
+        canLoadFullPatch: false,
+        patchLineCount,
+        tooLarge: false,
+      };
+    });
+
     const summary = parsedFiles.reduce((accumulator, file) => ({
       additions: accumulator.additions + (file.stats?.additions ?? 0),
       deletions: accumulator.deletions + (file.stats?.deletions ?? 0),
@@ -681,11 +877,12 @@ export class GitService {
     });
 
     return {
-      files: parsedFiles,
+      files: mergedFiles,
       isGitRepo: true,
+      metaOnly: false,
       path: normalizedPath,
       scope: resolvedScope,
-      summary,
+      summary: normalizedPath ? summary : scopeSummary,
     };
   }
 }

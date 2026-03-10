@@ -144,6 +144,9 @@ export class GitDiffViewController {
     this.mode = 'unified';
     this.data = null;
     this.currentIndex = 0;
+    this.fileCache = new Map();
+    this.loadingFilePath = null;
+    this.requestScope = 'all';
   }
 
   initialize() {
@@ -156,6 +159,14 @@ export class GitDiffViewController {
       }
 
       this.onOpenFile?.(currentFile.path);
+    });
+    this.content?.addEventListener('click', (event) => {
+      const loadButton = event.target instanceof Element
+        ? event.target.closest('[data-load-full-diff]')
+        : null;
+      if (loadButton) {
+        void this.loadCurrentFile({ forceFullPatch: true });
+      }
     });
     this.modeButtons.forEach((button) => {
       button.addEventListener('click', () => {
@@ -176,11 +187,16 @@ export class GitDiffViewController {
     }
     this.data = null;
     this.currentIndex = 0;
+    this.fileCache.clear();
+    this.loadingFilePath = null;
     this.syncToolbar();
   }
 
   async open({ filePath = null, scope = 'all' } = {}) {
-    this.renderLoading();
+    this.fileCache.clear();
+    this.loadingFilePath = null;
+    this.requestScope = scope;
+    this.renderLoading('Loading diff summary...');
 
     try {
       const query = new URLSearchParams();
@@ -188,6 +204,7 @@ export class GitDiffViewController {
       if (filePath) {
         query.set('path', filePath);
       }
+      query.set('metaOnly', 'true');
 
       const response = await fetch(`/api/git/diff?${query.toString()}`);
       const data = await response.json();
@@ -196,14 +213,23 @@ export class GitDiffViewController {
       }
 
       this.data = data;
-      this.currentIndex = 0;
-      this.render();
+      const initialIndex = filePath
+        ? Math.max(0, data.files.findIndex((file) => file.path === filePath))
+        : 0;
+      this.currentIndex = initialIndex;
+      if ((data.files?.length ?? 0) === 0) {
+        this.render();
+        return data;
+      }
+
+      await this.loadCurrentFile();
       return data;
     } catch (error) {
       console.error('[git-diff] Failed to load diff:', error);
       this.toastController?.show('Failed to load git diff');
       this.data = {
         files: [],
+        metaOnly: false,
         summary: { additions: 0, deletions: 0, filesChanged: 0 },
       };
       this.renderEmpty('Failed to load git diff');
@@ -222,15 +248,14 @@ export class GitDiffViewController {
     }
 
     this.currentIndex = nextIndex;
-    const target = this.content?.querySelector(`[data-diff-file-index="${this.currentIndex}"]`);
-    target?.scrollIntoView({ block: 'start', behavior: 'smooth' });
-    this.syncToolbar();
+    this.scrollContainer?.scrollTo({ top: 0, behavior: 'auto' });
+    void this.loadCurrentFile();
   }
 
-  renderLoading() {
+  renderLoading(message = 'Loading git diff...') {
     this.page?.classList.remove('hidden');
     if (this.content) {
-      this.content.innerHTML = '<div class="diff-empty-state">Loading git diff...</div>';
+      this.content.innerHTML = `<div class="diff-empty-state">${escapeHtml(message)}</div>`;
     }
     this.data = null;
     this.syncToolbar();
@@ -341,6 +366,116 @@ export class GitDiffViewController {
     return files[this.currentIndex] ?? files[0] ?? null;
   }
 
+  getCurrentCacheKey() {
+    const currentFile = this.getCurrentFile();
+    return currentFile?.path ? `${this.requestScope}:${currentFile.path}` : null;
+  }
+
+  async loadCurrentFile({ forceFullPatch = false } = {}) {
+    const currentFile = this.getCurrentFile();
+    if (!currentFile?.path) {
+      this.render();
+      return null;
+    }
+
+    const cacheKey = this.getCurrentCacheKey();
+    const cachedFile = cacheKey ? this.fileCache.get(cacheKey) : null;
+    if (cachedFile && (!cachedFile.tooLarge || !forceFullPatch)) {
+      this.loadingFilePath = null;
+      this.render();
+      return cachedFile;
+    }
+
+    this.loadingFilePath = currentFile.path;
+    this.render();
+
+    try {
+      const query = new URLSearchParams();
+      query.set('scope', this.requestScope);
+      query.set('path', currentFile.path);
+      if (forceFullPatch) {
+        query.set('allowLargePatch', 'true');
+      }
+
+      const response = await fetch(`/api/git/diff?${query.toString()}`);
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to load file diff');
+      }
+
+      const detail = {
+        ...currentFile,
+        ...(data.files?.[0] ?? {}),
+      };
+      if (cacheKey) {
+        this.fileCache.set(cacheKey, detail);
+      }
+      this.loadingFilePath = null;
+      this.render();
+      return detail;
+    } catch (error) {
+      console.error('[git-diff] Failed to load file diff:', error);
+      this.toastController?.show('Failed to load file diff');
+      this.loadingFilePath = null;
+      this.render();
+      return null;
+    }
+  }
+
+  renderCurrentFile() {
+    const currentFile = this.getCurrentFile();
+    if (!currentFile) {
+      return '<div class="diff-empty-state">No changes to display.</div>';
+    }
+
+    const cacheKey = this.getCurrentCacheKey();
+    const detail = cacheKey ? this.fileCache.get(cacheKey) : null;
+    if (this.loadingFilePath === currentFile.path) {
+      return `
+        <section class="diff-file-block">
+          <div class="diff-file-header">
+            <span class="diff-file-path">${escapeHtml(currentFile.path)}</span>
+            <span class="git-status-badge ${badgeClass(currentFile.status)}">${escapeHtml(currentFile.status)}</span>
+          </div>
+          <div class="diff-empty-state">Loading file diff...</div>
+        </section>
+      `;
+    }
+
+    if (!detail) {
+      return `
+        <section class="diff-file-block">
+          <div class="diff-file-header">
+            <span class="diff-file-path">${escapeHtml(currentFile.path)}</span>
+            <span class="git-status-badge ${badgeClass(currentFile.status)}">${escapeHtml(currentFile.status)}</span>
+          </div>
+          <div class="diff-empty-state">Select a file to load its diff.</div>
+        </section>
+      `;
+    }
+
+    if (detail.tooLarge) {
+      return `
+        <section class="diff-file-block">
+          <div class="diff-file-header">
+            <span class="diff-file-path">${escapeHtml(detail.path)}</span>
+            <span class="git-status-badge ${badgeClass(detail.status)}">${escapeHtml(detail.status)}</span>
+            <span class="diff-file-header-stats"><span class="diff-stats-add">+${detail.stats?.additions ?? 0}</span><span class="diff-stats-del">-${detail.stats?.deletions ?? 0}</span></span>
+          </div>
+          <div class="diff-limit-card">
+            <strong>Large diff withheld</strong>
+            <span>This file diff is large enough to impact rendering performance.</span>
+            <button class="btn btn-secondary diff-load-full-btn" type="button" data-load-full-diff>Load full diff</button>
+          </div>
+        </section>
+      `;
+    }
+
+    return this.mode === 'split'
+      ? this.renderSplitFile(detail, this.currentIndex)
+      : this.renderUnifiedFile(detail, this.currentIndex);
+  }
+
   syncToolbar() {
     const totalFiles = this.data?.files?.length ?? 0;
     const visibleIndex = totalFiles === 0 ? 0 : this.currentIndex + 1;
@@ -380,13 +515,7 @@ export class GitDiffViewController {
       return;
     }
 
-    this.content.innerHTML = files
-      .map((file, index) => (
-        this.mode === 'split'
-          ? this.renderSplitFile(file, index)
-          : this.renderUnifiedFile(file, index)
-      ))
-      .join('');
+    this.content.innerHTML = this.renderCurrentFile();
     this.syncToolbar();
   }
 

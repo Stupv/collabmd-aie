@@ -15,6 +15,10 @@ function resolveDiffScope(requestUrl) {
   return 'working-tree';
 }
 
+function isTruthyParam(value) {
+  return value === '1' || value === 'true';
+}
+
 export function createGitApiHandler({ gitService = null }) {
   return async function handleGitApi(req, res, requestUrl) {
     if (!requestUrl.pathname.startsWith('/api/git')) {
@@ -46,6 +50,8 @@ export function createGitApiHandler({ gitService = null }) {
     if (requestUrl.pathname === '/api/git/diff' && req.method === 'GET') {
       try {
         const diff = await gitService.getDiff({
+          allowLargePatch: isTruthyParam(requestUrl.searchParams.get('allowLargePatch')),
+          metaOnly: isTruthyParam(requestUrl.searchParams.get('metaOnly')),
           path: requestUrl.searchParams.get('path'),
           scope: resolveDiffScope(requestUrl),
         });

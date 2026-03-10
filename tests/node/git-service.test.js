@@ -84,6 +84,14 @@ test('GitService reports sections and diffs for staged, unstaged, and untracked 
     ['staged.md', 'tracked.md', 'untracked.md'],
   );
   assert.equal(fullDiff.summary.filesChanged, 3);
+
+  const metaDiff = await gitService.getDiff({ metaOnly: true, scope: 'all' });
+  assert.equal(metaDiff.metaOnly, true);
+  assert.deepEqual(
+    metaDiff.files.map((file) => file.path).sort(),
+    ['staged.md', 'tracked.md', 'untracked.md'],
+  );
+  assert.equal(metaDiff.files.every((file) => !('hunks' in file)), true);
 });
 
 test('GitService normalizes git paths that include spaces', async (t) => {
@@ -112,4 +120,44 @@ test('GitService normalizes git paths that include spaces', async (t) => {
   const diff = await gitService.getDiff({ path: filePath, scope: 'working-tree' });
   assert.equal(diff.files.length, 1);
   assert.equal(diff.files[0].path, filePath);
+});
+
+test('GitService guards large file patches until explicitly requested', async (t) => {
+  const repoDir = await mkdtemp(join(tmpdir(), 'collabmd-git-service-large-'));
+  t.after(async () => {
+    await rm(repoDir, { force: true, recursive: true });
+  });
+
+  await runGit(repoDir, ['init']);
+  await runGit(repoDir, ['config', 'user.email', 'tests@example.com']);
+  await runGit(repoDir, ['config', 'user.name', 'CollabMD Tests']);
+
+  const largeContent = Array.from({ length: 80 }, (_, index) => `line ${index + 1}`).join('\n');
+  await writeFile(join(repoDir, 'large.md'), `${largeContent}\n`, 'utf8');
+  await runGit(repoDir, ['add', 'large.md']);
+  await runGit(repoDir, ['commit', '-m', 'Add large file']);
+  await writeFile(
+    join(repoDir, 'large.md'),
+    `${largeContent}\n${Array.from({ length: 80 }, (_, index) => `new line ${index + 1}`).join('\n')}\n`,
+    'utf8',
+  );
+
+  const gitService = new GitService({
+    maxInitialPatchLines: 20,
+    vaultDir: repoDir,
+  });
+
+  const guardedDiff = await gitService.getDiff({ path: 'large.md', scope: 'working-tree' });
+  assert.equal(guardedDiff.files.length, 1);
+  assert.equal(guardedDiff.files[0].tooLarge, true);
+  assert.equal(guardedDiff.files[0].canLoadFullPatch, true);
+  assert.deepEqual(guardedDiff.files[0].hunks, []);
+
+  const fullDiff = await gitService.getDiff({
+    allowLargePatch: true,
+    path: 'large.md',
+    scope: 'working-tree',
+  });
+  assert.equal(fullDiff.files[0].tooLarge, false);
+  assert.equal(fullDiff.files[0].hunks.length > 0, true);
 });

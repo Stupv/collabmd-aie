@@ -140,6 +140,11 @@ test('HTTP server exposes git status and diff endpoints for git-backed vaults', 
   assert.equal(diffResponse.statusCode, 200);
   assert.match(diffResponse.body, /"filesChanged":1/);
   assert.match(diffResponse.body, /"path":"test.md"/);
+
+  const metaDiffResponse = await httpRequest(`${app.baseUrl}/api/git/diff?scope=all&metaOnly=true`);
+  assert.equal(metaDiffResponse.statusCode, 200);
+  assert.match(metaDiffResponse.body, /"metaOnly":true/);
+  assert.match(metaDiffResponse.body, /"path":"test.md"/);
 });
 
 test('HTTP server supports password auth without blocking static assets', async (t) => {
