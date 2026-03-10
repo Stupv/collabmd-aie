@@ -7,7 +7,7 @@ This repository contains the files needed to publish CollabMD through a dedicate
 - `packaging/homebrew-tap/README.md`: tap repository README
 - `packaging/homebrew-tap/Formula/collabmd.rb`: bootstrap formula template that the release workflow overwrites
 - `scripts/render-homebrew-formula.mjs`: deterministic formula generator
-- `.github/workflows/homebrew-tap-release.yml`: workflow that pushes the tap update after each release
+- `.github/workflows/homebrew-tap-release.yml`: workflow that pushes the tap update after each version tag push
 
 ## One-time setup
 
@@ -21,7 +21,7 @@ This repository contains the files needed to publish CollabMD through a dedicate
 1. Bump the version in `package.json`.
 2. Commit and push the version change.
 3. Create and push a matching git tag, for example `vX.Y.Z`.
-4. Publish a GitHub release for that tag.
+4. Pushing that tag triggers the workflow automatically.
 5. The workflow downloads `https://github.com/andes90/collabmd/archive/refs/tags/<tag>.tar.gz`, computes the checksum, regenerates the formula, and commits the result into `andes90/homebrew-tap`.
 
 ## Manual run

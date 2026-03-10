@@ -19,7 +19,7 @@ brew install andes90/tap/collabmd
 
 `Formula/collabmd.rb` is managed from the main `collabmd` repository by the Homebrew release workflow.
 
-When a GitHub release is published in `andes90/collabmd`, the workflow:
+When a version tag such as `vX.Y.Z` is pushed in `andes90/collabmd`, the workflow:
 
 1. Downloads the tagged source tarball
 2. Computes the Homebrew `sha256`
