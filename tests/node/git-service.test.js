@@ -161,3 +161,49 @@ test('GitService guards large file patches until explicitly requested', async (t
   assert.equal(fullDiff.files[0].tooLarge, false);
   assert.equal(fullDiff.files[0].hunks.length > 0, true);
 });
+
+test('GitService stages, unstages, and commits a single file without consuming other staged changes', async (t) => {
+  const repoDir = await mkdtemp(join(tmpdir(), 'collabmd-git-service-actions-'));
+  t.after(async () => {
+    await rm(repoDir, { force: true, recursive: true });
+  });
+
+  await runGit(repoDir, ['init']);
+  await runGit(repoDir, ['config', 'user.email', 'tests@example.com']);
+  await runGit(repoDir, ['config', 'user.name', 'CollabMD Tests']);
+  await writeFile(join(repoDir, 'a.md'), '# A\n', 'utf8');
+  await writeFile(join(repoDir, 'b.md'), '# B\n', 'utf8');
+  await runGit(repoDir, ['add', 'a.md', 'b.md']);
+  await runGit(repoDir, ['commit', '-m', 'Initial commit']);
+
+  await writeFile(join(repoDir, 'a.md'), '# A\nupdated\n', 'utf8');
+  await writeFile(join(repoDir, 'b.md'), '# B\nstaged elsewhere\n', 'utf8');
+
+  const gitService = new GitService({ vaultDir: repoDir });
+  await gitService.stageFile('b.md');
+  await gitService.stageFile('a.md');
+
+  let status = await gitService.getStatus({ force: true });
+  assert.equal(status.sections.find((section) => section.key === 'staged')?.files.length, 2);
+
+  await gitService.unstageFile('a.md');
+  status = await gitService.getStatus({ force: true });
+  assert.equal(status.sections.find((section) => section.key === 'staged')?.files.map((file) => file.path).join(','), 'b.md');
+  assert.equal(status.sections.find((section) => section.key === 'working-tree')?.files.map((file) => file.path).join(','), 'a.md');
+
+  await gitService.stageFile('a.md');
+  const commitResult = await gitService.commitFile({
+    message: 'Commit only a',
+    path: 'a.md',
+  });
+  assert.equal(commitResult.path, 'a.md');
+  assert.equal(commitResult.commit.message, 'Commit only a');
+  assert.equal(commitResult.commit.shortHash.length > 0, true);
+
+  const headMessage = await execFile('git', ['log', '-1', '--pretty=%s'], { cwd: repoDir });
+  assert.equal(String(headMessage.stdout).trim(), 'Commit only a');
+
+  status = await gitService.getStatus({ force: true });
+  assert.equal(status.sections.find((section) => section.key === 'staged')?.files.map((file) => file.path).join(','), 'b.md');
+  assert.equal((status.sections.find((section) => section.key === 'working-tree')?.files ?? []).length, 0);
+});

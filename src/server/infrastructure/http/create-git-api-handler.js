@@ -1,5 +1,6 @@
 import { getRequestErrorStatusCode } from './http-errors.js';
 import { jsonResponse } from './http-response.js';
+import { parseJsonBody } from './request-body.js';
 
 function resolveDiffScope(requestUrl) {
   const scope = String(requestUrl.searchParams.get('scope') || '').trim().toLowerCase();
@@ -65,6 +66,82 @@ export function createGitApiHandler({ gitService = null }) {
 
         console.error('[api] Failed to read git diff:', error.message);
         jsonResponse(req, res, 500, { error: 'Failed to read git diff' });
+      }
+      return true;
+    }
+
+    if (requestUrl.pathname === '/api/git/stage' && req.method === 'POST') {
+      try {
+        const body = await parseJsonBody(req);
+        if (!body?.path) {
+          jsonResponse(req, res, 400, { error: 'Missing path' });
+          return true;
+        }
+
+        const result = await gitService.stageFile(body.path);
+        jsonResponse(req, res, 200, result);
+      } catch (error) {
+        const statusCode = getRequestErrorStatusCode(error);
+        if (statusCode) {
+          jsonResponse(req, res, statusCode, { error: error.message });
+          return true;
+        }
+
+        console.error('[api] Failed to stage git file:', error.message);
+        jsonResponse(req, res, 500, { error: 'Failed to stage git file' });
+      }
+      return true;
+    }
+
+    if (requestUrl.pathname === '/api/git/unstage' && req.method === 'POST') {
+      try {
+        const body = await parseJsonBody(req);
+        if (!body?.path) {
+          jsonResponse(req, res, 400, { error: 'Missing path' });
+          return true;
+        }
+
+        const result = await gitService.unstageFile(body.path);
+        jsonResponse(req, res, 200, result);
+      } catch (error) {
+        const statusCode = getRequestErrorStatusCode(error);
+        if (statusCode) {
+          jsonResponse(req, res, statusCode, { error: error.message });
+          return true;
+        }
+
+        console.error('[api] Failed to unstage git file:', error.message);
+        jsonResponse(req, res, 500, { error: 'Failed to unstage git file' });
+      }
+      return true;
+    }
+
+    if (requestUrl.pathname === '/api/git/commit' && req.method === 'POST') {
+      try {
+        const body = await parseJsonBody(req);
+        if (!body?.path) {
+          jsonResponse(req, res, 400, { error: 'Missing path' });
+          return true;
+        }
+        if (!body?.message) {
+          jsonResponse(req, res, 400, { error: 'Missing commit message' });
+          return true;
+        }
+
+        const result = await gitService.commitFile({
+          message: body.message,
+          path: body.path,
+        });
+        jsonResponse(req, res, 200, result);
+      } catch (error) {
+        const statusCode = getRequestErrorStatusCode(error);
+        if (statusCode) {
+          jsonResponse(req, res, statusCode, { error: error.message });
+          return true;
+        }
+
+        console.error('[api] Failed to commit git file:', error.message);
+        jsonResponse(req, res, 500, { error: 'Failed to commit git file' });
       }
       return true;
     }

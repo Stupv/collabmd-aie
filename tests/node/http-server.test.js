@@ -145,6 +145,30 @@ test('HTTP server exposes git status and diff endpoints for git-backed vaults', 
   assert.equal(metaDiffResponse.statusCode, 200);
   assert.match(metaDiffResponse.body, /"metaOnly":true/);
   assert.match(metaDiffResponse.body, /"path":"test.md"/);
+
+  const stageResponse = await httpRequest(`${app.baseUrl}/api/git/stage`, {
+    body: JSON.stringify({ path: 'test.md' }),
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    method: 'POST',
+  });
+  assert.equal(stageResponse.statusCode, 200);
+  assert.match(stageResponse.body, /"ok":true/);
+
+  const commitResponse = await httpRequest(`${app.baseUrl}/api/git/commit`, {
+    body: JSON.stringify({ message: 'Commit test file', path: 'test.md' }),
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    method: 'POST',
+  });
+  assert.equal(commitResponse.statusCode, 200);
+  assert.match(commitResponse.body, /"shortHash":"/);
+
+  const cleanStatusResponse = await httpRequest(`${app.baseUrl}/api/git/status?force=true`);
+  assert.equal(cleanStatusResponse.statusCode, 200);
+  assert.match(cleanStatusResponse.body, /"changedFiles":0/);
 });
 
 test('HTTP server supports password auth without blocking static assets', async (t) => {

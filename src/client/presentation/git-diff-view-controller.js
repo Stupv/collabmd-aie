@@ -129,14 +129,25 @@ function renderSplitRow(leftLine, rightLine) {
 }
 
 export class GitDiffViewController {
-  constructor({ onOpenFile = null, toastController = null } = {}) {
+  constructor({
+    onCommitFile = null,
+    onOpenFile = null,
+    onStageFile = null,
+    onUnstageFile = null,
+    toastController = null,
+  } = {}) {
+    this.onCommitFile = onCommitFile;
     this.onOpenFile = onOpenFile;
+    this.onStageFile = onStageFile;
+    this.onUnstageFile = onUnstageFile;
     this.toastController = toastController;
     this.page = document.getElementById('diff-page');
     this.content = document.getElementById('diffContent');
     this.scrollContainer = document.getElementById('diffScroll');
     this.fileIndicator = document.getElementById('diffFileIndicator');
     this.openEditorButton = document.getElementById('diffOpenEditorBtn');
+    this.primaryActionButton = document.getElementById('diffPrimaryActionBtn');
+    this.commitButton = document.getElementById('diffCommitBtn');
     this.stats = document.getElementById('diffStats');
     this.prevButton = document.getElementById('diffPrevBtn');
     this.nextButton = document.getElementById('diffNextBtn');
@@ -147,6 +158,7 @@ export class GitDiffViewController {
     this.fileCache = new Map();
     this.loadingFilePath = null;
     this.requestScope = 'all';
+    this.pendingAction = null;
   }
 
   initialize() {
@@ -159,6 +171,17 @@ export class GitDiffViewController {
       }
 
       this.onOpenFile?.(currentFile.path);
+    });
+    this.primaryActionButton?.addEventListener('click', () => {
+      const action = this.getPrimaryAction();
+      if (!action) {
+        return;
+      }
+
+      void this.handleFileAction(action);
+    });
+    this.commitButton?.addEventListener('click', () => {
+      void this.handleFileAction('commit');
     });
     this.content?.addEventListener('click', (event) => {
       const loadButton = event.target instanceof Element
@@ -189,6 +212,7 @@ export class GitDiffViewController {
     this.currentIndex = 0;
     this.fileCache.clear();
     this.loadingFilePath = null;
+    this.pendingAction = null;
     this.syncToolbar();
   }
 
@@ -371,6 +395,72 @@ export class GitDiffViewController {
     return currentFile?.path ? `${this.requestScope}:${currentFile.path}` : null;
   }
 
+  getCurrentFileDetail() {
+    const cacheKey = this.getCurrentCacheKey();
+    return cacheKey ? this.fileCache.get(cacheKey) : null;
+  }
+
+  getCurrentActionState() {
+    const currentFile = this.getCurrentFile();
+    const detail = this.getCurrentFileDetail() ?? currentFile;
+    if (!detail?.path) {
+      return {
+        canCommit: false,
+        canStage: false,
+        canUnstage: false,
+      };
+    }
+
+    return {
+      canCommit: Boolean(detail.hasStagedChanges),
+      canStage: Boolean(detail.hasWorkingTreeChanges || detail.hasUntrackedChanges),
+      canUnstage: Boolean(detail.hasStagedChanges),
+    };
+  }
+
+  getPrimaryAction() {
+    const actionState = this.getCurrentActionState();
+    if (actionState.canStage && !actionState.canUnstage) {
+      return 'stage';
+    }
+    if (actionState.canUnstage && !actionState.canStage) {
+      return 'unstage';
+    }
+    if (this.requestScope === 'staged' && actionState.canUnstage) {
+      return 'unstage';
+    }
+    if (actionState.canStage) {
+      return 'stage';
+    }
+    if (actionState.canUnstage) {
+      return 'unstage';
+    }
+    return null;
+  }
+
+  async handleFileAction(action) {
+    const currentFile = this.getCurrentFile();
+    if (!currentFile?.path || this.pendingAction) {
+      return;
+    }
+
+    this.pendingAction = action;
+    this.syncToolbar();
+
+    try {
+      if (action === 'stage') {
+        await this.onStageFile?.(currentFile.path, { scope: this.requestScope });
+      } else if (action === 'unstage') {
+        await this.onUnstageFile?.(currentFile.path, { scope: this.requestScope });
+      } else if (action === 'commit') {
+        await this.onCommitFile?.(currentFile.path, { scope: this.requestScope });
+      }
+    } finally {
+      this.pendingAction = null;
+      this.syncToolbar();
+    }
+  }
+
   async loadCurrentFile({ forceFullPatch = false } = {}) {
     const currentFile = this.getCurrentFile();
     if (!currentFile?.path) {
@@ -428,8 +518,7 @@ export class GitDiffViewController {
       return '<div class="diff-empty-state">No changes to display.</div>';
     }
 
-    const cacheKey = this.getCurrentCacheKey();
-    const detail = cacheKey ? this.fileCache.get(cacheKey) : null;
+    const detail = this.getCurrentFileDetail();
     if (this.loadingFilePath === currentFile.path) {
       return `
         <section class="diff-file-block">
@@ -497,7 +586,25 @@ export class GitDiffViewController {
     this.modeButtons.forEach((button) => {
       button.classList.toggle('active', button.getAttribute('data-diff-mode') === this.mode);
     });
-    this.openEditorButton?.toggleAttribute('disabled', !this.getCurrentFile()?.path);
+    const hasCurrentFile = Boolean(this.getCurrentFile()?.path);
+    const actionState = this.getCurrentActionState();
+    const primaryAction = this.getPrimaryAction();
+    this.openEditorButton?.toggleAttribute('disabled', !hasCurrentFile);
+    if (this.primaryActionButton) {
+      this.primaryActionButton.textContent = this.pendingAction === primaryAction
+        ? 'Working...'
+        : primaryAction === 'unstage'
+          ? 'Unstage'
+          : 'Stage';
+      this.primaryActionButton.toggleAttribute(
+        'disabled',
+        !hasCurrentFile || !primaryAction || Boolean(this.pendingAction),
+      );
+    }
+    this.commitButton?.toggleAttribute(
+      'disabled',
+      !hasCurrentFile || !actionState.canCommit || Boolean(this.pendingAction),
+    );
     this.prevButton?.toggleAttribute('disabled', this.currentIndex <= 0);
     this.nextButton?.toggleAttribute('disabled', totalFiles === 0 || this.currentIndex >= totalFiles - 1);
   }

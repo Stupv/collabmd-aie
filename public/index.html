@@ -397,9 +397,22 @@
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>
               </button>
             </div>
-            <button class="btn btn-secondary diff-open-editor-btn" id="diffOpenEditorBtn" type="button" disabled>
-              Open in Editor
-            </button>
+            <div class="diff-toolbar-actions">
+              <div class="diff-toolbar-actions-group diff-toolbar-actions-group-git" role="group" aria-label="Git file actions">
+                <button class="btn btn-secondary diff-action-btn" id="diffPrimaryActionBtn" type="button" disabled>
+                  Stage
+                </button>
+                <button class="btn btn-primary diff-action-btn" id="diffCommitBtn" type="button" disabled>
+                  Commit
+                </button>
+              </div>
+              <span class="diff-toolbar-actions-divider" aria-hidden="true"></span>
+              <div class="diff-toolbar-actions-group" role="group" aria-label="Navigation actions">
+                <button class="btn btn-secondary diff-open-editor-btn" id="diffOpenEditorBtn" type="button" disabled>
+                  Open in Editor
+                </button>
+              </div>
+            </div>
           </div>
           <div class="diff-toolbar-right">
             <div class="diff-stats" id="diffStats">
@@ -451,6 +464,23 @@
       <div class="app-dialog-actions">
         <button type="button" class="btn btn-secondary" id="fileActionCancel">Cancel</button>
         <button type="submit" class="btn btn-primary" id="fileActionSubmit">Create</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog class="app-dialog" id="gitCommitDialog">
+    <form class="app-dialog-form" id="gitCommitForm" method="dialog">
+      <div class="app-dialog-header">
+        <h2 class="app-dialog-title" id="gitCommitTitle">Commit file</h2>
+        <p class="app-dialog-copy" id="gitCommitCopy">Provide a commit message for this file.</p>
+      </div>
+      <label class="app-dialog-field" for="gitCommitInput">
+        <span class="app-dialog-label">Commit message</span>
+        <input type="text" class="input" id="gitCommitInput" name="gitCommitMessage" autocomplete="off" spellcheck="true" required>
+      </label>
+      <div class="app-dialog-actions">
+        <button type="button" class="btn btn-secondary" id="gitCommitCancel">Cancel</button>
+        <button type="submit" class="btn btn-primary" id="gitCommitSubmit">Commit file</button>
       </div>
     </form>
   </dialog>

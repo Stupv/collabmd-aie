@@ -24,6 +24,17 @@ function chevronSvg(collapsed) {
   return `<svg class="git-section-chevron${collapsed ? ' collapsed' : ''}" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>`;
 }
 
+function actionIconSvg(action) {
+  switch (action) {
+    case 'commit':
+      return '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>';
+    case 'unstage':
+      return '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 12H8"/><path d="m12 16-4-4 4-4"/></svg>';
+    default:
+      return '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14"/><path d="M5 12h14"/></svg>';
+  }
+}
+
 function badgeClass(status) {
   switch (status) {
     case 'added':
@@ -68,15 +79,21 @@ function renderBranchMetrics(summary = {}, branch = {}) {
 export class GitPanelController {
   constructor({
     enabled = true,
+    onCommitFile = () => {},
     onRepoChange = () => {},
     onSelectDiff = () => {},
+    onStageFile = () => {},
+    onUnstageFile = () => {},
     onViewAllDiff = () => {},
     searchInput = null,
     toastController = null,
   } = {}) {
     this.enabled = enabled;
+    this.onCommitFile = onCommitFile;
     this.onRepoChange = onRepoChange;
     this.onSelectDiff = onSelectDiff;
+    this.onStageFile = onStageFile;
+    this.onUnstageFile = onUnstageFile;
     this.onViewAllDiff = onViewAllDiff;
     this.searchInput = searchInput;
     this.toastController = toastController;
@@ -90,6 +107,7 @@ export class GitPanelController {
       path: null,
       scope: null,
     };
+    this.pendingActionKey = null;
   }
 
   initialize() {
@@ -106,13 +124,30 @@ export class GitPanelController {
       const fileButton = event.target instanceof Element
         ? event.target.closest('[data-git-path]')
         : null;
-      if (fileButton) {
+      if (fileButton && !event.target.closest('[data-git-file-action]')) {
         const filePath = fileButton.getAttribute('data-git-path');
         const scope = fileButton.getAttribute('data-git-scope') || 'working-tree';
         if (!filePath) {
           return;
         }
         this.onSelectDiff(filePath, { scope });
+        return;
+      }
+
+      const actionButton = event.target instanceof Element
+        ? event.target.closest('[data-git-file-action]')
+        : null;
+      if (actionButton) {
+        const action = actionButton.getAttribute('data-git-file-action');
+        const filePath = actionButton.getAttribute('data-git-path');
+        const scope = actionButton.getAttribute('data-git-scope') || 'working-tree';
+        if (!action || !filePath) {
+          return;
+        }
+
+        event.preventDefault();
+        event.stopPropagation();
+        void this.handleFileAction(action, filePath, scope);
         return;
       }
 
@@ -217,6 +252,29 @@ export class GitPanelController {
     ));
   }
 
+  async handleFileAction(action, filePath, scope) {
+    const actionKey = `${action}:${scope}:${filePath}`;
+    if (this.pendingActionKey === actionKey) {
+      return;
+    }
+
+    this.pendingActionKey = actionKey;
+    this.render();
+
+    try {
+      if (action === 'stage') {
+        await this.onStageFile(filePath, { scope });
+      } else if (action === 'unstage') {
+        await this.onUnstageFile(filePath, { scope });
+      } else if (action === 'commit') {
+        await this.onCommitFile(filePath, { scope });
+      }
+    } finally {
+      this.pendingActionKey = null;
+      this.render();
+    }
+  }
+
   renderSection(section) {
     const files = this.filterFiles(section.files);
     if (files.length === 0) {
@@ -244,21 +302,58 @@ export class GitPanelController {
     const dirPath = getPathDir(file.path);
     const displayName = getPathLeaf(file.path);
     const statusClass = badgeClass(file.status);
+    const stageAction = file.scope === 'staged'
+      ? { label: 'Unstage', value: 'unstage' }
+      : { label: 'Stage', value: 'stage' };
+    const actionKey = `${stageAction.value}:${file.scope}:${file.path}`;
+    const isPending = this.pendingActionKey === actionKey;
+    const commitActionKey = `commit:${file.scope}:${file.path}`;
+    const isCommitPending = this.pendingActionKey === commitActionKey;
 
     return `
-      <button
-        class="git-file-item${isActive ? ' active' : ''}"
-        type="button"
-        data-git-path="${escapeHtml(file.path)}"
-        data-git-scope="${escapeHtml(file.scope)}"
-      >
-        ${fileIconSvg()}
-        <span class="git-file-copy">
-          <span class="git-file-name">${escapeHtml(displayName)}</span>
-          ${dirPath ? `<span class="git-file-path">${escapeHtml(dirPath)}</span>` : ''}
-        </span>
-        <span class="git-status-badge ${statusClass}">${escapeHtml(file.code)}</span>
-      </button>
+      <div class="git-file-row${isActive ? ' active' : ''}">
+        <button
+          class="git-file-item${isActive ? ' active' : ''}"
+          type="button"
+          data-git-path="${escapeHtml(file.path)}"
+          data-git-scope="${escapeHtml(file.scope)}"
+        >
+          ${fileIconSvg()}
+          <span class="git-file-copy">
+            <span class="git-file-name">${escapeHtml(displayName)}</span>
+            ${dirPath ? `<span class="git-file-path">${escapeHtml(dirPath)}</span>` : ''}
+          </span>
+          <span class="git-status-badge ${statusClass}">${escapeHtml(file.code)}</span>
+        </button>
+        <div class="git-file-actions">
+          <button
+            class="git-file-action-btn"
+            type="button"
+            data-git-file-action="${stageAction.value}"
+            data-git-path="${escapeHtml(file.path)}"
+            data-git-scope="${escapeHtml(file.scope)}"
+            aria-label="${escapeHtml(stageAction.label)} ${escapeHtml(displayName)}"
+            title="${escapeHtml(stageAction.label)}"
+            ${isPending ? 'disabled' : ''}
+          >
+            ${isPending ? '...' : actionIconSvg(stageAction.value)}
+          </button>
+          ${file.scope === 'staged' ? `
+            <button
+              class="git-file-action-btn git-file-action-btn-primary"
+              type="button"
+              data-git-file-action="commit"
+              data-git-path="${escapeHtml(file.path)}"
+              data-git-scope="${escapeHtml(file.scope)}"
+              aria-label="Commit ${escapeHtml(displayName)}"
+              title="Commit"
+              ${isCommitPending ? 'disabled' : ''}
+            >
+              ${isCommitPending ? '...' : actionIconSvg('commit')}
+            </button>
+          ` : ''}
+        </div>
+      </div>
     `;
   }
 

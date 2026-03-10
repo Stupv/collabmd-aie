@@ -305,10 +305,20 @@ function getStatusPriority(status) {
   }
 }
 
+function createScopeFlags(scope) {
+  return {
+    hasStagedChanges: scope === 'staged',
+    hasUntrackedChanges: scope === 'untracked',
+    hasWorkingTreeChanges: scope === 'working-tree',
+  };
+}
+
 function mergeScopedFile(existingFile, nextFile, scope) {
+  const nextFlags = createScopeFlags(nextFile.scope);
   if (!existingFile) {
     return {
       ...nextFile,
+      ...nextFlags,
       scope,
       stats: {
         additions: 0,
@@ -323,6 +333,9 @@ function mergeScopedFile(existingFile, nextFile, scope) {
     return {
       ...existingFile,
       ...nextFile,
+      hasStagedChanges: existingFile.hasStagedChanges || nextFlags.hasStagedChanges,
+      hasUntrackedChanges: existingFile.hasUntrackedChanges || nextFlags.hasUntrackedChanges,
+      hasWorkingTreeChanges: existingFile.hasWorkingTreeChanges || nextFlags.hasWorkingTreeChanges,
       scope,
       stats: existingFile.stats ?? {
         additions: 0,
@@ -331,7 +344,12 @@ function mergeScopedFile(existingFile, nextFile, scope) {
     };
   }
 
-  return existingFile;
+  return {
+    ...existingFile,
+    hasStagedChanges: existingFile.hasStagedChanges || nextFlags.hasStagedChanges,
+    hasUntrackedChanges: existingFile.hasUntrackedChanges || nextFlags.hasUntrackedChanges,
+    hasWorkingTreeChanges: existingFile.hasWorkingTreeChanges || nextFlags.hasWorkingTreeChanges,
+  };
 }
 
 function countPatchLines(file = null) {
@@ -583,6 +601,13 @@ export class GitService {
     return String(result.stdout ?? '');
   }
 
+  invalidateStatusCache() {
+    this.statusCache = {
+      expiresAt: 0,
+      value: null,
+    };
+  }
+
   async getStatus({ force = false } = {}) {
     const isGitRepo = await this.isGitRepo();
     if (!isGitRepo) {
@@ -652,6 +677,49 @@ export class GitService {
     } catch {
       return false;
     }
+  }
+
+  async stageFile(path) {
+    const normalizedPath = normalizeRelativePath(path);
+    await this.execGit(['add', '-A', '--', normalizedPath]);
+    this.invalidateStatusCache();
+    return {
+      ok: true,
+      path: normalizedPath,
+    };
+  }
+
+  async unstageFile(path) {
+    const normalizedPath = normalizeRelativePath(path);
+    await this.execGit(['reset', 'HEAD', '--', normalizedPath]);
+    this.invalidateStatusCache();
+    return {
+      ok: true,
+      path: normalizedPath,
+    };
+  }
+
+  async commitFile({ message, path } = {}) {
+    const normalizedPath = normalizeRelativePath(path);
+    const normalizedMessage = String(message ?? '').trim();
+    if (!normalizedMessage) {
+      throw createRequestError(400, 'Missing commit message');
+    }
+
+    await this.execGit(['add', '-A', '--', normalizedPath]);
+    await this.execGit(['commit', '-m', normalizedMessage, '--only', '--', normalizedPath]);
+    const hash = (await this.execGit(['rev-parse', 'HEAD'])).trim();
+    const shortHash = (await this.execGit(['rev-parse', '--short', 'HEAD'])).trim();
+    this.invalidateStatusCache();
+    return {
+      commit: {
+        hash,
+        message: normalizedMessage,
+        shortHash,
+      },
+      ok: true,
+      path: normalizedPath,
+    };
   }
 
   async getLocalChangeSummary(sections = []) {
