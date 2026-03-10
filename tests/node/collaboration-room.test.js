@@ -1,6 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
+import * as decoding from 'lib0/decoding';
+import * as syncProtocol from 'y-protocols/sync';
 import * as Y from 'yjs';
 
 import { CollaborationRoom } from '../../src/server/domain/collaboration/collaboration-room.js';
@@ -27,6 +29,13 @@ function createSocket({ bufferedAmount = 0 } = {}) {
       this.readyState = 3;
     },
   };
+}
+
+function getSyncSubmessageType(payload) {
+  const decoder = decoding.createDecoder(payload);
+  const messageType = decoding.readVarUint(decoder);
+  assert.equal(messageType, 0);
+  return decoding.readVarUint(decoder);
 }
 
 test('CollaborationRoom hydrates once for concurrent joins', async () => {
@@ -103,7 +112,41 @@ test('CollaborationRoom allows a single oversized initial sync frame from an emp
   await room.addClient(client);
 
   assert.equal(client.sent.length, 1);
+  assert.equal(getSyncSubmessageType(client.sent[0]), syncProtocol.messageYjsSyncStep2);
   assert.equal(client.closeCalls.length, 0);
+});
+
+test('CollaborationRoom primes a collaboration snapshot after content hydration when none exists', async () => {
+  const snapshotWrites = [];
+  const room = new CollaborationRoom({
+    maxBufferedAmountBytes: 1024,
+    name: 'snapshot-prime.md',
+    onEmpty: () => {},
+    vaultFileStore: {
+      async readCollaborationSnapshot() {
+        return null;
+      },
+      async readCommentThreads() {
+        return [];
+      },
+      async readMarkdownFile() {
+        return '# Primed\n';
+      },
+      async writeCollaborationSnapshot(path, snapshot) {
+        snapshotWrites.push({ path, snapshot });
+        return { ok: true };
+      },
+      async writeMarkdownFile() {},
+    },
+  });
+
+  await room.hydrate();
+  await Promise.resolve();
+
+  assert.equal(room.doc.getText('codemirror').toString(), '# Primed\n');
+  assert.equal(snapshotWrites.length, 1);
+  assert.equal(snapshotWrites[0].path, 'snapshot-prime.md');
+  assert.equal(snapshotWrites[0].snapshot instanceof Uint8Array, true);
 });
 
 test('CollaborationRoom hydrates and persists markdown comment threads', async () => {

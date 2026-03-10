@@ -124,13 +124,19 @@ export class CollaborationRoom {
               this.documentStore.readContent(),
               this.documentStore.readCommentThreads(),
             ]);
-            if (content !== null) {
+            if (content !== null || commentThreads.length > 0) {
               const ytext = this.doc.getText('codemirror');
               const comments = this.doc.getArray('comments');
               this.doc.transact(() => {
-                ytext.insert(0, content);
+                if (content !== null) {
+                  ytext.insert(0, content);
+                }
                 populateCommentThreads(comments, commentThreads);
               }, 'hydrate');
+
+              void this.documentStore.writeSnapshot(Y.encodeStateAsUpdate(this.doc)).catch((error) => {
+                console.error(`[room:${this.name}] Failed to prime collaboration snapshot: ${error.message}`);
+              });
             }
           }
         } catch (error) {
@@ -248,7 +254,7 @@ export class CollaborationRoom {
 
     const syncEncoder = encoding.createEncoder();
     encoding.writeVarUint(syncEncoder, MSG_SYNC);
-    syncProtocol.writeSyncStep1(syncEncoder, this.doc);
+    syncProtocol.writeSyncStep2(syncEncoder, this.doc);
     sendMessage(ws, encoding.toUint8Array(syncEncoder), this);
 
     const awarenessStates = this.awareness.getStates();
