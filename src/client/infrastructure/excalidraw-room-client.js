@@ -16,6 +16,7 @@ const DEFAULT_HISTORY_ARRAY_KEY = 'excalidraw-history';
 const DEFAULT_HISTORY_CAPTURE_WINDOW_MS = 500;
 const DEFAULT_HISTORY_LIMIT = 100;
 const DEFAULT_HISTORY_STATE_KEY = 'excalidraw-history-state';
+const DEFAULT_EMPTY_SCENE_GUARD_MS = 250;
 const DEFAULT_ROOM_TEXT_KEY = 'codemirror';
 const DEFAULT_SAVE_THROTTLE_MS = 48;
 const DEFAULT_SYNC_TIMEOUT_MS = 4000;
@@ -25,6 +26,7 @@ export class ExcalidrawRoomClient {
   constructor({
     cancelAnimationFrameFn = (frameId) => cancelAnimationFrame(frameId),
     clearTimeoutFn = (timeoutId) => clearTimeout(timeoutId),
+    emptySceneGuardMs = DEFAULT_EMPTY_SCENE_GUARD_MS,
     filePath = '',
     historyArrayKey = DEFAULT_HISTORY_ARRAY_KEY,
     historyCaptureWindowMs = DEFAULT_HISTORY_CAPTURE_WINDOW_MS,
@@ -46,6 +48,7 @@ export class ExcalidrawRoomClient {
   }) {
     this.cancelAnimationFrameFn = cancelAnimationFrameFn;
     this.clearTimeoutFn = clearTimeoutFn;
+    this.emptySceneGuardMs = emptySceneGuardMs;
     this.filePath = filePath;
     this.historyArrayKey = historyArrayKey;
     this.historyCaptureWindowMs = historyCaptureWindowMs;
@@ -82,6 +85,7 @@ export class ExcalidrawRoomClient {
     this.pendingViewportPayload = null;
     this.lastViewportSignature = '';
     this.lastSelectedIdsSignature = '';
+    this.pendingEmptySceneCandidate = null;
     this.canWriteToRoom = false;
     this.waitingForAuthoritativeSync = false;
     this.applyingSharedSnapshotDepth = 0;
@@ -108,6 +112,7 @@ export class ExcalidrawRoomClient {
       }
 
       this.unlockRoomWrites();
+      this.pendingEmptySceneCandidate = null;
       this.lastSceneJson = JSON.stringify(parseSceneJson(remoteJson));
       this.onRemoteSceneJson(this.lastSceneJson);
     };
@@ -274,7 +279,12 @@ export class ExcalidrawRoomClient {
       return emptyScene;
     } catch (createError) {
       if (createError?.status === 409) {
-        return emptyScene;
+        try {
+          const existingData = await this.vaultClient.readFile(this.filePath);
+          return parseSceneJson(existingData.content);
+        } catch (conflictReadError) {
+          throw new Error(conflictReadError?.message || 'Failed to load existing Excalidraw file after create conflict');
+        }
       }
 
       throw new Error(createError?.message || 'Failed to create Excalidraw file');
@@ -379,6 +389,11 @@ export class ExcalidrawRoomClient {
 
     const sceneData = buildStoredScene(elements, appState, files);
     const json = JSON.stringify(sceneData);
+    if (this.shouldDelayEmptySceneCommit(json)) {
+      this.pendingSceneSyncPayload = { appState, elements, files };
+      this.scheduleDelayedEmptySceneCommit();
+      return;
+    }
 
     if (json !== this.lastSceneJson || this.getSharedHistoryLength() === 0) {
       this.lastSceneSyncAt = this.now();
@@ -389,9 +404,70 @@ export class ExcalidrawRoomClient {
       });
     }
 
+    this.pendingEmptySceneCandidate = null;
+
     if (this.pendingSceneSyncPayload) {
       this.scheduleSceneSyncFlush();
     }
+  }
+
+  hasRemoteCollaborators() {
+    if (!this.awareness) {
+      return false;
+    }
+
+    for (const [clientId, state] of this.awareness.getStates()) {
+      if (clientId !== this.awareness.clientID && state?.user) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  shouldDelayEmptySceneCommit(nextJson) {
+    if (!this.emptySceneGuardMs || !this.hasRemoteCollaborators()) {
+      this.pendingEmptySceneCandidate = null;
+      return false;
+    }
+
+    const nextScene = parseSceneJson(nextJson);
+    if (nextScene.elements.length > 0) {
+      this.pendingEmptySceneCandidate = null;
+      return false;
+    }
+
+    const previousScene = parseSceneJson(this.lastSceneJson || this.ytext?.toString());
+    if (previousScene.elements.length === 0) {
+      this.pendingEmptySceneCandidate = null;
+      return false;
+    }
+
+    const now = this.now();
+    if (!this.pendingEmptySceneCandidate || this.pendingEmptySceneCandidate.previousSceneJson !== this.lastSceneJson) {
+      this.pendingEmptySceneCandidate = {
+        firstSeenAt: now,
+        previousSceneJson: this.lastSceneJson,
+      };
+      console.warn(`[excalidraw:${this.filePath}] Delaying suspicious empty scene commit during active collaboration`);
+      return true;
+    }
+
+    return (now - this.pendingEmptySceneCandidate.firstSeenAt) < this.emptySceneGuardMs;
+  }
+
+  scheduleDelayedEmptySceneCommit() {
+    if (this.sceneSyncTimer !== null) {
+      return;
+    }
+
+    const firstSeenAt = this.pendingEmptySceneCandidate?.firstSeenAt ?? this.now();
+    const elapsed = this.now() - firstSeenAt;
+    const delay = Math.max(0, this.emptySceneGuardMs - elapsed);
+    this.sceneSyncTimer = this.setTimeoutFn(() => {
+      this.sceneSyncTimer = null;
+      this.flushSceneSync();
+    }, delay);
   }
 
   flushPointerAwarenessPayload() {
@@ -696,6 +772,7 @@ export class ExcalidrawRoomClient {
     this.pendingViewportPayload = null;
     this.lastViewportSignature = '';
     this.lastSelectedIdsSignature = '';
+    this.pendingEmptySceneCandidate = null;
 
     if (this.ytext) {
       this.ytext.unobserve(this.handleRoomTextUpdate);

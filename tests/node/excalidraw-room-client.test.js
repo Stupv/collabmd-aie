@@ -311,3 +311,133 @@ test('ExcalidrawRoomClient updates awareness fields for local user, pointer, and
   assert.equal(provider.awareness.localState.pointerButton, 'down');
   assert.deepEqual(provider.awareness.localState.viewport, { scrollX: 12, scrollY: 34, zoom: 1.5 });
 });
+
+test('ExcalidrawRoomClient rereads the file after a create conflict instead of falling back to an empty scene', async () => {
+  const provider = createFakeProvider();
+  const ydoc = new Y.Doc();
+  let readCount = 0;
+
+  const client = new ExcalidrawRoomClient({
+    filePath: 'diagram.excalidraw',
+    resolveWsBaseUrlFn: () => 'ws://localhost:3000',
+    setTimeoutFn: (callback) => {
+      callback();
+      return 1;
+    },
+    vaultClient: {
+      async createFile() {
+        const error = new Error('File already exists');
+        error.status = 409;
+        throw error;
+      },
+      async readFile() {
+        readCount += 1;
+        if (readCount === 1) {
+          const error = new Error('File not found');
+          error.status = 404;
+          throw error;
+        }
+
+        return { content: createScene('shape-existing') };
+      },
+    },
+    websocketProviderFactory: () => provider,
+    ydocFactory: () => ydoc,
+  });
+
+  const scene = await client.connect({
+    initialUser: { color: '#111111', colorLight: '#11111133', name: 'Andes', peerId: 'peer-1' },
+  });
+
+  assert.deepEqual(scene.elements.map((element) => element.id), ['shape-existing']);
+});
+
+test('ExcalidrawRoomClient delays transient empty scene commits during active collaboration', async () => {
+  let currentTime = 1000;
+  const timers = [];
+  const provider = createFakeProvider();
+  const ydoc = new Y.Doc();
+
+  const client = new ExcalidrawRoomClient({
+    filePath: 'diagram.excalidraw',
+    now: () => currentTime,
+    resolveWsBaseUrlFn: () => 'ws://localhost:3000',
+    setTimeoutFn: (callback, delay) => {
+      timers.push({ callback, delay });
+      return timers.length;
+    },
+    vaultClient: {
+      async readFile() {
+        return { content: JSON.stringify({ type: 'excalidraw', version: 2, source: 'collabmd', elements: [], appState: {}, files: {} }) };
+      },
+    },
+    websocketProviderFactory: () => provider,
+    ydocFactory: () => ydoc,
+  });
+
+  await client.connect({
+    initialUser: { color: '#111111', colorLight: '#11111133', name: 'Andes', peerId: 'peer-1' },
+  });
+
+  provider.awareness.getStates().set(2, {
+    user: { color: '#222222', colorLight: '#22222233', name: 'Remote', peerId: 'peer-2' },
+  });
+
+  client.commitSceneJson(createScene('shape-1'), { origin: 'seed-shape' });
+  client.scheduleSceneSync([], { gridSize: null, viewBackgroundColor: '#ffffff' }, {});
+  timers.shift().callback();
+
+  assert.deepEqual(parseElements(client.getLastSceneJson()), ['shape-1']);
+  assert.equal(timers.length, 1);
+
+  client.scheduleSceneSync([{ id: 'shape-2', isDeleted: false }], { gridSize: null, viewBackgroundColor: '#ffffff' }, {});
+  currentTime += 25;
+  timers.shift().callback();
+
+  assert.deepEqual(parseElements(client.getLastSceneJson()), ['shape-2']);
+});
+
+test('ExcalidrawRoomClient still allows an empty scene commit after the guard window elapses', async () => {
+  let currentTime = 1000;
+  const timers = [];
+  const provider = createFakeProvider();
+  const ydoc = new Y.Doc();
+
+  const client = new ExcalidrawRoomClient({
+    filePath: 'diagram.excalidraw',
+    emptySceneGuardMs: 200,
+    now: () => currentTime,
+    resolveWsBaseUrlFn: () => 'ws://localhost:3000',
+    setTimeoutFn: (callback, delay) => {
+      timers.push({ callback, delay });
+      return timers.length;
+    },
+    vaultClient: {
+      async readFile() {
+        return { content: JSON.stringify({ type: 'excalidraw', version: 2, source: 'collabmd', elements: [], appState: {}, files: {} }) };
+      },
+    },
+    websocketProviderFactory: () => provider,
+    ydocFactory: () => ydoc,
+  });
+
+  await client.connect({
+    initialUser: { color: '#111111', colorLight: '#11111133', name: 'Andes', peerId: 'peer-1' },
+  });
+
+  provider.awareness.getStates().set(2, {
+    user: { color: '#222222', colorLight: '#22222233', name: 'Remote', peerId: 'peer-2' },
+  });
+
+  client.commitSceneJson(createScene('shape-1'), { origin: 'seed-shape' });
+  client.scheduleSceneSync([], { gridSize: null, viewBackgroundColor: '#ffffff' }, {});
+  timers.shift().callback();
+
+  assert.deepEqual(parseElements(client.getLastSceneJson()), ['shape-1']);
+  assert.equal(timers.length, 1);
+
+  currentTime += 250;
+  timers.shift().callback();
+
+  assert.deepEqual(parseElements(client.getLastSceneJson()), []);
+});
