@@ -1,17 +1,17 @@
 # CollabMD
 
-Collaborative markdown workspace for local folders, like Obsidian but online.
+Browser collaboration for existing markdown folders, diagram files, and git-backed docs.
 
 <p align="center">
   <img src="./docs/assets/collabmd-hero.png" alt="CollabMD showing a file tree, markdown editor, live preview, and collaborator presence." width="100%">
 </p>
 
 <p align="center">
-  <strong>Serve any markdown folder as a realtime collaborative workspace.</strong>
+  <strong>Turn an existing markdown-and-diagram workspace into a realtime collaborative web app.</strong>
 </p>
 
 <p align="center">
-  Local files stay on disk. Markdown stays plain text. Collaborators get live editing, preview, comments, chat, diagrams, and browser-based sessions.
+  No migration. Plain files stay on disk. Collaborators get live editing, chat, Mermaid, PlantUML, Excalidraw, and vault-style navigation in the browser.
 </p>
 
 ## See it in action
@@ -20,16 +20,25 @@ Collaborative markdown workspace for local folders, like Obsidian but online.
 
 Prefer video? [Open the WebM demo](./docs/assets/collabmd-demo.webm).
 
-## Why CollabMD
+## Why teams use CollabMD
 
-- **Local-files-first** — your filesystem is the source of truth
+- **No migration** — point CollabMD at an existing markdown folder, diagram workspace, Obsidian-style vault, or git-backed docs repo
+- **Local-files-first** — your filesystem remains the source of truth
 - **Realtime collaboration** — multiple people can edit the same file at the same time via Yjs
 - **Markdown with context** — live preview, wiki-links, backlinks, outline, quick switcher, and scroll sync
-- **Review built in** — inline comments, collaborator presence, follow mode, and team chat
-- **Diagram-friendly** — Mermaid fences and standalone `.mmd` / `.mermaid` files, PlantUML `.puml` / `.plantuml`, and `.excalidraw` support
-- **Easy sharing** — optional Cloudflare Tunnel support makes it easy to share a running session
+- **Collaboration built in** — collaborator presence, follow mode, and team chat
+- **Diagram-friendly** — Mermaid fences and standalone `.mmd` / `.mermaid`, PlantUML `.puml` / `.plantuml`, and `.excalidraw` support
+- **Easy browser access** — optional Cloudflare Tunnel support makes a running session easy to share
 
-## Quick Start
+## Best fit for
+
+- Collaborating on an existing Obsidian-style vault without migrating files
+- Reviewing RFCs, product docs, architecture notes, and runbooks in real time
+- Sharing markdown-heavy knowledge bases with remote teammates
+- Editing notes and diagrams together while keeping everything as plain files on disk
+- Giving browser access to collaborators who do not use your local markdown setup
+
+## Quick start
 
 ### Requirements
 
@@ -41,14 +50,14 @@ Prefer video? [Open the WebM demo](./docs/assets/collabmd-demo.webm).
 ```bash
 brew tap andes90/tap
 brew install collabmd
-collabmd ~/my-vault
+collabmd ~/my-vault --no-tunnel
 ```
 
 Or in a single command:
 
 ```bash
 brew install andes90/tap/collabmd
-collabmd ~/my-vault
+collabmd ~/my-vault --no-tunnel
 ```
 
 Open `http://localhost:1234`.
@@ -61,38 +70,36 @@ cd collabmd
 npm install
 npm run build
 npm link       # optional: makes `collabmd` available globally
-collabmd ~/my-vault
+collabmd ~/my-vault --no-tunnel
 ```
 
 Open `http://localhost:1234`.
 
-If you want local-only access, start with:
+For a safer first run, start local-only:
 
 ```bash
 collabmd ~/my-vault --no-tunnel
 ```
 
-If you want to share the session over the internet, install `cloudflared` and CollabMD will start a quick tunnel by default.
+If you want to share the session over the internet, protect it first:
 
-## Good fit for
+```bash
+collabmd ~/my-vault --auth password
+```
 
-- Collaborating on an existing Obsidian-style vault without migrating files
-- Reviewing RFCs, product docs, and architecture notes in real time
-- Sharing markdown-heavy knowledge bases with remote teammates
-- Editing notes and diagrams together while keeping everything as plain files on disk
+If `cloudflared` is installed, CollabMD starts a quick tunnel by default unless you pass `--no-tunnel`.
 
-## Safety
+## Safety first
 
-- Authentication defaults to `none`, so anyone with the URL can edit the vault unless you enable an auth strategy.
-- `--auth password` protects `/api/*` and `/ws/*` with a host password and a signed session cookie.
-- If you omit auth, treat the URL as write access to the vault.
-- Cloudflare Tunnel starts by default when `cloudflared` is installed, unless you pass `--no-tunnel`.
-- `oidc` is reserved for a future implementation and is not usable yet.
+- Treat the URL as write access to the vault unless you enable auth
+- `--auth password` protects `/api/*` and `/ws/*` with a host password and signed session cookie
+- If `cloudflared` is installed, CollabMD may expose the app through a Cloudflare Quick Tunnel unless you pass `--no-tunnel`
+- `oidc` is reserved for a future implementation and is not usable yet
 
 ## How it works
 
 ```bash
-collabmd ~/my-vault
+collabmd ~/my-vault --no-tunnel
 ```
 
 CollabMD starts a local server, scans the vault, and opens a browser-based editor with:
@@ -100,7 +107,7 @@ CollabMD starts a local server, scans the vault, and opens a browser-based edito
 - **File explorer sidebar** — browse, create, rename, and delete `.md`, `.mmd`, `.mermaid`, `.puml`, `.plantuml`, and `.excalidraw` files plus folders
 - **Live preview** — rendered as you type, with syntax-highlighted code blocks plus Mermaid and PlantUML diagrams
 - **`[[wiki-links]]` + backlinks** — jump between notes and inspect linked mentions
-- **Comments + room chat** — review content in context without leaving the document
+- **Room chat** — discuss changes without leaving the workspace
 - **Presence + follow mode** — see who is online and follow another collaborator's active cursor
 - **Quick switcher + outline** — move around large vaults and long documents faster
 - **Standalone diagram files** — open `.mmd` / `.mermaid` or `.puml` / `.plantuml` files in side-by-side editor + preview, or `.excalidraw` files in direct preview mode
@@ -135,16 +142,16 @@ collabmd [directory] [options]
 ### Examples
 
 ```bash
-# Serve the current directory
-collabmd
+# Serve the current directory locally
+collabmd --no-tunnel
 
-# Serve a specific vault
-collabmd ~/my-vault
+# Serve a specific vault locally
+collabmd ~/my-vault --no-tunnel
 
 # Use a custom port, no tunnel
 collabmd --port 3000 --no-tunnel
 
-# Require a generated password for collaborators
+# Share with collaborators using a generated password
 collabmd --auth password
 
 # Require an explicit password
@@ -338,7 +345,7 @@ npx playwright install chromium    # first time only
 npm run test:e2e
 ```
 
-Playwright boots the full app against the `test-vault/` directory and verifies the file explorer, editor, preview, comments, collaboration, chat, outline, and scroll sync flows.
+Playwright boots the full app against the `test-vault/` directory and verifies the file explorer, editor, preview, collaboration, chat, outline, and scroll sync flows.
 
 ### All tests
 
@@ -358,9 +365,9 @@ src/
     bootstrap/             app-shell composition and startup wiring
     domain/                markdown editing, wiki-link, room, and vault helpers
     infrastructure/        runtime config, auth bootstrap, browser ports, collaborative editor session
-    presentation/          file explorer, comments, backlinks, quick switcher, outline, scroll sync, theme, layout
+    presentation/          file explorer, backlinks, quick switcher, outline, scroll sync, theme, layout
     styles/                app CSS
-  domain/                  shared comment and wiki-link helpers
+  domain/                  shared wiki-link helpers
   server/
     auth/                  strategy selection and cookie-backed auth sessions
     config/                environment loading
