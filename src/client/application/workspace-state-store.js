@@ -7,7 +7,6 @@ export class WorkspaceStateStore {
       chatMessageIds: new Set(),
       chatMessages: [],
       chatUnreadCount: 0,
-      commentThreads: [],
       connectionHelpShown: false,
       connectionState: { status: 'disconnected', unreachable: false },
       currentFilePath: null,

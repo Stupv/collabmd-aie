@@ -9,10 +9,7 @@ function createController(overrides = {}) {
 
   return new WorkspacePreviewController({
     backlinksPanel: { clear() {}, ...(overrides.backlinksPanel || {}) },
-    commentsPanel: { decoratePreviewAnchors() {}, ...(overrides.commentsPanel || {}) },
     elements: overrides.elements ?? {
-      commentSelectionButton: { classList: { toggle() {} } },
-      commentsToggle: { classList: { toggle() {} } },
       markdownToolbar: { classList: { toggle() {} } },
       outlineToggle: { classList: { toggle() {} } },
       previewContent: { classList: { add() {}, remove() {}, toggle() {} } },
@@ -108,8 +105,6 @@ test('WorkspacePreviewController still syncs Excalidraw preview layout without a
   };
   const controller = createController({
     elements: {
-      commentSelectionButton: { classList: { toggle() {} } },
-      commentsToggle: { classList: { toggle() {} } },
       markdownToolbar: { classList: { toggle() {} } },
       outlineToggle: { classList: { toggle() {} } },
       previewContent,

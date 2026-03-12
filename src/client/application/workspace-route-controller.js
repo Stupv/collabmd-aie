@@ -3,7 +3,6 @@ export class WorkspaceRouteController {
     backlinksPanel,
     clearInitialFileBootstrap,
     closeSidebarOnMobile,
-    commentsPanel,
     elements,
     excalidrawEmbed,
     fileExplorer,
@@ -24,14 +23,12 @@ export class WorkspaceRouteController {
     setCurrentFilePath,
     showGitDiff,
     syncMainChrome,
-    updateCommentThreads,
     workspaceCoordinator,
     layoutController,
   }) {
     this.backlinksPanel = backlinksPanel;
     this.clearInitialFileBootstrap = clearInitialFileBootstrap;
     this.closeSidebarOnMobile = closeSidebarOnMobile;
-    this.commentsPanel = commentsPanel;
     this.elements = elements;
     this.excalidrawEmbed = excalidrawEmbed;
     this.fileExplorer = fileExplorer;
@@ -52,7 +49,6 @@ export class WorkspaceRouteController {
     this.setCurrentFilePath = setCurrentFilePath;
     this.showGitDiff = showGitDiff;
     this.syncMainChrome = syncMainChrome;
-    this.updateCommentThreads = updateCommentThreads;
     this.workspaceCoordinator = workspaceCoordinator;
     this.layoutController = layoutController;
   }
@@ -88,8 +84,6 @@ export class WorkspaceRouteController {
     this.clearInitialFileBootstrap();
     this.resetPreviewMode();
     this.elements.outlineToggle?.classList.remove('hidden');
-    this.elements.commentsToggle?.classList.add('hidden');
-    this.elements.commentSelectionButton?.classList.add('hidden');
     this.elements.markdownToolbar?.classList.add('hidden');
     this.setCurrentFilePath(null);
     this.lobby.setCurrentFile(null);
@@ -107,8 +101,6 @@ export class WorkspaceRouteController {
     this.renderAvatars();
     this.renderPresence();
     this.backlinksPanel.clear();
-    this.updateCommentThreads([]);
-    this.commentsPanel.setCurrentFile(null, { supported: false });
 
     if (this.elements.activeFileName) {
       this.elements.activeFileName.textContent = 'CollabMD';
@@ -136,15 +128,11 @@ export class WorkspaceRouteController {
     this.resetPreviewSurface();
 
     this.elements.outlineToggle?.classList.add('hidden');
-    this.elements.commentsToggle?.classList.add('hidden');
-    this.elements.commentSelectionButton?.classList.add('hidden');
     this.elements.markdownToolbar?.classList.add('hidden');
 
     this.renderAvatars();
     this.renderPresence();
     this.backlinksPanel.clear();
-    this.updateCommentThreads([]);
-    this.commentsPanel.setCurrentFile(null, { supported: false });
   }
 
   async openFile(filePath) {

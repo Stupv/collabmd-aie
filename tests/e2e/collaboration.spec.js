@@ -131,37 +131,13 @@ test('renaming in the app updates the mounted Excalidraw iframe user name', asyn
   )).toBe('After Name');
 });
 
-test('creates, replies to, and resolves source-anchored comments', async ({ page }) => {
+test('does not render comment UI controls', async ({ page }) => {
   await openFile(page, 'README.md');
 
-  await replaceEditorContent(page, [
-    '# Comment target',
-    '',
-    'First paragraph for review.',
-    '',
-    '## Second section',
-    '',
-    'Another paragraph that needs a follow-up.',
-  ].join('\n'));
-
-  await page.locator('#previewContent [data-source-line="3"] .comment-anchor-btn').click();
-  await expect(page.locator('#commentsPanel')).toHaveClass(/expanded/);
-
-  await page.locator('#commentComposerInput').fill('Please expand this explanation.');
-  await page.locator('#commentComposerForm').getByRole('button', { name: 'Post comment' }).click();
-
-  const thread = page.locator('#commentsList .comment-thread').first();
-  await expect(thread).toContainText('Please expand this explanation.');
-  await expect(page.locator('#previewContent [data-source-line="3"] .comment-anchor-btn')).toHaveAttribute('data-count', '1');
-
-  await thread.getByRole('button', { name: 'Reply' }).click();
-  await thread.locator('.comment-reply-input').fill('Adding a follow-up reply.');
-  await thread.locator('.comment-reply-form').getByRole('button', { name: 'Reply' }).click();
-  await expect(thread).toContainText('Adding a follow-up reply.');
-
-  await thread.getByRole('button', { name: 'Resolve' }).click();
-  await expect(thread).toBeHidden();
-  await expect(page.locator('#previewContent [data-source-line="3"] .comment-anchor-btn')).toHaveAttribute('data-count', '+');
+  await expect(page.locator('#commentSelectionBtn')).toHaveCount(0);
+  await expect(page.locator('#commentsToggle')).toHaveCount(0);
+  await expect(page.locator('#commentsPanel')).toHaveCount(0);
+  await expect(page.locator('#previewContent .comment-anchor-btn')).toHaveCount(0);
 });
 
 test('syncs collaborative edits across two users on the same file', async ({ browser }) => {

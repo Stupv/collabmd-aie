@@ -6,7 +6,6 @@ import { WorkspaceCoordinator } from '../../src/client/application/workspace-coo
 
 function createStateStore() {
   const state = new Map([
-    ['commentThreads', []],
     ['connectionState', null],
     ['connectionHelpShown', false],
     ['currentFilePath', null],
@@ -40,9 +39,6 @@ function createCoordinator(overrides = {}) {
     },
     ensureInitialContent() {
       events.push('ensure-content');
-    },
-    getCommentThreads() {
-      return [];
     },
     getScrollContainer() {
       return null;
@@ -84,9 +80,6 @@ function createCoordinator(overrides = {}) {
     onBeforeFileOpen: () => {
       events.push('before-open');
     },
-    onCommentsChange: () => {
-      events.push('comments-change');
-    },
     onConnectionChange: () => {},
     onContentChange: () => {
       events.push('content-change');
@@ -115,7 +108,6 @@ function createCoordinator(overrides = {}) {
       events.push('render-presence');
     },
     scrollContainerForSession: () => null,
-    setCommentsFile: () => {},
     showEditorLoading: () => {
       events.push('show-loading');
     },
@@ -168,9 +160,6 @@ test('WorkspaceCoordinator ensures initial content after sync wait even without 
       destroy() {},
       ensureInitialContent() {
         ensureCalls += 1;
-      },
-      getCommentThreads() {
-        return [];
       },
       getScrollContainer() {
         return null;

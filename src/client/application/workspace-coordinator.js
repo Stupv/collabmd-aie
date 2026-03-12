@@ -20,7 +20,6 @@ export class WorkspaceCoordinator {
     loadEditorSessionClass,
     loadBacklinks,
     onBeforeFileOpen,
-    onCommentsChange,
     onConnectionChange,
     onContentChange,
     onFileAwarenessChange,
@@ -36,7 +35,6 @@ export class WorkspaceCoordinator {
     onViewModeReset,
     renderPresence,
     scrollContainerForSession,
-    setCommentsFile,
     showEditorLoading,
     stateStore,
   }) {
@@ -57,7 +55,6 @@ export class WorkspaceCoordinator {
     this.loadEditorSessionClassPort = loadEditorSessionClass;
     this.loadBacklinks = loadBacklinks;
     this.onBeforeFileOpen = onBeforeFileOpen;
-    this.onCommentsChange = onCommentsChange;
     this.onConnectionChange = onConnectionChange;
     this.onContentChange = onContentChange;
     this.onFileAwarenessChange = onFileAwarenessChange;
@@ -84,7 +81,6 @@ export class WorkspaceCoordinator {
       getDisplayName,
       loadBacklinks,
       onBeforeFileOpen,
-      onCommentsChange,
       onFileOpenError,
       onFileOpenReady,
       onRenderExcalidrawPreview,
@@ -95,7 +91,6 @@ export class WorkspaceCoordinator {
       onUpdateVisibleChrome,
       onViewModeReset,
       renderPresence,
-      setCommentsFile,
       showEditorLoading,
       stateStore,
     });
@@ -169,7 +164,6 @@ export class WorkspaceCoordinator {
       lineWrappingEnabled: this.getLineWrappingEnabled(),
       localUser: this.getLocalUser(),
       onAwarenessChange: (users) => this.onFileAwarenessChange(users),
-      onCommentsChange: (threads) => this.onCommentsChange(threads),
       onConnectionChange: (state) => this.onConnectionChange(state),
       onContentChange: () => {
         if (isExcalidraw) {

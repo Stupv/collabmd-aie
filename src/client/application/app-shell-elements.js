@@ -1,7 +1,6 @@
 export function bindAppShellElements(doc = document) {
   return {
     currentUserName: doc.getElementById('currentUserName'),
-    commentSelectionButton: doc.getElementById('commentSelectionBtn'),
     chatContainer: doc.getElementById('chatContainer'),
     chatEmptyState: doc.getElementById('chatEmptyState'),
     chatForm: doc.getElementById('chatForm'),
@@ -47,8 +46,6 @@ export function bindAppShellElements(doc = document) {
     mobileViewToggle: doc.getElementById('mobileViewToggle'),
     previewContent: doc.getElementById('previewContent'),
     previewContainer: doc.getElementById('previewContainer'),
-    commentsPanel: doc.getElementById('commentsPanel'),
-    commentsToggle: doc.getElementById('commentsToggle'),
     shareButton: doc.getElementById('shareBtn'),
     toastContainer: doc.getElementById('toastContainer'),
     toggleWrapButton: doc.getElementById('toggleWrapBtn'),

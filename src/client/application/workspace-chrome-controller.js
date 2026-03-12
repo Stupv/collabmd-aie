@@ -1,7 +1,6 @@
 import {
   isMarkdownFilePath,
   supportsBacklinksForFilePath,
-  supportsCommentsForFilePath,
 } from '../../domain/file-kind.js';
 
 export class WorkspaceChromeController {
@@ -10,7 +9,6 @@ export class WorkspaceChromeController {
     getDisplayName,
     loadBacklinks,
     onBeforeFileOpen,
-    onCommentsChange,
     onFileOpenError,
     onFileOpenReady,
     onRenderExcalidrawPreview,
@@ -21,7 +19,6 @@ export class WorkspaceChromeController {
     onUpdateVisibleChrome,
     onViewModeReset,
     renderPresence,
-    setCommentsFile,
     showEditorLoading,
     stateStore,
   }) {
@@ -29,7 +26,6 @@ export class WorkspaceChromeController {
     this.getDisplayName = getDisplayName;
     this.loadBacklinks = loadBacklinks;
     this.onBeforeFileOpen = onBeforeFileOpen;
-    this.onCommentsChange = onCommentsChange;
     this.onFileOpenError = onFileOpenError;
     this.onFileOpenReady = onFileOpenReady;
     this.onRenderExcalidrawPreview = onRenderExcalidrawPreview;
@@ -40,14 +36,11 @@ export class WorkspaceChromeController {
     this.onUpdateVisibleChrome = onUpdateVisibleChrome;
     this.onViewModeReset = onViewModeReset;
     this.renderPresence = renderPresence;
-    this.setCommentsFile = setCommentsFile;
     this.showEditorLoading = showEditorLoading;
     this.stateStore = stateStore;
   }
 
   prepareForFileOpen(filePath, { resetConnectionState = true } = {}) {
-    const supportsComments = supportsCommentsForFilePath(filePath);
-
     this.onViewModeReset();
     this.onBeforeFileOpen();
     this.stateStore.set('connectionHelpShown', false);
@@ -62,15 +55,12 @@ export class WorkspaceChromeController {
       displayName: this.getDisplayName(filePath),
       isMarkdown: isMarkdownFilePath(filePath),
     });
-    this.setCommentsFile(filePath, { supported: supportsComments });
-    this.onCommentsChange([]);
     this.showEditorLoading();
     this.beginDocumentLoad();
     this.renderPresence();
 
     return {
       supportsBacklinks: supportsBacklinksForFilePath(filePath),
-      supportsComments,
     };
   }
 
@@ -83,7 +73,6 @@ export class WorkspaceChromeController {
       this.onRenderExcalidrawPreview(filePath);
     }
     this.onSyncWrapToggle();
-    this.onCommentsChange(session?.getCommentThreads() ?? []);
     if (supportsBacklinks && session) {
       this.loadBacklinks(filePath);
     }

@@ -6,7 +6,6 @@ import {
 export class WorkspacePreviewController {
   constructor({
     backlinksPanel,
-    commentsPanel,
     elements,
     excalidrawEmbed,
     getDisplayName,
@@ -21,7 +20,6 @@ export class WorkspacePreviewController {
     scrollSyncController,
   }) {
     this.backlinksPanel = backlinksPanel;
-    this.commentsPanel = commentsPanel;
     this.elements = elements;
     this.excalidrawEmbed = excalidrawEmbed;
     this.getDisplayName = getDisplayName;
@@ -71,8 +69,6 @@ export class WorkspacePreviewController {
 
     this.elements.markdownToolbar?.classList.toggle('hidden', !isMarkdown);
     this.elements.outlineToggle?.classList.toggle('hidden', isDiagramFile);
-    this.elements.commentsToggle?.classList.toggle('hidden', isDiagramFile);
-    this.elements.commentSelectionButton?.classList.toggle('hidden', isDiagramFile);
     this.elements.previewContent?.classList.toggle('is-mermaid-file-preview', isMermaid);
     this.elements.previewContent?.classList.toggle('is-plantuml-file-preview', isPlantUml);
 

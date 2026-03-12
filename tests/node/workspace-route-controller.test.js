@@ -30,13 +30,8 @@ function createController(overrides = {}) {
     backlinksPanel: { clear: () => events.push(['backlinks-clear']) },
     clearInitialFileBootstrap: () => events.push(['clear-bootstrap']),
     closeSidebarOnMobile: () => events.push(['close-sidebar']),
-    commentsPanel: {
-      setCurrentFile: (filePath, options) => events.push(['comments-file', filePath, options.supported]),
-    },
     elements: {
       activeFileName: { textContent: '' },
-      commentSelectionButton: { classList: createClassListRecorder() },
-      commentsToggle: { classList: createClassListRecorder() },
       diffPage: { classList: createClassListRecorder() },
       editorPage: { classList: createClassListRecorder() },
       emptyState: { classList: createClassListRecorder() },
@@ -95,7 +90,6 @@ function createController(overrides = {}) {
       events.push(['show-git-diff', route.scope ?? 'all', route.filePath ?? null]);
     },
     syncMainChrome: ({ mode, title = null }) => events.push(['main-chrome', mode, title]),
-    updateCommentThreads: (threads) => events.push(['threads', threads.length]),
     workspaceCoordinator: {
       cleanupSession: () => events.push(['cleanup-session']),
       getSession: () => ({ id: 'session-2' }),

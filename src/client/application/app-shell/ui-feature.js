@@ -1,5 +1,5 @@
 import { USER_NAME_MAX_LENGTH, normalizeUserName } from '../../domain/room.js';
-import { isMarkdownFilePath, supportsBacklinksForFilePath, supportsCommentsForFilePath } from '../../../domain/file-kind.js';
+import { isMarkdownFilePath, supportsBacklinksForFilePath } from '../../../domain/file-kind.js';
 
 export const uiFeature = {
   initialize() {
@@ -122,10 +122,6 @@ export const uiFeature = {
 
     this.elements.toggleWrapButton?.addEventListener('click', () => {
       this.toggleLineWrapping();
-    });
-
-    this.elements.commentSelectionButton?.addEventListener('click', () => {
-      this.startCommentFromEditorSelection();
     });
 
     this.elements.previewContent?.addEventListener('click', (event) => {
@@ -251,30 +247,6 @@ export const uiFeature = {
     this.gitPanel.setActive(nextTab === 'git');
   },
 
-  supportsComments(filePath = this.currentFilePath) {
-    return supportsCommentsForFilePath(filePath);
-  },
-
-  startCommentFromEditorSelection() {
-    if (!this.session || !this.supportsComments()) {
-      return;
-    }
-
-    const range = this.session.getCurrentSelectionLineRange();
-    if (!range) {
-      this.toastController.show('Cannot anchor a comment without an editor selection');
-      return;
-    }
-
-    if (this.layoutController.currentView === 'preview' || this.isMobileViewport()) {
-      this.layoutController.setView('preview');
-    } else if (this.layoutController.currentView === 'editor') {
-      this.layoutController.setView('split');
-    }
-
-    this.commentsPanel.openComposerForRange(range);
-  },
-
   applyMarkdownToolbarAction(action) {
     if (!this.session || !isMarkdownFilePath(this.currentFilePath)) {
       return;
@@ -284,56 +256,6 @@ export const uiFeature = {
     if (!applied) {
       this.toastController.show('Formatting action is unavailable');
     }
-  },
-
-  navigateToCommentLine(lineNumber) {
-    if (!Number.isFinite(lineNumber)) {
-      return;
-    }
-
-    if (this.layoutController.currentView === 'preview' || this.isMobileViewport()) {
-      this.layoutController.setView('split');
-    }
-
-    this.scrollSyncController.suspendSync(250);
-    this.session?.scrollToLine(lineNumber, 0.2);
-  },
-
-  handleCommentThreadCreate(payload) {
-    const threadId = this.session?.createCommentThread(payload);
-    if (!threadId) {
-      this.toastController.show('Comment cannot be empty');
-    }
-
-    return threadId;
-  },
-
-  handleCommentReply(threadId, body) {
-    const messageId = this.session?.replyToCommentThread(threadId, body);
-    if (!messageId) {
-      this.toastController.show('Reply cannot be empty');
-    }
-
-    return messageId;
-  },
-
-  handleCommentResolution(threadId, resolved) {
-    if (!resolved) {
-      return false;
-    }
-
-    const didUpdate = this.session?.deleteCommentThread(threadId);
-    if (!didUpdate) {
-      this.toastController.show('Failed to resolve comment');
-      return false;
-    }
-
-    return true;
-  },
-
-  updateCommentThreads(threads = []) {
-    this.commentThreads = Array.isArray(threads) ? threads : [];
-    this.commentsPanel.setThreads(this.commentThreads);
   },
 
   handleThemeChange(theme) {

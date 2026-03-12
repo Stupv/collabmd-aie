@@ -18,7 +18,6 @@ import { getRuntimeConfig } from '../infrastructure/runtime-config.js';
 import { TabActivityLock } from '../infrastructure/tab-activity-lock.js';
 import { vaultApiClient } from '../infrastructure/vault-api-client.js';
 import { BacklinksPanel } from '../presentation/backlinks-panel.js';
-import { CommentsPanel } from '../presentation/comments-panel.js';
 import { ExcalidrawEmbedController } from '../presentation/excalidraw-embed-controller.js';
 import { FileExplorerController } from '../presentation/file-explorer-controller.js';
 import { GitDiffViewController } from '../presentation/git-diff-view-controller.js';
@@ -102,13 +101,11 @@ export class CollabMdAppShell {
         this.excalidrawEmbed.reconcileEmbeds(this.elements.previewContent, { isLargeDocument: stats.isLargeDocument });
         this.excalidrawEmbed.syncLayout();
         this.scrollSyncController.setLargeDocumentMode(stats.isLargeDocument);
-        this.commentsPanel.decoratePreviewAnchors();
         this.schedulePreviewLayoutSync({ delayMs: 0 });
       },
       onBeforeRenderCommit: () => this.excalidrawEmbed.detachForCommit(),
       onRenderComplete: () => {
         this.excalidrawEmbed.syncLayout();
-        this.commentsPanel.decoratePreviewAnchors();
         this.schedulePreviewLayoutSync({ delayMs: 0 });
       },
       outlineController: this.outlineController,
@@ -128,16 +125,6 @@ export class CollabMdAppShell {
       onFileSelect: (filePath) => this.handleFileSelection(filePath, { closeSidebarOnMobile: true }),
       panelElement: this.elements.backlinksPanel,
     });
-    this.commentsPanel = new CommentsPanel({
-      onCreateThread: (payload) => this.handleCommentThreadCreate(payload),
-      onNavigateToLine: (lineNumber) => this.navigateToCommentLine(lineNumber),
-      onReplyToThread: (threadId, body) => this.handleCommentReply(threadId, body),
-      onResolveThread: (threadId, resolved) => this.handleCommentResolution(threadId, resolved),
-      panelElement: this.elements.commentsPanel,
-      previewContainer: this.elements.previewContainer,
-      previewElement: this.elements.previewContent,
-      toggleButton: this.elements.commentsToggle,
-    });
     this.excalidrawEmbed = new ExcalidrawEmbedController({
       getLocalUser: () => this.lobby.getLocalUser(),
       getTheme: () => this.themeController.getTheme(),
@@ -147,7 +134,6 @@ export class CollabMdAppShell {
     });
     this.workspacePreviewController = new WorkspacePreviewController({
       backlinksPanel: this.backlinksPanel,
-      commentsPanel: this.commentsPanel,
       elements: this.elements,
       excalidrawEmbed: this.excalidrawEmbed,
       getDisplayName: (filePath) => this.getDisplayName(filePath),
@@ -223,13 +209,9 @@ export class CollabMdAppShell {
         this.elements.diffPage?.classList.add('hidden');
         this.clearInitialFileBootstrap();
       },
-      onCommentsChange: (threads) => this.updateCommentThreads(threads),
       onConnectionChange: (state) => this.handleConnectionChange(state),
       onContentChange: ({ isMermaid, isPlantUml }) => {
         this.previewRenderer.queueRender();
-        if (this.commentThreads.length > 0) {
-          this.updateCommentThreads(this.session?.getCommentThreads() ?? []);
-        }
         if (!isMermaid && !isPlantUml) {
           this.scheduleBacklinkRefresh();
         }
@@ -262,7 +244,6 @@ export class CollabMdAppShell {
       onViewModeReset: () => this.resetPreviewMode(),
       renderPresence: () => this.renderPresence(),
       scrollContainerForSession: (session) => session.getScrollContainer(),
-      setCommentsFile: (filePath, options) => this.commentsPanel.setCurrentFile(filePath, options),
       showEditorLoading: () => this.showEditorLoading(),
       stateStore: this.stateStore,
     });
@@ -270,7 +251,6 @@ export class CollabMdAppShell {
       backlinksPanel: this.backlinksPanel,
       clearInitialFileBootstrap: () => this.clearInitialFileBootstrap(),
       closeSidebarOnMobile: () => this.closeSidebarOnMobile(),
-      commentsPanel: this.commentsPanel,
       elements: this.elements,
       excalidrawEmbed: this.excalidrawEmbed,
       fileExplorer: this.fileExplorer,
@@ -298,7 +278,6 @@ export class CollabMdAppShell {
       setSidebarTab: (value) => this.setSidebarTab(value),
       showGitDiff: (route) => this.showGitDiff(route),
       syncMainChrome: (payload) => this.syncMainChrome(payload),
-      updateCommentThreads: (threads) => this.updateCommentThreads(threads),
       workspaceCoordinator: this.workspaceCoordinator,
     });
 
@@ -329,8 +308,6 @@ export class CollabMdAppShell {
   set chatIsOpen(value) { this.stateStore.set('chatIsOpen', value); }
   get chatInitialSyncComplete() { return this.stateStore.get('chatInitialSyncComplete'); }
   set chatInitialSyncComplete(value) { this.stateStore.set('chatInitialSyncComplete', value); }
-  get commentThreads() { return this.stateStore.get('commentThreads'); }
-  set commentThreads(value) { this.stateStore.set('commentThreads', value); }
   get isTabActive() { return this.stateStore.get('isTabActive'); }
   set isTabActive(value) { this.stateStore.set('isTabActive', value); }
   get fileExplorerReady() { return this.stateStore.get('fileExplorerReady'); }
