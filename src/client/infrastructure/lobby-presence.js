@@ -229,6 +229,18 @@ export class LobbyPresence {
     return users;
   }
 
+  getConnectionState() {
+    if (this._connected) {
+      return { status: 'connected', unreachable: false };
+    }
+
+    if (this.provider) {
+      return { status: 'connecting', unreachable: false };
+    }
+
+    return { status: 'disconnected', unreachable: false };
+  }
+
   disconnect() {
     if (this.provider) {
       this.awareness?.off('change', this.handleAwarenessChange);

@@ -16,14 +16,21 @@ export const presenceFeature = {
     const badge = this.elements.userCount;
     if (!badge) return;
 
-    if (this.connectionState.status === 'connected') {
+    const hasEditorSession = Boolean(this.session);
+    const isExcalidrawRoute = Boolean(this.currentFilePath && this.isExcalidrawFile?.(this.currentFilePath));
+    const shouldUseLobbyState = !hasEditorSession && (!this.currentFilePath || isExcalidrawRoute);
+    const effectiveConnectionState = shouldUseLobbyState
+      ? this.lobby?.getConnectionState?.() ?? this.connectionState
+      : this.connectionState;
+
+    if (effectiveConnectionState.status === 'connected') {
       badge.textContent = `${this.globalUsers.length} online`;
       badge.style.opacity = '1';
       return;
     }
 
-    if (this.connectionState.status === 'connecting') {
-      badge.textContent = this.connectionState.unreachable ? 'Unreachable' : 'Connecting...';
+    if (effectiveConnectionState.status === 'connecting') {
+      badge.textContent = effectiveConnectionState.unreachable ? 'Unreachable' : 'Connecting...';
       badge.style.opacity = '0.6';
       return;
     }
