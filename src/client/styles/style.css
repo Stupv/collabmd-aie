@@ -2811,7 +2811,7 @@ body.plantuml-maximized-open::before {
 .comment-editor-badge,
 .comment-preview-badge {
   position: absolute;
-  width: 24px;
+  min-width: 28px;
   height: 24px;
   border-radius: var(--radius-full);
   background: color-mix(in srgb, var(--color-surface) 68%, var(--color-comment) 32%);
@@ -2821,22 +2821,36 @@ body.plantuml-maximized-open::before {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 11px;
+  gap: 4px;
+  padding: 0 7px;
+  font-size: 10px;
   font-weight: 700;
   pointer-events: auto;
-  transition: transform 140ms ease, box-shadow 140ms ease;
+  transition: transform 140ms ease, box-shadow 140ms ease, background-color 140ms ease, border-color 140ms ease;
 }
 
-.comment-editor-badge::before,
-.comment-preview-badge::before {
-  content: '•';
-  font-size: 12px;
+.comment-editor-badge.is-active,
+.comment-preview-badge.is-active {
+  background: color-mix(in srgb, var(--color-surface) 42%, var(--color-comment) 58%);
+  border-color: oklch(from var(--color-comment) l c h / 0.32);
+  color: var(--color-text-inverse);
+}
+
+.comment-marker-icon {
+  display: inline-flex;
+  width: 12px;
+  height: 12px;
+  flex: 0 0 auto;
+}
+
+.comment-marker-icon svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.comment-marker-count {
   line-height: 1;
-}
-
-.comment-editor-badge[data-count]:not([data-count="1"]):not([data-count=""])::before,
-.comment-preview-badge:not(:empty)::before {
-  content: none;
 }
 
 .comment-editor-badge:hover,
@@ -2934,6 +2948,12 @@ body.plantuml-maximized-open::before {
 .comment-thread-card-action:hover {
   color: var(--color-text);
   border-color: oklch(from var(--color-comment) l c h / 0.16);
+}
+
+.comment-thread-card-action.is-active {
+  color: var(--color-text);
+  background: color-mix(in srgb, var(--color-surface-offset) 72%, var(--color-comment) 28%);
+  border-color: oklch(from var(--color-comment) l c h / 0.2);
 }
 
 .comment-thread-card-action.is-danger {

@@ -419,6 +419,48 @@ test('creates and syncs a line comment across collaborators', async ({ browser }
   await pageB.close();
 });
 
+test('renders icon-based thread markers with counts for grouped comments', async ({ page }) => {
+  await openFile(page, 'README.md');
+
+  await createComment(page, {
+    body: 'First grouped comment',
+    collapseSelection: true,
+    targetText: 'Welcome to the test vault. This is the top-level readme.',
+  });
+  await createComment(page, {
+    body: 'Second grouped comment',
+    collapseSelection: true,
+    targetText: 'Welcome to the test vault. This is the top-level readme.',
+  });
+
+  const editorBadge = page.locator('.comment-editor-badge[data-count="2"]').first();
+  const previewBadge = page.locator('#previewContent .comment-preview-badge').first();
+
+  await expect(editorBadge.locator('.comment-marker-icon')).toBeVisible();
+  await expect(editorBadge.locator('.comment-marker-count')).toHaveText('2');
+  await expect(previewBadge.locator('.comment-marker-icon')).toBeVisible();
+  await expect(previewBadge.locator('.comment-marker-count')).toHaveText('2');
+});
+
+test('keeps reply action aligned by using an active Reply toggle state', async ({ page }) => {
+  await openFile(page, 'README.md');
+
+  await createComment(page, {
+    body: 'Please clarify this section.',
+    collapseSelection: true,
+    targetText: 'Welcome to the test vault. This is the top-level readme.',
+  });
+
+  await page.locator('#previewContent .comment-preview-badge').click();
+  const replyButton = page.locator('.comment-thread-card-action').filter({ hasText: 'Reply' }).first();
+
+  await expect(replyButton).toHaveText('Reply');
+  await replyButton.click();
+  await expect(replyButton).toHaveText('Reply');
+  await expect(replyButton).toHaveClass(/is-active/);
+  await expect(page.locator('.comment-reply-form')).toBeVisible();
+});
+
 test('creates a selected-text comment and surfaces it in the preview bubble card', async ({ page }) => {
   await openFile(page, 'README.md');
 

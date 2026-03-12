@@ -190,6 +190,29 @@ function createRectFromRects(rects = []) {
   };
 }
 
+function createCommentMarkerContent(count) {
+  const fragment = document.createDocumentFragment();
+
+  const icon = document.createElement('span');
+  icon.className = 'comment-marker-icon';
+  icon.setAttribute('aria-hidden', 'true');
+  icon.innerHTML = `
+    <svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M3 4.75A1.75 1.75 0 0 1 4.75 3h6.5A1.75 1.75 0 0 1 13 4.75v4.5A1.75 1.75 0 0 1 11.25 11H8.9L6.5 13v-2H4.75A1.75 1.75 0 0 1 3 9.25v-4.5Z" stroke="currentColor" stroke-width="1.35" stroke-linejoin="round"/>
+    </svg>
+  `;
+  fragment.appendChild(icon);
+
+  if (count > 1) {
+    const countBadge = document.createElement('span');
+    countBadge.className = 'comment-marker-count';
+    countBadge.textContent = String(count);
+    fragment.appendChild(countBadge);
+  }
+
+  return fragment;
+}
+
 export class CommentUiController {
   constructor({
     commentSelectionButton,
@@ -604,7 +627,9 @@ export class CommentUiController {
       button.type = 'button';
       button.className = 'comment-editor-badge';
       button.dataset.count = String(group.threads.length);
-      button.textContent = group.threads.length > 1 ? String(group.threads.length) : '';
+      button.classList.toggle('is-active', this.activeCard?.groupKey === group.key);
+      button.setAttribute('aria-label', `${group.threads.length} comment thread${group.threads.length === 1 ? '' : 's'}`);
+      button.appendChild(createCommentMarkerContent(group.threads.length));
       const top = Math.max(relativeRect.top, 8);
       button.style.top = `${top}px`;
       button.style.left = `${Math.max(containerRect.width - 36, 8)}px`;
@@ -654,8 +679,7 @@ export class CommentUiController {
     button.style.right = `${COMMENT_SELECTION_CHIP_GAP}px`;
     button.addEventListener('pointerdown', (event) => {
       event.preventDefault();
-    });
-    button.addEventListener('click', () => {
+      event.stopPropagation();
       this.openComposerForSelection('editor', button.getBoundingClientRect());
     });
     layer.appendChild(button);
@@ -706,7 +730,9 @@ export class CommentUiController {
       const bubble = document.createElement('button');
       bubble.type = 'button';
       bubble.className = 'comment-preview-badge';
-      bubble.textContent = group.threads.length > 1 ? String(group.threads.length) : '';
+      bubble.classList.toggle('is-active', this.activeCard?.groupKey === group.key);
+      bubble.setAttribute('aria-label', `${group.threads.length} comment thread${group.threads.length === 1 ? '' : 's'}`);
+      bubble.appendChild(createCommentMarkerContent(group.threads.length));
       bubble.style.left = `${clamp(target.bubbleRect.right - previewRect.left + 6, 6, this.previewElement.clientWidth - 34)}px`;
       bubble.style.top = `${Math.max(target.bubbleRect.top - previewRect.top, 6)}px`;
       bubble.title = `${group.threads.length} comment${group.threads.length === 1 ? '' : 's'}`;
@@ -1016,11 +1042,16 @@ export class CommentUiController {
     const reply = document.createElement('button');
     reply.type = 'button';
     reply.className = 'comment-thread-card-action';
-    reply.textContent = this.activeCard?.replyThreadId === thread.id ? 'Cancel reply' : 'Reply';
+    const isReplying = this.activeCard?.replyThreadId === thread.id;
+    reply.classList.toggle('is-active', isReplying);
+    reply.textContent = 'Reply';
+    reply.setAttribute('aria-pressed', String(isReplying));
+    reply.setAttribute('aria-label', isReplying ? 'Cancel reply' : 'Reply to thread');
+    reply.title = isReplying ? 'Cancel reply' : 'Reply to thread';
     reply.addEventListener('click', () => {
       this.activeCard = {
         ...this.activeCard,
-        replyThreadId: this.activeCard?.replyThreadId === thread.id ? null : thread.id,
+        replyThreadId: isReplying ? null : thread.id,
       };
       this.renderCard();
     });
