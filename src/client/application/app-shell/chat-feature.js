@@ -205,6 +205,13 @@ export const chatFeature = {
     return this.getDisplayName(filePath);
   },
 
+  formatChatToastMessage(message) {
+    const sender = message?.userName || 'Someone';
+    const text = String(message?.text ?? '').replace(/\s+/g, ' ').trim();
+    const compactText = text.length > 88 ? `${text.slice(0, 85).trimEnd()}...` : text;
+    return `${sender}: ${compactText}`;
+  },
+
   syncChatToggleButton() {
     const button = this.elements.chatToggleButton;
     const badge = this.elements.chatToggleBadge;
@@ -212,8 +219,16 @@ export const chatFeature = {
       return;
     }
 
+    const hasUnread = this.chatUnreadCount > 0;
+    const shouldEmphasizeUnread = hasUnread && !this.chatIsOpen;
+
     button.classList.toggle('is-active', this.chatIsOpen);
+    button.classList.toggle('is-unread', shouldEmphasizeUnread);
     button.setAttribute('aria-expanded', String(this.chatIsOpen));
+    button.setAttribute(
+      'aria-label',
+      hasUnread ? `Open team chat, ${this.chatUnreadCount} unread` : 'Open team chat',
+    );
     button.title = this.chatUnreadCount > 0
       ? `Team chat (${this.chatUnreadCount} unread)`
       : 'Team chat';
@@ -222,7 +237,6 @@ export const chatFeature = {
       return;
     }
 
-    const hasUnread = this.chatUnreadCount > 0;
     badge.classList.toggle('hidden', !hasUnread);
     badge.textContent = this.chatUnreadCount > 9 ? '9+' : String(this.chatUnreadCount);
   },
@@ -313,11 +327,20 @@ export const chatFeature = {
       return;
     }
 
-    if (!this.chatNotificationsEnabled || this.notifications.getPermission() !== 'granted') {
+    if (document.hidden) {
+      this.maybeShowBrowserChatNotification(message);
       return;
     }
 
-    if (!document.hidden) {
+    if (!this.isTabActive || this.chatIsOpen) {
+      return;
+    }
+
+    (this.chatToastController ?? this.toastController).show(this.formatChatToastMessage(message), 4000);
+  },
+
+  maybeShowBrowserChatNotification(message) {
+    if (!this.chatNotificationsEnabled || this.notifications.getPermission() !== 'granted') {
       return;
     }
 

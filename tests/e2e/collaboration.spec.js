@@ -923,20 +923,65 @@ test('syncs collaborative edits across two users on the same file', async ({ bro
   await pageB.close();
 });
 
-test('syncs disposable lobby chat and tracks unread messages', async ({ browser }) => {
+test('shows a foreground toast and stronger unread state for visible remote chat messages', async ({ browser }) => {
   const pageA = await browser.newPage();
   const pageB = await browser.newPage();
 
-  await openFile(pageA, 'README.md');
-  await openFile(pageB, 'README.md');
+  await pageB.addInitScript(() => {
+    window.__testNotifications = [];
+
+    class TestNotification {
+      static permission = 'granted';
+
+      static async requestPermission() {
+        return 'granted';
+      }
+
+      constructor(title, options = {}) {
+        this.title = title;
+        this.options = options;
+        window.__testNotifications.push({ title, ...options });
+      }
+
+      addEventListener() { }
+
+      close() { }
+    }
+
+    Object.defineProperty(window, 'Notification', {
+      configurable: true,
+      writable: true,
+      value: TestNotification,
+    });
+  });
+
+  await openFile(pageA, 'README.md', { userName: 'Sender' });
+  await openFile(pageB, 'README.md', { userName: 'Receiver' });
+
+  await openChat(pageB);
+  await pageB.locator('#chatNotificationBtn').click();
+  await expect(pageB.locator('#chatNotificationBtn')).toHaveText('Alerts on');
+  await pageB.locator('#chatToggleBtn').click();
 
   await sendChatMessage(pageA, 'Quick sync: reviewing README right now.');
 
+  const chatToast = pageB.locator('#chatToastContainer .toast').filter({
+    hasText: 'Sender: Quick sync: reviewing README right now.',
+  }).first();
+  await expect(chatToast).toBeVisible();
+  await expect(chatToast).toContainText(
+    'Sender: Quick sync: reviewing README right now.',
+  );
   await expect(pageB.locator('#chatToggleBadge')).toHaveText('1');
+  await expect(pageB.locator('#chatToggleBtn')).toHaveClass(/is-unread/);
+  await expect.poll(async () => (
+    pageB.evaluate(() => window.__testNotifications.length)
+  )).toBe(0);
 
   await openChat(pageB);
   await expect(pageB.locator('#chatMessages')).toContainText('Quick sync: reviewing README right now.');
   await expect(pageB.locator('#chatToggleBadge')).toBeHidden();
+  await expect(pageB.locator('#chatToggleBtn')).not.toHaveClass(/is-unread/);
 
   await pageA.close();
   await pageB.close();

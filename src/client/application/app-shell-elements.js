@@ -9,6 +9,7 @@ export function bindAppShellElements(doc = document) {
     chatNotificationButton: doc.getElementById('chatNotificationBtn'),
     chatPanel: doc.getElementById('chatPanel'),
     chatStatus: doc.getElementById('chatStatus'),
+    chatToastContainer: doc.getElementById('chatToastContainer'),
     chatToggleBadge: doc.getElementById('chatToggleBadge'),
     chatToggleButton: doc.getElementById('chatToggleBtn'),
     gitCommitCancel: doc.getElementById('gitCommitCancel'),
