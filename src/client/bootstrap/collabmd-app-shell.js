@@ -182,6 +182,7 @@ export class CollabMdAppShell {
     this.excalidrawEmbed = new ExcalidrawEmbedController({
       getLocalUser: () => this.lobby.getLocalUser(),
       getTheme: () => this.themeController.getTheme(),
+      onOpenFile: (filePath) => filePath && this.navigation.navigateToFile(filePath),
       previewContainer: this.elements.previewContainer,
       previewElement: this.elements.previewContent,
       toastController: this.toastController,

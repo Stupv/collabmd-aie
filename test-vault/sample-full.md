@@ -33,7 +33,7 @@ graph LR
 
 ![[sample-excalidraw.excalidraw]]
 
-The diagram above is fully editable — try drawing on it directly in the preview panel.
+The diagram above is preview-only here. Use the Edit button to open it in Excalidraw.
 
 ### Service Handshake Sequence
 

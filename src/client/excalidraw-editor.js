@@ -26,6 +26,7 @@ import { vaultApiClient } from './infrastructure/vault-api-client.js';
 const params = new URLSearchParams(window.location.search);
 const filePath = params.get('file');
 const isTestMode = params.get('test') === '1';
+const isPreviewMode = params.get('mode') === 'preview';
 const parentOrigin = window.location.origin;
 const syncTimeoutMs = Number.parseInt(params.get('syncTimeoutMs') || '', 10);
 
@@ -51,6 +52,7 @@ let lastAppliedFollowViewportSignature = '';
 let apiCleanupCallbacks = [];
 let collaboratorRenderFrame = 0;
 let queuedCollaborators = null;
+let initialViewportFitPending = true;
 const roomClient = new ExcalidrawRoomClient({
   filePath,
   onCollaboratorsChange: (collaborators) => {
@@ -131,6 +133,7 @@ if (isTestMode) {
     ),
     getHistoryState: () => getNativeHistoryState(),
     getLocalUserName: () => localAwarenessUser?.name || '',
+    isViewMode: () => Boolean(excalidrawAPI?.getAppState?.().viewModeEnabled),
     getSceneJson: () => roomClient.getLastSceneJson(),
     isReady: () => collabReady && Boolean(excalidrawAPI) && Boolean(getNativeHistoryButton('undo')) && Boolean(getNativeHistoryButton('redo')),
     redoShared: () => triggerNativeHistory('redo'),
@@ -260,6 +263,8 @@ function updateApiScene(scene, {
   } finally {
     releaseOnChangeSuppressionAfterPaint({ trackedSharedSnapshot });
   }
+
+  scheduleInitialViewportFit();
 }
 
 function applyLocalScene(scene, {
@@ -287,6 +292,40 @@ function onRoomTextUpdate() {
 
 function postToParent(type, payload = {}) {
   window.parent.postMessage({ source: 'excalidraw-editor', type, ...payload }, parentOrigin);
+}
+
+function getSceneElementsForPreviewFit() {
+  return (
+    excalidrawAPI?.getSceneElementsIncludingDeleted?.()
+      ?.filter((element) => !element.isDeleted) ?? []
+  );
+}
+
+function scheduleInitialViewportFit() {
+  if (!initialViewportFitPending || !excalidrawAPI) {
+    return;
+  }
+
+  const elements = getSceneElementsForPreviewFit();
+  if (elements.length === 0) {
+    return;
+  }
+  initialViewportFitPending = false;
+
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      if (!excalidrawAPI) {
+        return;
+      }
+
+      excalidrawAPI.scrollToContent(elements, {
+        animate: false,
+        fitToViewport: true,
+        maxZoom: 2,
+        viewportZoomFactor: isPreviewMode ? 0.92 : 0.88,
+      });
+    });
+  });
 }
 
 function syncLocalViewportToRoom() {
@@ -492,6 +531,7 @@ async function init() {
           applyHostFollowRequest(pendingHostFollowPeerId);
         }
 
+        scheduleInitialViewportFit();
         postToParent('ready');
       },
       initialData,
@@ -505,6 +545,8 @@ async function init() {
         roomClient.scheduleLocalPointerAwareness(payload);
       },
       theme: currentTheme,
+      viewModeEnabled: isPreviewMode,
+      zenModeEnabled: isPreviewMode,
       UIOptions: {
         canvasActions: {
           export: false,

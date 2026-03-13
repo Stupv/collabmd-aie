@@ -50,9 +50,17 @@ function isNearViewport(element, root, marginPx) {
 }
 
 export class ExcalidrawEmbedController {
-  constructor({ getTheme, getLocalUser, previewContainer, previewElement, toastController }) {
+  constructor({
+    getTheme,
+    getLocalUser,
+    onOpenFile = null,
+    previewContainer,
+    previewElement,
+    toastController,
+  }) {
     this.getTheme = getTheme;
     this.getLocalUser = getLocalUser;
+    this.onOpenFile = onOpenFile;
     this.previewContainer = previewContainer;
     this.previewElement = previewElement;
     this.toastController = toastController;
@@ -390,6 +398,7 @@ export class ExcalidrawEmbedController {
 
       const removedIndex = removedEntries.findIndex((entry) => (
         entry.filePath === nextEntry.filePath
+        && this._getEntryMode(entry) === this._getEntryMode(nextEntry)
         && (entry.wrapper || entry.iframe)
       ));
       if (removedIndex < 0) {
@@ -521,6 +530,9 @@ export class ExcalidrawEmbedController {
     iframeUrl.searchParams.set('file', entry.filePath);
     iframeUrl.searchParams.set('theme', theme);
     iframeUrl.searchParams.set('boot', entry.instanceId || '');
+    if (!this._isFilePreviewEntry(entry)) {
+      iframeUrl.searchParams.set('mode', 'preview');
+    }
 
     const localUser = this.getLocalUser?.();
     if (localUser?.name) {
@@ -568,6 +580,13 @@ export class ExcalidrawEmbedController {
     label.className = 'excalidraw-embed-label';
     label.textContent = entry.label.replace(/\.excalidraw$/i, '');
 
+    const openBtn = document.createElement('button');
+    openBtn.type = 'button';
+    openBtn.className = 'excalidraw-embed-btn';
+    openBtn.title = 'Edit in Excalidraw';
+    openBtn.setAttribute('aria-label', 'Edit in Excalidraw');
+    openBtn.textContent = 'Edit';
+
     const maxBtn = document.createElement('button');
     maxBtn.type = 'button';
     maxBtn.className = 'excalidraw-embed-btn';
@@ -575,7 +594,11 @@ export class ExcalidrawEmbedController {
     maxBtn.setAttribute('aria-label', 'Maximize diagram');
     maxBtn.textContent = 'Max';
 
-    header.append(icon, label, maxBtn);
+    header.append(icon, label);
+    if (!this._isFilePreviewEntry(entry)) {
+      header.append(openBtn);
+    }
+    header.append(maxBtn);
 
     const iframe = document.createElement('iframe');
     iframe.className = 'excalidraw-embed-iframe';
@@ -637,6 +660,9 @@ export class ExcalidrawEmbedController {
       } else {
         enterMaximize();
       }
+    });
+    openBtn.addEventListener('click', () => {
+      this.onOpenFile?.(entry.filePath);
     });
 
     syncMaximizeButtonState();
@@ -712,6 +738,10 @@ export class ExcalidrawEmbedController {
 
   _isFilePreviewEntry(entry) {
     return entry?.key === `${entry?.filePath}#file-preview`;
+  }
+
+  _getEntryMode(entry) {
+    return this._isFilePreviewEntry(entry) ? 'edit' : 'preview';
   }
 
   _shouldInlineFilePreview(entry) {

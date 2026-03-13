@@ -82,8 +82,9 @@ test('opens excalidraw files with a direct iframe preview', async ({ page }) => 
   const iframe = page.locator('#previewContent .excalidraw-embed iframe').first();
   await expect(iframe).toBeVisible();
   await expect(iframe).toHaveAttribute('src', /file=sample-excalidraw\.excalidraw/);
-  await expect(iframe).not.toHaveAttribute('src', /mode=embed/);
+  await expect(iframe).not.toHaveAttribute('src', /mode=preview/);
   await expect(page.locator('#previewContent .excalidraw-embed-label')).toHaveText('sample-excalidraw');
+  await expect(page.locator('#previewContent .excalidraw-embed-btn', { hasText: 'Edit' })).toHaveCount(0);
   await expect(page.locator('#previewContent .excalidraw-embed-placeholder')).toHaveCount(0);
   await expect(page.locator('#previewContent')).not.toContainText('Loading Excalidraw preview…');
   await expect(page.locator('#editorLayout')).toHaveAttribute('data-view', 'preview');
@@ -130,7 +131,7 @@ test('opens excalidraw files with a direct iframe preview', async ({ page }) => 
   expect(maximizedWidths.right).toBeLessThanOrEqual(maximizedWidths.innerWidth);
 });
 
-test('markdown excalidraw embeds stay on the editable editor path', async ({ page }) => {
+test('markdown excalidraw embeds use preview mode with an edit button', async ({ page }) => {
   test.slow();
 
   await openSampleFull(page);
@@ -139,7 +140,23 @@ test('markdown excalidraw embeds stay on the editable editor path', async ({ pag
   ), { timeout: 60000 }).toBeGreaterThan(0);
 
   const iframe = page.locator('#previewContent .excalidraw-embed iframe').first();
-  await expect(iframe).not.toHaveAttribute('src', /mode=embed/);
+  await expect(iframe).toHaveAttribute('src', /mode=preview/);
+  await expect(page.locator('#previewContent .excalidraw-embed-btn', { hasText: 'Edit' }).first()).toBeVisible();
+});
+
+test('embedded excalidraw edit button navigates to the diagram file', async ({ page }) => {
+  test.slow();
+
+  await openSampleFull(page);
+  await expect.poll(async () => (
+    page.locator('#previewContent .excalidraw-embed-btn', { hasText: 'Edit' }).count()
+  ), { timeout: 60000 }).toBeGreaterThan(0);
+
+  await page.locator('#previewContent .excalidraw-embed-btn', { hasText: 'Edit' }).first().click();
+  await expect(page).toHaveURL(/#file=sample-excalidraw\.excalidraw/);
+  await expect(page.locator('#editorLayout')).toHaveAttribute('data-view', 'preview');
+  await expect(page.locator('#previewContent .excalidraw-embed iframe').first()).toHaveAttribute('src', /file=sample-excalidraw\.excalidraw/);
+  await expect(page.locator('#previewContent .excalidraw-embed iframe').first()).not.toHaveAttribute('src', /mode=preview/);
 });
 
 test('sample-full renders embedded PlantUML files', async ({ page }) => {
@@ -199,7 +216,7 @@ test('preserves excalidraw iframe instances across unrelated preview rerenders',
   ), { timeout: 60000 }).toBe('alive');
 });
 
-test('reuses an embedded excalidraw iframe when opening the same file directly', async ({ page }) => {
+test('opening an embedded excalidraw file directly remounts it in editable mode', async ({ page }) => {
   test.slow();
 
   await openSampleFull(page);
@@ -216,13 +233,6 @@ test('reuses an embedded excalidraw iframe when opening the same file directly',
     })
   ), { timeout: 60000 }).toBe('complete');
 
-  await page.evaluate(() => {
-    const iframe = document.querySelector('#previewContent .excalidraw-embed iframe[src*="sample-excalidraw.excalidraw"]');
-    if (iframe?.contentWindow) {
-      iframe.contentWindow.__collabmdDirectPreviewReuseProbe = 'alive';
-    }
-  });
-
   const firstInstanceId = await embeddedIframe.getAttribute('data-instance-id');
 
   await page.locator('#fileTree .file-tree-item', { hasText: 'sample-excalidraw' }).first().click();
@@ -231,18 +241,13 @@ test('reuses an embedded excalidraw iframe when opening the same file directly',
   const directIframe = page.locator('#previewContent .excalidraw-embed iframe').first();
   await expect(directIframe).toBeVisible();
   await expect(directIframe).toHaveAttribute('src', /file=sample-excalidraw\.excalidraw/);
+  await expect(directIframe).not.toHaveAttribute('src', /mode=preview/);
   await expect(page.locator('#previewContent')).not.toContainText('Loading Excalidraw preview…');
+  await expect(page.locator('#previewContent .excalidraw-embed-btn', { hasText: 'Edit' })).toHaveCount(0);
 
   await expect.poll(async () => (
     page.locator('#previewContent .excalidraw-embed iframe').first().getAttribute('data-instance-id')
-  ), { timeout: 60000 }).toBe(firstInstanceId);
-
-  await expect.poll(async () => (
-    page.evaluate(() => {
-      const iframe = document.querySelector('#previewContent .excalidraw-embed iframe');
-      return iframe?.contentWindow?.__collabmdDirectPreviewReuseProbe || '';
-    })
-  ), { timeout: 60000 }).toBe('alive');
+  ), { timeout: 60000 }).not.toBe(firstInstanceId);
 });
 
 test('switching away from a direct excalidraw preview hides stale iframe overlays immediately', async ({ page }) => {
