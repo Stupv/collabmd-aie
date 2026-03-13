@@ -1,5 +1,6 @@
 export class LayoutController {
-  constructor({ onMeasureEditor }) {
+  constructor({ mobileBreakpointQuery = window.matchMedia('(max-width: 768px)'), onMeasureEditor }) {
+    this.mobileBreakpointQuery = mobileBreakpointQuery;
     this.onMeasureEditor = onMeasureEditor;
     this.currentView = 'split';
     this.mobileShowsEditor = true;
@@ -9,6 +10,10 @@ export class LayoutController {
     this.mobileToggleButton = document.getElementById('mobileViewToggle');
     this.resizer = document.getElementById('resizer');
     this.viewButtons = Array.from(document.querySelectorAll('.view-btn'));
+  }
+
+  isMobileViewport() {
+    return this.mobileBreakpointQuery.matches;
   }
 
   initialize() {
@@ -22,9 +27,9 @@ export class LayoutController {
   }
 
   reset() {
-    this.mobileShowsEditor = true;
-    this.updateMobileToggleButton('Preview');
-    this.setView('split');
+    this.mobileShowsEditor = !this.isMobileViewport();
+    this.updateMobileToggleButton(this.mobileShowsEditor ? 'Preview' : 'Editor');
+    this.setView(this.mobileShowsEditor ? 'split' : 'preview');
 
     if (this.editorPane) {
       this.editorPane.style.flex = '';

@@ -187,7 +187,7 @@ export const uiFeature = {
   },
 
   isMobileViewport() {
-    return window.matchMedia('(max-width: 768px)').matches;
+    return this.mobileBreakpointQuery.matches;
   },
 
   closeSidebarOnMobile() {

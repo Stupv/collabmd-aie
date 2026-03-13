@@ -55,10 +55,32 @@ export async function waitForEditor(page) {
   await expect(page.locator('.cm-editor')).toBeVisible({ timeout: 15000 });
 }
 
-export async function openFile(page, filePath, { userName = E2E_USER_NAME } = {}) {
+export async function waitForPreview(page) {
+  await expect(page.locator('#previewPane')).toBeVisible({ timeout: 15000 });
+  await expect(page.locator('#previewContent')).toBeVisible({ timeout: 15000 });
+}
+
+export async function openFile(page, filePath, { userName = E2E_USER_NAME, waitFor = 'editor' } = {}) {
   await seedStoredUserName(page, userName);
   await page.goto(`/#file=${encodeURIComponent(filePath)}`);
-  await waitForEditor(page);
+  if (waitFor === 'preview') {
+    await waitForPreview(page);
+    return;
+  }
+
+  if (waitFor === 'editor') {
+    await waitForEditor(page);
+    return;
+  }
+
+  if (waitFor === 'loaded') {
+    await expect.poll(async () => (
+      page.locator('.cm-editor').count()
+    ), { timeout: 15000 }).toBeGreaterThan(0);
+    return;
+  }
+
+  throw new Error(`Unsupported openFile waitFor mode: ${waitFor}`);
 }
 
 export async function openHome(page, { userName = E2E_USER_NAME } = {}) {

@@ -108,6 +108,7 @@ export class CollabMdAppShell {
     this.quickSwitcher = null;
     this.quickSwitcherModulePromise = null;
     this.fileExplorerReadyPromise = Promise.resolve();
+    this.mobileBreakpointQuery = window.matchMedia('(max-width: 768px)');
 
     this.lobby = new LobbyPresence({
       preferredUserName: this.getStoredUserName(),
@@ -140,6 +141,7 @@ export class CollabMdAppShell {
       toastController: this.toastController,
     });
     this.outlineController = new OutlineController({
+      mobileBreakpointQuery: this.mobileBreakpointQuery,
       onNavigateToHeading: ({ sourceLine }) => {
         if (!Number.isFinite(sourceLine)) return;
         this.scrollSyncController.suspendSync(250);
@@ -167,7 +169,10 @@ export class CollabMdAppShell {
       previewElement: this.elements.previewContent,
     });
     this.themeController = new ThemeController({ onChange: (theme) => this.handleThemeChange(theme) });
-    this.layoutController = new LayoutController({ onMeasureEditor: () => this.session?.requestMeasure() });
+    this.layoutController = new LayoutController({
+      mobileBreakpointQuery: this.mobileBreakpointQuery,
+      onMeasureEditor: () => this.session?.requestMeasure(),
+    });
     this.scrollSyncController = new ScrollSyncController({
       getEditorLineNumber: () => this.session?.getTopVisibleLineNumber(0.35) ?? 1,
       onEditorScrollActivityChange: (isActive) => this.handleEditorScrollActivityChange(isActive),

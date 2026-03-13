@@ -7,6 +7,7 @@ import {
   replaceEditorContent,
   test,
   waitForEditor,
+  waitForPreview,
 } from './helpers/app-fixture.js';
 
 const OUTLINE_TEST_DOCUMENT = `# My Vault
@@ -25,7 +26,11 @@ test.describe('mobile outline', () => {
   });
 
   test('closes the outline after selecting a section on mobile', async ({ page }) => {
-    await openFile(page, 'README.md');
+    await openFile(page, 'README.md', { waitFor: 'preview' });
+    await expect(page.locator('#editorLayout')).toHaveAttribute('data-view', 'preview');
+
+    await page.locator('#mobileViewToggle').click();
+    await waitForEditor(page);
     await replaceEditorContent(page, OUTLINE_TEST_DOCUMENT);
     await expect(page.locator('#previewContent')).toContainText('My Vault');
 
@@ -61,7 +66,11 @@ test.describe('mobile PlantUML preview', () => {
       });
     });
 
-    await openFile(page, 'README.md');
+    await openFile(page, 'README.md', { waitFor: 'preview' });
+    await expect(page.locator('#editorLayout')).toHaveAttribute('data-view', 'preview');
+
+    await page.locator('#mobileViewToggle').click();
+    await waitForEditor(page);
     await replaceEditorContent(page, '# Mobile PlantUML\n\n![[sample-plantuml.puml]]');
     await page.locator('#mobileViewToggle').click();
     await expect(page.locator('#previewContent .plantuml-frame svg')).toBeVisible();
@@ -75,8 +84,8 @@ test.describe('mobile PlantUML preview', () => {
     expect(embeddedMetrics.frameClientWidth).toBeGreaterThan(0);
     expect(embeddedMetrics.frameClientWidth).toBeLessThanOrEqual(embeddedMetrics.containerClientWidth);
 
-    await openFile(page, 'sample-plantuml.puml');
-    await page.locator('#mobileViewToggle').click();
+    await openFile(page, 'sample-plantuml.puml', { waitFor: 'preview' });
+    await expect(page.locator('#editorLayout')).toHaveAttribute('data-view', 'preview');
     await expect(page.locator('#previewContent .plantuml-frame svg')).toBeVisible();
 
     const standaloneMetrics = await getPreviewHorizontalOverflowMetrics(page);
@@ -112,7 +121,8 @@ test.describe('mobile sidebar', () => {
 
     await page.locator('#fileTree .file-tree-item', { hasText: 'README' }).first().click();
 
-    await waitForEditor(page);
+    await waitForPreview(page);
+    await expect(page.locator('#editorLayout')).toHaveAttribute('data-view', 'preview');
     await expect(sidebar).toBeHidden();
   });
 });

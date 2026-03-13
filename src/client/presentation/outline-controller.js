@@ -1,5 +1,8 @@
 export class OutlineController {
-  constructor({ onNavigateToHeading } = {}) {
+  constructor({
+    mobileBreakpointQuery = window.matchMedia('(max-width: 768px)'),
+    onNavigateToHeading,
+  } = {}) {
     this.outlineOpen = false;
     this.activeHeadingFrame = null;
     this.activeHeadingId = null;
@@ -9,7 +12,7 @@ export class OutlineController {
     this.navigation = document.getElementById('outlineNav');
     this.previewContainer = document.getElementById('previewContainer');
     this.toggleButton = document.getElementById('outlineToggle');
-    this.mobileBreakpointQuery = window.matchMedia('(max-width: 768px)');
+    this.mobileBreakpointQuery = mobileBreakpointQuery;
     this.handlePreviewScroll = () => this.scheduleActiveHeadingUpdate();
   }
 
