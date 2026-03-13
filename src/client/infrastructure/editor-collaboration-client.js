@@ -3,6 +3,7 @@ import * as Y from 'yjs';
 
 import { createRandomUser, normalizeUserName } from '../domain/room.js';
 import { resolveWsBaseUrl } from './runtime-config.js';
+import { stopReconnectOnControlledClose } from './yjs-provider-reset-guard.js';
 
 export class EditorCollaborationClient {
   constructor({
@@ -59,6 +60,7 @@ export class EditorCollaborationClient {
       disableBc: true,
       maxBackoffTime: 5000,
     });
+    stopReconnectOnControlledClose(provider);
     const awareness = provider.awareness;
     const user = this.providedLocalUser ?? createRandomUser(this.preferredUserName);
 

@@ -53,6 +53,7 @@ test('presenceFeature routes excalidraw follow through the embed controller', as
     ...presenceFeature,
     currentFilePath: 'diagram.excalidraw',
     followedCursorSignature: '',
+    followedUserClientId: 'global-2',
     excalidrawEmbed: {
       async setFollowedUser(filePath, peerId) {
         calls.push({ filePath, peerId });
@@ -64,12 +65,33 @@ test('presenceFeature routes excalidraw follow through the embed controller', as
 
   context.followUserCursor({ clientId: 'global-2', peerId: 'peer-2' }, { force: true });
   await Promise.resolve();
+  await Promise.resolve();
 
   assert.deepEqual(calls, [{
     filePath: 'diagram.excalidraw',
     peerId: 'peer-2',
   }]);
   assert.equal(context.followedCursorSignature, 'excalidraw:diagram.excalidraw:peer-2');
+});
+
+test('presenceFeature leaves Excalidraw follow retryable when the embed controller is not ready', async () => {
+  const context = {
+    ...presenceFeature,
+    currentFilePath: 'diagram.excalidraw',
+    followedCursorSignature: '',
+    followedUserClientId: 'global-3',
+    excalidrawEmbed: {
+      async setFollowedUser() {
+        return false;
+      },
+    },
+    isExcalidrawFile: (filePath) => filePath.endsWith('.excalidraw'),
+  };
+
+  context.followUserCursor({ clientId: 'global-3', peerId: 'peer-3' }, { force: true });
+  await Promise.resolve();
+
+  assert.equal(context.followedCursorSignature, '');
 });
 
 test('presenceFeature renders lobby presence on the empty workspace when no editor session exists', () => {

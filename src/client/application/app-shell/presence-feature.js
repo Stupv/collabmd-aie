@@ -208,8 +208,15 @@ export const presenceFeature = {
       return;
     }
 
-    this.followedCursorSignature = nextSig;
-    void this.excalidrawEmbed?.setFollowedUser(this.currentFilePath, user.peerId);
+    void Promise.resolve(
+      this.excalidrawEmbed?.setFollowedUser(this.currentFilePath, user.peerId),
+    ).then((didApply) => {
+      if (didApply === false || this.followedUserClientId !== user.clientId) {
+        return;
+      }
+
+      this.followedCursorSignature = nextSig;
+    }).catch(() => {});
   },
 
   resolveFileClientId(peerId) {

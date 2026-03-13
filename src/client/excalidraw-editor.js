@@ -49,7 +49,7 @@ let pendingHostFollowPeerId = null;
 let suppressViewportBroadcast = false;
 let pendingViewportSuppressionReleases = 0;
 let lastAppliedFollowViewportSignature = '';
-let apiCleanupCallbacks = [];
+let apiStateCleanupCallbacks = [];
 let collaboratorRenderFrame = 0;
 let queuedCollaborators = null;
 let initialViewportFitPending = true;
@@ -133,13 +133,45 @@ if (isTestMode) {
     ),
     getHistoryState: () => getNativeHistoryState(),
     getLocalUserName: () => localAwarenessUser?.name || '',
+    getLocalPeerId: () => localAwarenessUser?.peerId || '',
+    getViewport: () => {
+      const appState = excalidrawAPI?.getAppState?.();
+      return appState ? {
+        scrollX: appState.scrollX,
+        scrollY: appState.scrollY,
+        zoom: appState.zoom?.value ?? null,
+      } : null;
+    },
     isViewMode: () => Boolean(excalidrawAPI?.getAppState?.().viewModeEnabled),
     getSceneJson: () => roomClient.getLastSceneJson(),
+    isAuthoritativeReady: () => (
+      Boolean(excalidrawAPI)
+      && collabReady
+      && roomClient.canWriteToRoom === true
+      && roomClient.waitingForAuthoritativeSync === false
+    ),
     isReady: () => collabReady && Boolean(excalidrawAPI) && Boolean(getNativeHistoryButton('undo')) && Boolean(getNativeHistoryButton('redo')),
     redoShared: () => triggerNativeHistory('redo'),
     setScene: (scene) => {
       applyLocalScene(normalizeScene(scene), {
         captureUpdate: CaptureUpdateAction.IMMEDIATELY,
+      });
+    },
+    setViewport: (viewport) => {
+      if (!excalidrawAPI) {
+        return;
+      }
+
+      const currentAppState = excalidrawAPI.getAppState();
+      excalidrawAPI.updateScene({
+        appState: {
+          scrollX: Number.isFinite(viewport?.scrollX) ? viewport.scrollX : currentAppState.scrollX,
+          scrollY: Number.isFinite(viewport?.scrollY) ? viewport.scrollY : currentAppState.scrollY,
+          zoom: Number.isFinite(viewport?.zoom) && viewport.zoom > 0
+            ? { value: viewport.zoom }
+            : currentAppState.zoom,
+        },
+        captureUpdate: CaptureUpdateAction.NEVER,
       });
     },
     undoShared: () => triggerNativeHistory('undo'),
@@ -190,7 +222,7 @@ function applySceneFromJson(rawJson) {
 
   appliedSceneJson = normalizedJson;
 
-  if (!excalidrawAPI) {
+  if (!excalidrawAPI || !collabReady) {
     pendingRemoteSceneJson = normalizedJson;
     return;
   }
@@ -275,7 +307,7 @@ function applyLocalScene(scene, {
 
   appliedSceneJson = normalizedJson;
 
-  if (!excalidrawAPI) {
+  if (!excalidrawAPI || !collabReady) {
     pendingRemoteSceneJson = normalizedJson;
     return;
   }
@@ -431,8 +463,8 @@ function disconnectRealtimeRoom() {
   }
   collaboratorRenderFrame = 0;
   queuedCollaborators = null;
-  apiCleanupCallbacks.forEach((cleanup) => cleanup());
-  apiCleanupCallbacks = [];
+  apiStateCleanupCallbacks.forEach((cleanup) => cleanup());
+  apiStateCleanupCallbacks = [];
   roomClient.disconnect();
 }
 
@@ -486,6 +518,50 @@ function scheduleSyncToRoom(elements, appState, files) {
   roomClient.scheduleSceneSync(elements, appState, files);
 }
 
+function initializeEditor(api) {
+  excalidrawAPI = api;
+  apiStateCleanupCallbacks.forEach((cleanup) => cleanup());
+  apiStateCleanupCallbacks = [];
+
+  apiStateCleanupCallbacks.push(api.onStateChange(['scrollX', 'scrollY', 'zoom'], () => {
+    syncLocalViewportToRoom();
+  }));
+  apiStateCleanupCallbacks.push(api.onStateChange('userToFollow', (userToFollow) => {
+    if (userToFollow?.socketId) {
+      setFollowedSocket(userToFollow.socketId, { force: true });
+      return;
+    }
+
+    setFollowedSocket(null, { force: true });
+  }));
+
+  const sceneJson = pendingRemoteSceneJson || roomClient.getLastSceneJson();
+  pendingRemoteSceneJson = '';
+  updateApiScene(parseSceneJson(sceneJson));
+
+  if (pendingCollaborators) {
+    excalidrawAPI.updateScene({
+      collaborators: pendingCollaborators,
+      captureUpdate: CaptureUpdateAction.NEVER,
+    });
+    pendingCollaborators = null;
+  }
+
+  collabReady = true;
+  syncLocalViewportToRoom();
+  onRoomTextUpdate();
+  if (pendingHostFollowPeerId) {
+    applyHostFollowRequest(pendingHostFollowPeerId);
+  }
+
+  scheduleInitialViewportFit();
+  postToParent('ready');
+}
+
+function handleEditorMount({ excalidrawAPI: api }) {
+  excalidrawAPI = api;
+}
+
 async function init() {
   const loadingElement = document.getElementById('loadingState');
 
@@ -497,42 +573,15 @@ async function init() {
     loadingElement?.remove();
 
     const excalidrawProps = {
-      excalidrawAPI: (api) => {
-        apiCleanupCallbacks.forEach((cleanup) => cleanup());
-        apiCleanupCallbacks = [];
-        excalidrawAPI = api;
-
-        const sceneJson = pendingRemoteSceneJson || roomClient.getLastSceneJson();
-        pendingRemoteSceneJson = '';
-        updateApiScene(parseSceneJson(sceneJson));
-
-        if (pendingCollaborators) {
-          excalidrawAPI.updateScene({
-            collaborators: pendingCollaborators,
-            captureUpdate: CaptureUpdateAction.NEVER,
-          });
-          pendingCollaborators = null;
-        }
-        apiCleanupCallbacks.push(excalidrawAPI.onScrollChange(() => {
-          syncLocalViewportToRoom();
-        }));
-        apiCleanupCallbacks.push(excalidrawAPI.onUserFollow((payload) => {
-          if (payload.action === 'FOLLOW') {
-            setFollowedSocket(payload.userToFollow?.socketId, { force: true });
-            return;
-          }
-
-          setFollowedSocket(null, { force: true });
-        }));
-        collabReady = true;
-        syncLocalViewportToRoom();
-        onRoomTextUpdate();
-        if (pendingHostFollowPeerId) {
-          applyHostFollowRequest(pendingHostFollowPeerId);
-        }
-
-        scheduleInitialViewportFit();
-        postToParent('ready');
+      onMount: handleEditorMount,
+      onInitialize: (api) => {
+        initializeEditor(api);
+      },
+      onUnmount: () => {
+        apiStateCleanupCallbacks.forEach((cleanup) => cleanup());
+        apiStateCleanupCallbacks = [];
+        excalidrawAPI = null;
+        collabReady = false;
       },
       initialData,
       aiEnabled: false,

@@ -76,6 +76,7 @@ export class ExcalidrawEmbedController {
     this.overlayRoot = null;
     this.maximizedRoot = null;
     this.placeholderObserver = null;
+    this.followedPeerIdsByFilePath = new Map();
 
     this._onMessage = this._onMessage.bind(this);
     this._onKeyDown = this._onKeyDown.bind(this);
@@ -103,6 +104,7 @@ export class ExcalidrawEmbedController {
       entry.placeholder = null;
     });
     this.embedEntries.clear();
+    this.followedPeerIdsByFilePath.clear();
     this.overlayRoot?.remove();
     this.overlayRoot = null;
     this.maximizedRoot?.remove();
@@ -114,20 +116,19 @@ export class ExcalidrawEmbedController {
       return false;
     }
 
+    this.followedPeerIdsByFilePath.set(filePath, peerId || null);
+
     const entry = this._findEntryByFilePath(filePath);
     if (!entry) {
-      return false;
+      return true;
     }
 
     if (!entry.wrapper) {
       await this._hydrateEntry(entry);
     }
 
-    this._postMessageToEntry(entry, {
-      source: 'collabmd-host',
-      type: 'follow-user',
-      peerId: peerId || null,
-    });
+    entry.followedPeerId = this.followedPeerIdsByFilePath.get(filePath) ?? null;
+    this._syncEntryFollowState(entry);
     return true;
   }
 
@@ -187,6 +188,7 @@ export class ExcalidrawEmbedController {
 
     this.embedEntries.forEach((entry) => {
       entry.queued = false;
+      entry.followedPeerId = this.followedPeerIdsByFilePath.get(entry.filePath);
       if (entry.wrapper) {
         this._updateEmbedLabel(entry);
         this._attachWrapper(entry);
@@ -351,10 +353,12 @@ export class ExcalidrawEmbedController {
       entry.iframe = mount.iframe;
       entry.labelElement = mount.labelElement;
       entry.instanceId = mount.instanceId;
+      entry.isReady = false;
       entry.bootAttempts = (entry.bootAttempts ?? 0) + 1;
       this._armEntryBootTimeout(entry);
     }
 
+    entry.followedPeerId = this.followedPeerIdsByFilePath.get(entry.filePath);
     this._updateEmbedLabel(entry);
     this._attachWrapper(entry);
   }
@@ -475,6 +479,7 @@ export class ExcalidrawEmbedController {
     entry.iframe = null;
     entry.labelElement = null;
     entry.instanceId = null;
+    entry.isReady = false;
 
     await this._hydrateEntry(entry);
   }
@@ -895,6 +900,7 @@ export class ExcalidrawEmbedController {
     }
 
     if (msg.type === 'ready') {
+      entry.isReady = true;
       this._clearEntryBootTimeout(entry);
       this._syncEntryUser(entry);
       this._postMessageToEntry(entry, {
@@ -902,10 +908,12 @@ export class ExcalidrawEmbedController {
         type: 'set-theme',
         theme: this.getTheme?.() || 'dark',
       });
+      this._syncEntryFollowState(entry);
       return;
     }
 
     if (msg.type === 'error') {
+      entry.isReady = false;
       void this._handleEntryBootTimeout(entry);
     }
   }
@@ -943,6 +951,18 @@ export class ExcalidrawEmbedController {
         name: localUser.name || '',
         peerId: localUser.peerId || '',
       },
+    });
+  }
+
+  _syncEntryFollowState(entry) {
+    if (!entry?.isReady || entry.followedPeerId === undefined) {
+      return;
+    }
+
+    this._postMessageToEntry(entry, {
+      source: 'collabmd-host',
+      type: 'follow-user',
+      peerId: entry.followedPeerId,
     });
   }
 }

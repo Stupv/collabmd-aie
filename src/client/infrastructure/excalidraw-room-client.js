@@ -24,6 +24,7 @@ import {
   tryParseSceneJson,
 } from '../domain/excalidraw-scene.js';
 import { resolveWsBaseUrl } from '../domain/runtime-paths.js';
+import { stopReconnectOnControlledClose } from './yjs-provider-reset-guard.js';
 
 const DEFAULT_EMPTY_SCENE_GUARD_MS = 250;
 const DEFAULT_SAVE_THROTTLE_MS = 48;
@@ -184,6 +185,7 @@ export class ExcalidrawRoomClient {
       disableBc: true,
       maxBackoffTime: 5000,
     });
+    stopReconnectOnControlledClose(this.provider);
 
     this.awareness = this.provider.awareness;
     if (this.localUser) {

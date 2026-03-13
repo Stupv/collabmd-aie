@@ -3,6 +3,7 @@ import * as Y from 'yjs';
 
 import { createRandomUser } from '../domain/room.js';
 import { resolveWsBaseUrl } from './runtime-config.js';
+import { stopReconnectOnControlledClose } from './yjs-provider-reset-guard.js';
 
 const LOBBY_ROOM_NAME = '__lobby__';
 export const LOBBY_CHAT_MESSAGE_MAX_LENGTH = 280;
@@ -97,6 +98,7 @@ export class LobbyPresence {
       this.ydoc,
       { disableBc: true, maxBackoffTime: 5000 },
     );
+    stopReconnectOnControlledClose(this.provider);
 
     this.awareness = this.provider.awareness;
     this.awareness.setLocalStateField('user', this.localUser);

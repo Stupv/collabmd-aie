@@ -1,6 +1,7 @@
 import {
   ACTIVE_MAXIMIZED_EXCALIDRAW_SELECTOR,
   ACTIVE_MAXIMIZED_PLANTUML_SELECTOR,
+  README_TEST_DOCUMENT,
   duplicateVaultFile,
   expect,
   getMermaidZoomMetrics,
@@ -9,20 +10,12 @@ import {
   openHome,
   openSampleFull,
   replaceEditorContent,
+  restoreReadmeTestDocument,
   stubPlantUmlRender,
   test,
   waitForHeavyPreviewContent,
+  writeVaultFileAndResetCollab,
 } from './helpers/app-fixture.js';
-
-const README_TEST_DOCUMENT = `# My Vault
-
-Welcome to the test vault. This is the top-level readme.
-
-## Links
-
-- [[daily/2026-03-05]]
-- [[projects/collabmd]]
-`;
 
 test('renders PlantUML fenced blocks through the preview pipeline', async ({ page }) => {
   await page.route('**/api/plantuml/render', async (route) => {
@@ -252,6 +245,8 @@ test('opening an embedded excalidraw file directly remounts it in editable mode'
 });
 
 test('switching away from a direct excalidraw preview hides stale iframe overlays immediately', async ({ page }) => {
+  const switchMarkdownPath = 'switch-readme.md';
+
   await page.route('**/api/plantuml/render', async (route) => {
     await route.fulfill({
       body: JSON.stringify({
@@ -268,15 +263,15 @@ test('switching away from a direct excalidraw preview hides stale iframe overlay
   await page.locator('#fileTree .file-tree-item', { hasText: 'sample-excalidraw' }).first().click();
   await expect(page.locator('#previewContent .excalidraw-embed iframe')).toBeVisible();
 
-  const writeReadmeResponse = await page.request.put('http://127.0.0.1:4173/api/file', {
-    data: {
-      content: README_TEST_DOCUMENT,
-      path: 'README.md',
-    },
+  await restoreReadmeTestDocument(page);
+  await writeVaultFileAndResetCollab(page, {
+    content: README_TEST_DOCUMENT,
+    path: switchMarkdownPath,
   });
-  expect(writeReadmeResponse.ok()).toBeTruthy();
+  await page.locator('#refreshFilesBtn').click();
+  await expect(page.locator('#fileTree')).toContainText('switch-readme');
 
-  await page.locator('#fileTree .file-tree-item', { hasText: 'README' }).first().click();
+  await page.locator('#fileTree .file-tree-item', { hasText: 'switch-readme' }).first().click();
   await expect(page.locator('#previewContent .excalidraw-embed iframe').first()).toBeHidden();
   await expect(page.locator('#previewContent')).toContainText('My Vault');
 

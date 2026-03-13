@@ -1,26 +1,61 @@
 import { test as base, expect } from '@playwright/test';
+import { readFile, rm } from 'node:fs/promises';
+import { resolve } from 'node:path';
 
-import { resetE2EVaultSnapshot } from './vault-snapshot.js';
+import { resetE2EVaultSnapshot, runtimeVaultDir, templateVaultDir } from './vault-snapshot.js';
 
 export const E2E_USER_NAME = 'E2E User';
 export const ACTIVE_MAXIMIZED_EXCALIDRAW_SELECTOR = '[data-excalidraw-maximized-root="true"] .excalidraw-embed.is-maximized';
 export const ACTIVE_MAXIMIZED_PLANTUML_SELECTOR = '[data-plantuml-maximized-root="true"] .plantuml-shell.is-maximized';
+export const README_TEST_DOCUMENT = `# My Vault
+
+Welcome to the test vault. This is the top-level readme.
+
+## Links
+
+- [[daily/2026-03-05]]
+- [[projects/collabmd]]
+`;
+let lateStatePrimePending = false;
 
 export const test = base;
 
-test.beforeEach(async ({ page }) => {
+test.beforeEach(async ({ browser, page }) => {
+  const currentContext = page.context();
+  await Promise.all(
+    browser.contexts()
+      .filter((context) => context !== currentContext)
+      .map((context) => context.close().catch(() => {})),
+  );
   await resetE2EAppState(page);
+  lateStatePrimePending = true;
   await seedStoredUserName(page);
+});
+
+test.afterEach(async ({ page }) => {
+  try {
+    await page.goto('about:blank');
+    await page.waitForTimeout(250);
+  } catch {
+    // Ignore teardown navigation failures when the page is already closed.
+  }
 });
 
 export { expect };
 
 async function resetE2EAppState(page, { attempts = 5, stabilityWindowMs = 650 } = {}) {
   let lastContent = '';
+  const resetServerState = async () => {
+    const response = await page.request.post('http://127.0.0.1:4173/api/test/reset-state');
+    if (!response.ok()) {
+      throw new Error(`reset-state failed: ${response.status()} ${await response.text()}`);
+    }
+  };
 
   for (let attempt = 0; attempt < attempts; attempt += 1) {
+    await resetServerState();
     await resetE2EVaultSnapshot();
-    await page.request.post('http://127.0.0.1:4173/api/test/reset-state');
+    await resetServerState();
 
     const readReadme = async () => {
       const response = await page.request.get('http://127.0.0.1:4173/api/file?path=README.md');
@@ -45,6 +80,15 @@ async function resetE2EAppState(page, { attempts = 5, stabilityWindowMs = 650 } 
   throw new Error(`Failed to restore the E2E vault snapshot. README.md content was: ${lastContent}`);
 }
 
+async function ensureLateStatePrime(page) {
+  if (!lateStatePrimePending) {
+    return;
+  }
+
+  await resetE2EAppState(page);
+  lateStatePrimePending = false;
+}
+
 export async function seedStoredUserName(page, name = E2E_USER_NAME) {
   await page.addInitScript((storedName) => {
     window.localStorage.setItem('collabmd-user-name', storedName);
@@ -61,6 +105,7 @@ export async function waitForPreview(page) {
 }
 
 export async function openFile(page, filePath, { userName = E2E_USER_NAME, waitFor = 'editor' } = {}) {
+  await ensureLateStatePrime(page);
   await seedStoredUserName(page, userName);
   await page.goto(`/#file=${encodeURIComponent(filePath)}`);
   if (waitFor === 'preview') {
@@ -84,12 +129,62 @@ export async function openFile(page, filePath, { userName = E2E_USER_NAME, waitF
 }
 
 export async function openHome(page, { userName = E2E_USER_NAME } = {}) {
+  await ensureLateStatePrime(page);
   await seedStoredUserName(page, userName);
   await page.goto('/');
   await expect(page.locator('#displayNameDialog')).toBeHidden();
   await expect.poll(async () => (
     page.locator('#fileTree .file-tree-item').count()
   ), { timeout: 15000 }).toBeGreaterThan(0);
+}
+
+export async function writeVaultFileAndResetCollab(page, { path, content }) {
+  const resetResponseBeforeWrite = await page.request.post('http://127.0.0.1:4173/api/test/reset-state');
+  if (!resetResponseBeforeWrite.ok()) {
+    throw new Error(`reset-state failed before write: ${resetResponseBeforeWrite.status()} ${await resetResponseBeforeWrite.text()}`);
+  }
+
+  await clearCollaborationSidecars(path);
+  const writeResponse = await page.request.put('http://127.0.0.1:4173/api/file', {
+    data: { content, path },
+  });
+  if (!writeResponse.ok()) {
+    throw new Error(`write file failed: ${writeResponse.status()} ${await writeResponse.text()}`);
+  }
+
+  const resetResponseAfterWrite = await page.request.post('http://127.0.0.1:4173/api/test/reset-state');
+  if (!resetResponseAfterWrite.ok()) {
+    throw new Error(`reset-state failed after write: ${resetResponseAfterWrite.status()} ${await resetResponseAfterWrite.text()}`);
+  }
+}
+
+export async function restoreReadmeTestDocument(page) {
+  await writeVaultFileAndResetCollab(page, {
+    content: README_TEST_DOCUMENT,
+    path: 'README.md',
+  });
+}
+
+export async function restoreVaultFileFromTemplate(page, filePath) {
+  const absoluteTemplatePath = resolve(templateVaultDir, filePath);
+  const content = await readFile(absoluteTemplatePath, 'utf8');
+  await writeVaultFileAndResetCollab(page, {
+    content,
+    path: filePath,
+  });
+}
+
+export async function clearCollaborationSidecars(filePath) {
+  const targets = [
+    resolve(runtimeVaultDir, '.collabmd/comments', `${filePath}.json`),
+    resolve(runtimeVaultDir, '.collabmd/yjs', `${filePath}.bin`),
+  ];
+
+  await Promise.all(targets.map((target) => rm(target, { force: true }).catch(() => {})));
+}
+
+export async function clearReadmeCollaborationSidecars() {
+  await clearCollaborationSidecars('README.md');
 }
 
 export async function stubPlantUmlRender(page, label = 'plantuml-stub') {
@@ -312,6 +407,7 @@ export async function dragEditorSelection(page, targetText) {
 export async function waitForCommentSelectionChip(page) {
   const chip = page.locator('.comment-selection-chip');
   await expect(chip).toBeVisible();
+  await expect.poll(async () => Boolean(await chip.boundingBox())).toBe(true);
   return chip;
 }
 

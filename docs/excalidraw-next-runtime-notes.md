@@ -1,20 +1,20 @@
 # Excalidraw `@next` Runtime Notes
 
-Date: March 10, 2026
+Date: March 13, 2026
 
 Tested package:
 
-- `@excalidraw/excalidraw@0.18.0-c1dbbdf`
+- `@excalidraw/excalidraw@0.18.0-816c81c`
 
-Findings from direct inspection of the installed bundle in `node_modules` and runtime probing in the embed harness:
+Current public API surface confirmed from the installed package types:
 
-- This snapshot does not yet expose the newer changelog APIs such as `onMount`, `onInitialize`, generic `onEvent(...)`, or `onExcalidrawAPI`.
-- The installed bundle still wires the host callback through `excalidrawAPI`.
-- During a real drag, the library sets drag-related app state such as `selectedElementsAreBeingDragged`, but the public scene returned by `getSceneElementsIncludingDeleted()` does not move before mouseup.
-- The public `onIncrement` / store path does not provide a usable live element-update stream for that drag path in this snapshot.
-- Live pointer updates do arrive in real time.
+- `onMount` / `onInitialize` / `onUnmount` are the main lifecycle props to prefer for host integration.
+- `onMount`, `onInitialize`, and `onUnmount` are available on `<Excalidraw />`.
+- The imperative API exposes `onEvent(...)` and `onStateChange(...)`.
+- Legacy imperative subscriptions such as `api.onScrollChange(...)` and `api.onUserFollow(...)` still exist in this snapshot, but host integrations should prefer `api.onStateChange(...)` / `onEvent(...)` where practical.
 
-Conclusion:
+CollabMD integration notes:
 
-- In-progress remote drag rendering for this `@next` snapshot requires host-side reconstruction from pointer and selection awareness, or an internal Excalidraw collaboration path that is not exposed through the public package API.
-- Because stable `@excalidraw/excalidraw@0.18.0` already provides the expected multiplayer behavior for this app, the repo is being reverted to the stable package instead of carrying custom drag-preview glue for the prerelease snapshot.
+- The editor now captures the API via `onMount` and defers room synchronization setup until `onInitialize`.
+- Remote scene updates are queued until initialization completes so we do not write into the editor before its initial scene is ready.
+- Viewport and follow handling now subscribe through `api.onStateChange(...)` for `scrollX` / `scrollY` / `zoom` and `userToFollow`, which matches the new state-observer API surface.

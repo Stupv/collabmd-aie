@@ -1,11 +1,15 @@
 import {
   createComment,
   createLongMarkdownDocument,
+  clearReadmeCollaborationSidecars,
   dragEditorSelection,
   expect,
+  README_TEST_DOCUMENT,
   openChat,
   openFile,
   replaceEditorContent,
+  restoreReadmeTestDocument,
+  restoreVaultFileFromTemplate,
   setEditorSelection,
   seedStoredUserName,
   sendChatMessage,
@@ -366,6 +370,45 @@ test('direct Excalidraw fallback does not wipe live room state from another page
   await context.close();
 });
 
+test('direct Excalidraw follow tracks remote viewport updates', async ({ browser }) => {
+  const context = await browser.newContext();
+  const followerPage = await context.newPage();
+  const targetPage = await context.newPage();
+
+  await followerPage.goto('/excalidraw-editor.html?file=sample-excalidraw.excalidraw&test=1&userName=Follower');
+  await targetPage.goto('/excalidraw-editor.html?file=sample-excalidraw.excalidraw&test=1&userName=Target');
+  await waitForExcalidrawTestHarness(followerPage);
+  await waitForExcalidrawTestHarness(targetPage);
+
+  const targetPeerId = await targetPage.evaluate(() => window.__COLLABMD_EXCALIDRAW_TEST__.getLocalPeerId());
+
+  await followerPage.evaluate((peerId) => {
+    window.postMessage({
+      source: 'collabmd-host',
+      type: 'follow-user',
+      peerId,
+    }, window.location.origin);
+  }, targetPeerId);
+
+  await targetPage.evaluate(() => {
+    window.__COLLABMD_EXCALIDRAW_TEST__.setViewport({
+      scrollX: 640,
+      scrollY: 320,
+      zoom: 1.6,
+    });
+  });
+
+  await expect.poll(async () => (
+    followerPage.evaluate(() => window.__COLLABMD_EXCALIDRAW_TEST__.getViewport())
+  )).toMatchObject({
+    scrollX: 640,
+    scrollY: 320,
+    zoom: 1.6,
+  });
+
+  await context.close();
+});
+
 test('taking over an Excalidraw file tab preserves the live scene', async ({ browser }) => {
   const context = await browser.newContext();
   const pageA = await context.newPage();
@@ -376,6 +419,9 @@ test('taking over an Excalidraw file tab preserves the live scene', async ({ bro
 
   await pageA.goto('/?test=1#file=sample-excalidraw.excalidraw');
   const frameA = await waitForExcalidrawFrameHarness(pageA);
+  await expect.poll(async () => (
+    frameA.evaluate(() => window.__COLLABMD_EXCALIDRAW_TEST__.isAuthoritativeReady())
+  )).toBe(true);
 
   await frameA.evaluate(() => {
     const scene = JSON.parse(window.__COLLABMD_EXCALIDRAW_TEST__.getSceneJson());
@@ -385,7 +431,9 @@ test('taking over an Excalidraw file tab preserves the live scene', async ({ bro
     };
     window.__COLLABMD_EXCALIDRAW_TEST__.setScene(scene);
   });
-  await frameA.waitForTimeout(150);
+  await expect.poll(async () => (
+    frameA.evaluate(() => JSON.parse(window.__COLLABMD_EXCALIDRAW_TEST__.getSceneJson()).appState.viewBackgroundColor)
+  )).toBe('#345678');
 
   await pageB.goto('/?test=1#file=sample-excalidraw.excalidraw');
   await expect(pageB.locator('#tabLockOverlay')).toBeVisible();
@@ -638,10 +686,18 @@ test('keeps multiplayer Excalidraw scenes stable while one user drags and anothe
     'status-pill',
   ].sort();
 
+  await restoreVaultFileFromTemplate(pageA, 'sample-excalidraw.excalidraw');
   await pageA.goto('/excalidraw-editor.html?file=sample-excalidraw.excalidraw&test=1');
   await pageB.goto('/excalidraw-editor.html?file=sample-excalidraw.excalidraw&test=1');
   await waitForExcalidrawTestHarness(pageA);
   await waitForExcalidrawTestHarness(pageB);
+  await expect.poll(async () => ({
+    idsA: await getSceneElementIds(pageA),
+    idsB: await getSceneElementIds(pageB),
+  })).toEqual({
+    idsA: [],
+    idsB: [],
+  });
 
   await seedExcalidrawMultiplayerScene(pageA);
 
@@ -771,7 +827,9 @@ test('typing immediately after opening a multiline comment goes into the compose
 });
 
 test('keeps the inline chip hidden during pointer drag and hides it when scrolled out of view', async ({ page }) => {
+  await restoreReadmeTestDocument(page);
   await openFile(page, 'README.md');
+  await expect(page.locator('.cm-editor')).toContainText('Welcome to the test vault');
 
   await dragEditorSelection(page, 'Welcome to the test vault');
   await expect(page.locator('.comment-selection-chip')).toBeHidden();
@@ -793,8 +851,11 @@ test('creates and syncs a line comment across collaborators', async ({ browser }
   const pageA = await browser.newPage();
   const pageB = await browser.newPage();
 
+  await clearReadmeCollaborationSidecars();
   await openFile(pageA, 'README.md');
   await openFile(pageB, 'README.md');
+  await replaceEditorContent(pageA, README_TEST_DOCUMENT);
+  await expect(pageB.locator('#previewContent')).toContainText('Welcome to the test vault');
 
   await createComment(pageA, {
     body: 'Please tighten this intro.',
@@ -816,7 +877,10 @@ test('creates and syncs a line comment across collaborators', async ({ browser }
 });
 
 test('renders icon-based thread markers with counts for grouped comments', async ({ page }) => {
+  await clearReadmeCollaborationSidecars();
   await openFile(page, 'README.md');
+  await replaceEditorContent(page, README_TEST_DOCUMENT);
+  await expect(page.locator('#previewContent')).toContainText('Welcome to the test vault');
 
   await createComment(page, {
     body: 'First grouped comment',
@@ -830,7 +894,7 @@ test('renders icon-based thread markers with counts for grouped comments', async
   });
 
   const editorBadge = page.locator('.comment-editor-badge[data-count="2"]').first();
-  const previewBadge = page.locator('#previewContent .comment-preview-badge').first();
+  const previewBadge = page.locator('#previewContent .comment-preview-badge[aria-label="2 comment threads"]').first();
 
   await expect(editorBadge.locator('.comment-marker-icon')).toBeVisible();
   await expect(editorBadge.locator('.comment-marker-count')).toHaveText('2');
@@ -839,7 +903,10 @@ test('renders icon-based thread markers with counts for grouped comments', async
 });
 
 test('keeps reply action aligned by using an active Reply toggle state', async ({ page }) => {
+  await clearReadmeCollaborationSidecars();
   await openFile(page, 'README.md');
+  await replaceEditorContent(page, README_TEST_DOCUMENT);
+  await expect(page.locator('#previewContent')).toContainText('Welcome to the test vault');
 
   await createComment(page, {
     body: 'Please clarify this section.',
@@ -847,7 +914,7 @@ test('keeps reply action aligned by using an active Reply toggle state', async (
     targetText: 'Welcome to the test vault. This is the top-level readme.',
   });
 
-  await page.locator('#previewContent .comment-preview-badge').click();
+  await page.locator('#previewContent .comment-preview-badge[aria-label="1 comment thread"]').first().click();
   const replyButton = page.locator('.comment-thread-card-action').filter({ hasText: 'Reply' }).first();
 
   await expect(replyButton).toHaveText('Reply');
@@ -858,7 +925,10 @@ test('keeps reply action aligned by using an active Reply toggle state', async (
 });
 
 test('creates a selected-text comment and surfaces it in the preview bubble card', async ({ page }) => {
+  await clearReadmeCollaborationSidecars();
   await openFile(page, 'README.md');
+  await replaceEditorContent(page, README_TEST_DOCUMENT);
+  await expect(page.locator('#previewContent')).toContainText('Welcome to the test vault');
 
   await createComment(page, {
     body: 'This phrase should stay visible in preview.',
@@ -867,7 +937,7 @@ test('creates a selected-text comment and surfaces it in the preview bubble card
   });
 
   await expect(page.locator('#previewContent .comment-preview-highlight')).toHaveCount(1);
-  await page.locator('#previewContent .comment-preview-badge').click();
+  await page.locator('#previewContent .comment-preview-badge[aria-label="1 comment thread"]').first().click();
   await expect(page.locator('.comment-card')).toContainText('Welcome to the test vault');
   await expect(page.locator('.comment-card')).toContainText('This phrase should stay visible in preview.');
 });
@@ -905,8 +975,11 @@ test('syncs collaborative edits across two users on the same file', async ({ bro
   const pageA = await browser.newPage();
   const pageB = await browser.newPage();
 
+  await clearReadmeCollaborationSidecars();
   await openFile(pageA, 'README.md');
   await openFile(pageB, 'README.md');
+  await replaceEditorContent(pageA, README_TEST_DOCUMENT);
+  await expect(pageB.locator('#previewContent')).toContainText('Welcome to the test vault');
 
   await expect(pageA.locator('#userCount')).toHaveText('2 online');
 
