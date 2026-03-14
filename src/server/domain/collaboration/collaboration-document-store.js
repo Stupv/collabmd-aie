@@ -5,6 +5,14 @@ import {
   supportsBacklinksForFilePath,
 } from '../../../domain/file-kind.js';
 
+function assertWriteSucceeded(result, operation, filePath) {
+  if (!result || result.ok !== false) {
+    return;
+  }
+
+  throw new Error(`Failed to ${operation} for "${filePath}": ${result.error || 'Unknown error'}`);
+}
+
 export class CollaborationDocumentStore {
   constructor({
     backlinkIndex = null,
@@ -89,21 +97,25 @@ export class CollaborationDocumentStore {
 
     const options = { invalidateCollaborationSnapshot: false };
     if (isExcalidrawFilePath(this.name) && typeof this.vaultFileStore.writeExcalidrawFile === 'function') {
-      await this.vaultFileStore.writeExcalidrawFile(this.name, content, options);
+      const result = await this.vaultFileStore.writeExcalidrawFile(this.name, content, options);
+      assertWriteSucceeded(result, 'write content', this.name);
       return;
     }
 
     if (isMermaidFilePath(this.name) && typeof this.vaultFileStore.writeMermaidFile === 'function') {
-      await this.vaultFileStore.writeMermaidFile(this.name, content, options);
+      const result = await this.vaultFileStore.writeMermaidFile(this.name, content, options);
+      assertWriteSucceeded(result, 'write content', this.name);
       return;
     }
 
     if (isPlantUmlFilePath(this.name) && typeof this.vaultFileStore.writePlantUmlFile === 'function') {
-      await this.vaultFileStore.writePlantUmlFile(this.name, content, options);
+      const result = await this.vaultFileStore.writePlantUmlFile(this.name, content, options);
+      assertWriteSucceeded(result, 'write content', this.name);
       return;
     }
 
-    await this.vaultFileStore.writeMarkdownFile(this.name, content, options);
+    const result = await this.vaultFileStore.writeMarkdownFile(this.name, content, options);
+    assertWriteSucceeded(result, 'write content', this.name);
   }
 
   async writeSnapshot(snapshot) {
@@ -111,7 +123,8 @@ export class CollaborationDocumentStore {
       return;
     }
 
-    await this.vaultFileStore.writeCollaborationSnapshot(this.name, snapshot);
+    const result = await this.vaultFileStore.writeCollaborationSnapshot(this.name, snapshot);
+    assertWriteSucceeded(result, 'write collaboration snapshot', this.name);
   }
 
   async deleteSnapshot() {
@@ -127,6 +140,7 @@ export class CollaborationDocumentStore {
       return;
     }
 
-    await this.vaultFileStore.writeCommentThreads(this.name, threads);
+    const result = await this.vaultFileStore.writeCommentThreads(this.name, threads);
+    assertWriteSucceeded(result, 'write comment threads', this.name);
   }
 }
