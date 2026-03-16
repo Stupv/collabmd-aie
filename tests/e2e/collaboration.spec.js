@@ -799,6 +799,7 @@ test('focuses the comment textbox when opening the composer', async ({ page }) =
   await (await waitForCommentSelectionChip(page)).click();
   await expect(page.locator('.comment-card')).toBeVisible();
   await expect(page.locator('.comment-card-input')).toBeFocused();
+  await expect(page.locator('.cm-editor')).not.toHaveClass(/cm-focused/);
   await page.keyboard.type('inline');
   await expect(page.locator('.comment-card-input')).toHaveValue('inline');
   await expect(page.locator('.cm-content')).not.toContainText('inline');
@@ -808,6 +809,7 @@ test('focuses the comment textbox when opening the composer', async ({ page }) =
   await page.locator('#commentSelectionBtn').click();
   await expect(page.locator('.comment-card')).toBeVisible();
   await expect(page.locator('.comment-card-input')).toBeFocused();
+  await expect(page.locator('.cm-editor')).not.toHaveClass(/cm-focused/);
   await page.keyboard.type('toolbar');
   await expect(page.locator('.comment-card-input')).toHaveValue('toolbar');
   await expect(page.locator('.cm-content')).not.toContainText('toolbar');
@@ -822,6 +824,7 @@ test('typing immediately after opening a multiline comment goes into the compose
   await page.keyboard.type('multiline');
 
   await expect(page.locator('.comment-card')).toBeVisible();
+  await expect(page.locator('.cm-editor')).not.toHaveClass(/cm-focused/);
   await expect(page.locator('.comment-card-input')).toHaveValue('multiline');
   await expect(page.locator('.cm-content')).not.toContainText('multiline');
 });

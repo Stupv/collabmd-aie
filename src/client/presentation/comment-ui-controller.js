@@ -329,6 +329,9 @@ export class CommentUiController {
     this.handleEditorScroll = () => this.scheduleLayoutRefresh();
     this.handlePreviewScroll = () => this.scheduleLayoutRefresh();
     this.handleWindowResize = () => this.scheduleLayoutRefresh();
+    this.handleCommentSelectionButtonPointerDown = (event) => {
+      event.preventDefault();
+    };
     this.handleEditorPointerDown = (event) => {
       if (event.button !== 0 || !this.supported || !this.session) {
         return;
@@ -406,6 +409,7 @@ export class CommentUiController {
       }
     };
 
+    this.commentSelectionButton?.addEventListener('pointerdown', this.handleCommentSelectionButtonPointerDown);
     this.commentSelectionButton?.addEventListener('click', () => {
       this.openComposerForSelection('toolbar');
     });
@@ -430,6 +434,7 @@ export class CommentUiController {
     }
     this.attachSession(null);
     this.previewContainer?.removeEventListener('scroll', this.handlePreviewScroll);
+    this.commentSelectionButton?.removeEventListener('pointerdown', this.handleCommentSelectionButtonPointerDown);
     this.editorContainer?.removeEventListener('pointerdown', this.handleEditorPointerDown);
     this.editorContainer?.removeEventListener('focusout', this.handleEditorFocusOut);
     window.removeEventListener('resize', this.handleWindowResize);
@@ -1470,7 +1475,32 @@ export class CommentUiController {
     }
 
     this.pendingCardFocusElement = null;
-    element.focus({ preventScroll: true });
+    const focusElement = () => {
+      if (!element.isConnected) {
+        return;
+      }
+
+      const activeElement = document.activeElement;
+      if (activeElement instanceof HTMLElement && this.editorContainer?.contains(activeElement)) {
+        activeElement.blur();
+      }
+
+      element.focus({ preventScroll: true });
+    };
+
+    focusElement();
+    if (document.activeElement === element) {
+      return;
+    }
+
+    requestAnimationFrame(() => {
+      focusElement();
+      if (document.activeElement !== element) {
+        setTimeout(() => {
+          focusElement();
+        }, 50);
+      }
+    });
   }
 
   clearSelectionRevealTimer() {
