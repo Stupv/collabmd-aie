@@ -6,6 +6,7 @@ import { parseNameStatusOutput } from './parsers.js';
 import { createEmptyWorkspaceChange, createWorkspaceChange } from './responses.js';
 import { GitStatusService } from './status-service.js';
 import { GitUntrackedFileService } from './untracked-files.js';
+import { PullBackupStore } from '../persistence/pull-backup-store.js';
 
 export class GitService {
   constructor({
@@ -36,6 +37,7 @@ export class GitService {
       statusService: this.statusService,
       untrackedFileService: this.untrackedFileService,
     });
+    this.pullBackupStore = new PullBackupStore({ vaultDir });
   }
 
   async isGitRepo() {
@@ -53,6 +55,14 @@ export class GitService {
 
   async getStatus(options = {}) {
     return this.statusService.getStatus(options);
+  }
+
+  async listPullBackups() {
+    if (!(await this.isGitRepo())) {
+      return [];
+    }
+
+    return this.pullBackupStore.listBackups();
   }
 
   async stageFile(path) {
@@ -131,7 +141,45 @@ export class GitService {
     }
 
     const beforeRef = await this.getHeadRef();
-    const output = await this.commandRunner.execGit(['pull', '--ff-only']);
+    await this.fetchUpstream(status.branch.upstream);
+
+    const targetRef = await this.resolveRef(status.branch.upstream);
+    if (!targetRef) {
+      throw createGitRequestError(409, 'Unable to resolve upstream branch for pull');
+    }
+
+    if (!(await this.canFastForwardTo(targetRef))) {
+      throw createGitRequestError(
+        409,
+        'Cannot pull because local and remote commits have diverged; fast-forward only pull is not possible.',
+        'pull_diverged_ff_only',
+      );
+    }
+
+    const dirtyEntries = this.collectDirtyEntries(status);
+    const upstreamWorkspaceChange = await this.createWorkspaceChangeFromRefs(beforeRef, targetRef);
+    const overlappingEntries = this.findOverlappingDirtyEntries({
+      dirtyEntries,
+      workspaceChange: upstreamWorkspaceChange,
+    });
+
+    let pullBackup = null;
+    if (overlappingEntries.length > 0) {
+      pullBackup = await this.backupAndClearOverlappingEntries({
+        beforeRef,
+        branchName: status.branch?.name ?? null,
+        entries: overlappingEntries,
+        targetRef,
+      });
+    }
+
+    let output;
+    try {
+      output = await this.commandRunner.execGit(['pull', '--ff-only', '--autostash']);
+    } catch (error) {
+      throw await this.classifyPullError(error);
+    }
+
     const afterRef = await this.getHeadRef();
     this.invalidateStatusCache();
     return {
@@ -139,6 +187,7 @@ export class GitService {
       beforeRef,
       ok: true,
       output: output.trim(),
+      pullBackup,
       workspaceChange: await this.createWorkspaceChangeFromRefs(beforeRef, afterRef),
     };
   }
@@ -200,6 +249,171 @@ export class GitService {
     } catch {
       return false;
     }
+  }
+
+  async resolveRef(ref) {
+    try {
+      const output = await this.commandRunner.execGit(['rev-parse', ref]);
+      return output.trim() || null;
+    } catch {
+      return null;
+    }
+  }
+
+  async fetchUpstream(upstreamRef) {
+    const remoteName = String(upstreamRef ?? '').split('/')[0] || null;
+    await this.commandRunner.execGit(remoteName
+      ? ['fetch', '--prune', remoteName]
+      : ['fetch', '--prune']);
+  }
+
+  async canFastForwardTo(targetRef) {
+    const headRef = await this.getHeadRef();
+    if (!headRef || !targetRef || headRef === targetRef) {
+      return true;
+    }
+
+    try {
+      await this.commandRunner.execGit(['merge-base', '--is-ancestor', headRef, targetRef]);
+      return true;
+    } catch (error) {
+      if (error?.code === 1) {
+        return false;
+      }
+      throw error;
+    }
+  }
+
+  collectDirtyEntries(status = {}) {
+    const entries = new Map();
+    for (const section of status.sections ?? []) {
+      for (const file of section.files ?? []) {
+        if (!file?.path) {
+          continue;
+        }
+
+        const existing = entries.get(file.path) ?? {
+          hasStagedChanges: false,
+          hasWorkingTreeChanges: false,
+          hasTrackedChanges: false,
+          isUntracked: false,
+          oldPath: null,
+          path: file.path,
+          touchPaths: new Set(),
+        };
+
+        existing.isUntracked = existing.isUntracked || file.scope === 'untracked';
+        existing.hasStagedChanges = existing.hasStagedChanges || file.scope === 'staged';
+        existing.hasWorkingTreeChanges = existing.hasWorkingTreeChanges || file.scope === 'working-tree';
+        existing.hasTrackedChanges = existing.hasTrackedChanges || file.scope === 'staged' || file.scope === 'working-tree';
+        if (!existing.oldPath && file.oldPath) {
+          existing.oldPath = file.oldPath;
+        }
+        existing.touchPaths.add(file.path);
+        if (file.oldPath) {
+          existing.touchPaths.add(file.oldPath);
+        }
+        entries.set(file.path, existing);
+      }
+    }
+
+    return Array.from(entries.values());
+  }
+
+  findOverlappingDirtyEntries({ dirtyEntries = [], workspaceChange = createEmptyWorkspaceChange() } = {}) {
+    const upstreamTouchedPaths = new Set([
+      ...(workspaceChange.changedPaths ?? []),
+      ...(workspaceChange.deletedPaths ?? []),
+      ...((workspaceChange.renamedPaths ?? []).flatMap((entry) => [entry.oldPath, entry.newPath])),
+    ].filter(Boolean));
+
+    return dirtyEntries.filter((entry) => Array.from(entry.touchPaths).some((path) => upstreamTouchedPaths.has(path)));
+  }
+
+  async createPatchForEntry(entry, { cached = false } = {}) {
+    const pathspecs = Array.from(entry?.touchPaths ?? []).filter(Boolean);
+    if (pathspecs.length === 0) {
+      return null;
+    }
+
+    const output = await this.commandRunner.execGit([
+      'diff',
+      '--binary',
+      '--find-renames',
+      ...(cached ? ['--cached'] : []),
+      '--',
+      ...pathspecs,
+    ]);
+
+    return output || null;
+  }
+
+  async backupAndClearOverlappingEntries({
+    beforeRef,
+    branchName = null,
+    entries = [],
+    targetRef = null,
+  } = {}) {
+    const backupEntries = await Promise.all(entries.map(async (entry) => ({
+      ...entry,
+      stagedPatchContent: entry.hasStagedChanges
+        ? await this.createPatchForEntry(entry, { cached: true })
+        : null,
+      worktreePatchContent: entry.hasWorkingTreeChanges
+        ? await this.createPatchForEntry(entry, { cached: false })
+        : null,
+    })));
+
+    const pullBackup = await this.pullBackupStore.createBackup({
+      branch: branchName,
+      entries: backupEntries,
+      headRef: beforeRef,
+      targetRef,
+    });
+
+    for (const entry of backupEntries) {
+      if (entry.isUntracked && !entry.hasTrackedChanges) {
+        await this.commandRunner.execGit(['clean', '-f', '--', entry.path]);
+        continue;
+      }
+
+      await this.restorePathToHead(entry.path);
+    }
+
+    return pullBackup;
+  }
+
+  async restorePathToHead(path) {
+    const normalizedPath = normalizeRelativeGitPath(path);
+    const sourceRef = 'HEAD';
+    const existsOnSource = await this.pathExistsAtRef(sourceRef, normalizedPath);
+
+    if (existsOnSource) {
+      await this.commandRunner.execGit(['restore', '--source', sourceRef, '--staged', '--worktree', '--', normalizedPath]);
+      return;
+    }
+
+    await this.commandRunner.execGit(['rm', '-f', '--ignore-unmatch', '--', normalizedPath]);
+    await this.commandRunner.execGit(['clean', '-f', '--', normalizedPath]);
+  }
+
+  async hasConflictedStatus() {
+    const status = await this.getStatus({ force: true });
+    return (status.sections ?? [])
+      .flatMap((section) => section.files ?? [])
+      .some((file) => file?.status === 'conflicted');
+  }
+
+  async classifyPullError(error) {
+    if (await this.hasConflictedStatus()) {
+      return createGitRequestError(
+        409,
+        'Pull applied remote updates, but reapplying local changes caused conflicts. Review the conflicted files and the pull backup summary.',
+        'pull_conflicted_after_autostash',
+      );
+    }
+
+    return error;
   }
 
   async createWorkspaceChangeFromRefs(beforeRef, afterRef) {

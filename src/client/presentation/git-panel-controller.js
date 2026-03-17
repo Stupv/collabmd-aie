@@ -87,6 +87,7 @@ export class GitPanelController {
   constructor({
     enabled = true,
     onCommitStaged = () => {},
+    onOpenPullBackup = () => {},
     onPullBranch = () => {},
     onPushBranch = () => {},
     onRepoChange = () => {},
@@ -100,6 +101,7 @@ export class GitPanelController {
   } = {}) {
     this.enabled = enabled;
     this.onCommitStaged = onCommitStaged;
+    this.onOpenPullBackup = onOpenPullBackup;
     this.onPullBranch = onPullBranch;
     this.onPushBranch = onPushBranch;
     this.onRepoChange = onRepoChange;
@@ -111,6 +113,7 @@ export class GitPanelController {
     this.searchInput = searchInput;
     this.toastController = toastController;
     this.panel = document.getElementById('gitPanel');
+    this.pullBackups = [];
     this.status = null;
     this.active = false;
     this.refreshTimer = null;
@@ -144,6 +147,18 @@ export class GitPanelController {
           return;
         }
         this.onSelectDiff(filePath, { scope });
+        return;
+      }
+
+      const pullBackupButton = event.target instanceof Element
+        ? event.target.closest('[data-git-pull-backup-path]')
+        : null;
+      if (pullBackupButton) {
+        const summaryPath = pullBackupButton.getAttribute('data-git-pull-backup-path');
+        if (!summaryPath) {
+          return;
+        }
+        this.onOpenPullBackup(summaryPath);
         return;
       }
 
@@ -243,6 +258,7 @@ export class GitPanelController {
         sections: [],
         summary: { changedFiles: 0 },
       };
+      this.pullBackups = [];
       this.onRepoChange(false, this.status);
       this.render();
       return this.status;
@@ -256,6 +272,19 @@ export class GitPanelController {
       }
 
       this.status = data;
+      this.pullBackups = [];
+      if (data.isGitRepo) {
+        try {
+          const backupResponse = await fetch(resolveApiUrl('/git/pull-backups'));
+          const backupData = await backupResponse.json();
+          if (!backupResponse.ok) {
+            throw new Error(backupData.error || 'Failed to load pull backups');
+          }
+          this.pullBackups = Array.isArray(backupData.backups) ? backupData.backups : [];
+        } catch (backupError) {
+          console.error('[git-panel] Failed to load pull backups:', backupError);
+        }
+      }
       this.onRepoChange(Boolean(data.isGitRepo), data);
       this.render();
       return data;
@@ -267,6 +296,7 @@ export class GitPanelController {
         sections: [],
         summary: { changedFiles: 0 },
       };
+      this.pullBackups = [];
       this.onRepoChange(false, this.status);
       this.render();
       return this.status;
@@ -367,6 +397,47 @@ export class GitPanelController {
     `;
   }
 
+  renderPullBackupsSection() {
+    if (!Array.isArray(this.pullBackups) || this.pullBackups.length === 0) {
+      return '';
+    }
+
+    return `
+      <section class="git-section">
+        <button class="git-section-header" type="button" data-git-section-toggle="pull-backups">
+          ${chevronSvg(this.collapsedSections.has('pull-backups'))}
+          Pull Backups
+          <span class="git-section-count">${this.pullBackups.length}</span>
+        </button>
+        <div class="git-file-list${this.collapsedSections.has('pull-backups') ? ' hidden' : ''}">
+          ${this.pullBackups.map((backup) => this.renderPullBackup(backup)).join('')}
+        </div>
+      </section>
+    `;
+  }
+
+  renderPullBackup(backup) {
+    const createdAt = String(backup?.createdAt || '').replace('T', ' ').replace(/\.\d+Z?$/u, 'Z');
+    const fileCount = Number(backup?.fileCount || 0);
+
+    return `
+      <div class="git-file-row">
+        <button
+          class="git-file-item"
+          type="button"
+          data-git-pull-backup-path="${escapeHtml(backup.summaryPath || '')}"
+        >
+          ${fileIconSvg()}
+          <span class="git-file-copy">
+            <span class="git-file-name">Pull backup ${escapeHtml(backup.id || '')}</span>
+            <span class="git-file-path">${escapeHtml(`${createdAt} · ${backup.branch || 'HEAD'} · ${fileCount} file${fileCount === 1 ? '' : 's'}`)}</span>
+          </span>
+          <span class="git-status-badge modified">BK</span>
+        </button>
+      </div>
+    `;
+  }
+
   renderFile(file) {
     const isActive = this.selection.path === file.path && this.selection.scope === file.scope;
     const dirPath = getPathDir(file.path);
@@ -449,6 +520,7 @@ export class GitPanelController {
     }
 
     const branch = this.status.branch ?? {};
+    const pullBackupsMarkup = this.renderPullBackupsSection();
     const sectionMarkup = (this.status.sections ?? [])
       .map((section) => this.renderSection(section))
       .filter(Boolean)
@@ -492,6 +564,7 @@ export class GitPanelController {
           </button>
         </div>
       </div>
+      ${pullBackupsMarkup}
       ${sectionMarkup || '<div class="git-panel-empty">No local changes</div>'}
       ${hasChanges ? `
         <div class="git-panel-footer">

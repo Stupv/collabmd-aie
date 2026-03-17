@@ -16,7 +16,11 @@ async function parseRequiredBody(req, res, fieldName) {
 function handleGitError(req, res, error, logMessage, fallbackMessage) {
   const statusCode = getRequestErrorStatusCode(error);
   if (statusCode) {
-    jsonResponse(req, res, statusCode, { error: error.message });
+    const payload = { error: error.message };
+    if (typeof error?.requestCode === 'string') {
+      payload.code = error.requestCode;
+    }
+    jsonResponse(req, res, statusCode, payload);
     return true;
   }
 
@@ -47,6 +51,7 @@ async function applyWorkspaceMutationEffects({
   }
 
   await vaultFileStore?.reconcileSidecars?.(workspaceChange);
+  await vaultFileStore?.reconcileCollaborationSnapshots?.(workspaceChange);
   await backlinkIndex?.build?.();
   await roomRegistry?.reconcileWorkspaceChange?.(workspaceChange);
   return responsePayload;

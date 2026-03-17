@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { execFile as execFileCallback } from 'node:child_process';
-import { mkdir, mkdtemp, rm, stat, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, readFile, rm, stat, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { promisify } from 'node:util';
@@ -40,6 +40,46 @@ async function createFixtureRepository() {
   await writeFile(join(repoDir, 'untracked.md'), '# Untracked\n\nscratch\n', 'utf8');
 
   return repoDir;
+}
+
+async function createRemotePullFixture(t) {
+  const remoteDir = await mkdtemp(join(tmpdir(), 'collabmd-git-remote-fixture-'));
+  const seedDir = await mkdtemp(join(tmpdir(), 'collabmd-git-seed-fixture-'));
+  const localDir = await mkdtemp(join(tmpdir(), 'collabmd-git-local-fixture-'));
+  const peerDir = await mkdtemp(join(tmpdir(), 'collabmd-git-peer-fixture-'));
+
+  t.after(async () => {
+    await rm(remoteDir, { force: true, recursive: true });
+    await rm(seedDir, { force: true, recursive: true });
+    await rm(localDir, { force: true, recursive: true });
+    await rm(peerDir, { force: true, recursive: true });
+  });
+
+  await runGit(remoteDir, ['init', '--bare']);
+
+  await runGit(seedDir, ['init']);
+  await runGit(seedDir, ['config', 'user.email', 'tests@example.com']);
+  await runGit(seedDir, ['config', 'user.name', 'CollabMD Tests']);
+  await writeFile(join(seedDir, 'tracked.md'), '# Seed\n', 'utf8');
+  await runGit(seedDir, ['add', 'tracked.md']);
+  await runGit(seedDir, ['commit', '-m', 'Initial commit']);
+  await runGit(seedDir, ['remote', 'add', 'origin', remoteDir]);
+  await runGit(seedDir, ['push', '-u', 'origin', 'master']);
+
+  await runGit(tmpdir(), ['clone', remoteDir, localDir]);
+  await runGit(localDir, ['config', 'user.email', 'tests@example.com']);
+  await runGit(localDir, ['config', 'user.name', 'CollabMD Tests']);
+
+  await runGit(tmpdir(), ['clone', remoteDir, peerDir]);
+  await runGit(peerDir, ['config', 'user.email', 'tests@example.com']);
+  await runGit(peerDir, ['config', 'user.name', 'CollabMD Tests']);
+
+  return {
+    localDir,
+    peerDir,
+    remoteDir,
+    seedDir,
+  };
 }
 
 function createCountingExecFileImpl({ delayStatusMs = 0 } = {}) {
@@ -429,6 +469,122 @@ test('GitService pull reports workspace changes from the fetched ref update', as
   assert.deepEqual(pullResult.workspaceChange.changedPaths.sort(), ['new.md', 'tracked.md']);
   assert.deepEqual(pullResult.workspaceChange.deletedPaths, []);
   assert.deepEqual(pullResult.workspaceChange.renamedPaths, []);
+});
+
+test('GitService pull uses autostash for non-overlapping dirty files without creating a backup', async (t) => {
+  const { localDir, peerDir } = await createRemotePullFixture(t);
+
+  await writeFile(join(localDir, 'tracked.md'), '# Seed\nlocal dirty change\n', 'utf8');
+  await writeFile(join(peerDir, 'remote.md'), '# Remote\nnew file\n', 'utf8');
+  await runGit(peerDir, ['add', 'remote.md']);
+  await runGit(peerDir, ['commit', '-m', 'Remote update']);
+  await runGit(peerDir, ['push']);
+
+  const gitService = new GitService({ vaultDir: localDir });
+  const pullResult = await gitService.pullBranch();
+
+  assert.equal(pullResult.pullBackup, null);
+  assert.equal(await readFile(join(localDir, 'tracked.md'), 'utf8'), '# Seed\nlocal dirty change\n');
+  assert.equal(await readFile(join(localDir, 'remote.md'), 'utf8'), '# Remote\nnew file\n');
+  assert.equal((await execFile('git', ['status', '--porcelain=v1'], { cwd: localDir })).stdout.trim(), 'M tracked.md');
+});
+
+test('GitService pull creates a backup bundle when tracked local edits overlap upstream changes', async (t) => {
+  const { localDir, peerDir } = await createRemotePullFixture(t);
+
+  await writeFile(join(peerDir, 'tracked.md'), '# Seed\nupdated remotely\n', 'utf8');
+  await runGit(peerDir, ['add', 'tracked.md']);
+  await runGit(peerDir, ['commit', '-m', 'Remote update']);
+  await runGit(peerDir, ['push']);
+
+  await writeFile(join(localDir, 'tracked.md'), '# Seed\nlocal overlap\n', 'utf8');
+
+  const gitService = new GitService({ vaultDir: localDir });
+  const pullResult = await gitService.pullBranch();
+  const pullBackups = await gitService.listPullBackups();
+
+  assert.equal(pullResult.pullBackup?.fileCount, 1);
+  assert.equal(await readFile(join(localDir, 'tracked.md'), 'utf8'), '# Seed\nupdated remotely\n');
+  assert.equal(
+    await readFile(join(localDir, pullResult.pullBackup.summaryPath.replace('/summary.md', '/files/tracked.md')), 'utf8'),
+    '# Seed\nlocal overlap\n',
+  );
+  assert.equal(
+    await readFile(join(localDir, pullResult.pullBackup.summaryPath), 'utf8'),
+    await readFile(join(localDir, pullBackups[0].summaryPath), 'utf8'),
+  );
+  assert.equal((await execFile('git', ['status', '--porcelain=v1'], { cwd: localDir })).stdout.trim(), '');
+});
+
+test('GitService pull backup preserves staged and unstaged patch artifacts for partially staged overlaps', async (t) => {
+  const { localDir, peerDir } = await createRemotePullFixture(t);
+
+  await writeFile(join(localDir, 'tracked.md'), '# Seed\nstaged only\n', 'utf8');
+  await runGit(localDir, ['add', 'tracked.md']);
+  await writeFile(join(localDir, 'tracked.md'), '# Seed\nstaged only\nunstaged only\n', 'utf8');
+
+  await writeFile(join(peerDir, 'tracked.md'), '# Seed\nupdated remotely\n', 'utf8');
+  await runGit(peerDir, ['add', 'tracked.md']);
+  await runGit(peerDir, ['commit', '-m', 'Remote overlap']);
+  await runGit(peerDir, ['push']);
+
+  const gitService = new GitService({ vaultDir: localDir });
+  const pullResult = await gitService.pullBranch();
+  const backupRoot = join(localDir, pullResult.pullBackup.summaryPath.replace('/summary.md', ''));
+  const stagedPatch = await readFile(join(backupRoot, 'patches/tracked.md.staged.patch'), 'utf8');
+  const worktreePatch = await readFile(join(backupRoot, 'patches/tracked.md.worktree.patch'), 'utf8');
+  const summary = await readFile(join(localDir, pullResult.pullBackup.summaryPath), 'utf8');
+
+  assert.match(stagedPatch, /\+staged only/);
+  assert.doesNotMatch(stagedPatch, /\+unstaged only/);
+  assert.match(worktreePatch, /\+unstaged only/);
+  assert.match(summary, /Staged patch:/);
+  assert.match(summary, /Worktree patch:/);
+});
+
+test('GitService pull creates a backup bundle when an untracked local file overlaps a new upstream file', async (t) => {
+  const { localDir, peerDir } = await createRemotePullFixture(t);
+
+  await writeFile(join(peerDir, 'clash.md'), '# Remote\nincoming\n', 'utf8');
+  await runGit(peerDir, ['add', 'clash.md']);
+  await runGit(peerDir, ['commit', '-m', 'Add clash file']);
+  await runGit(peerDir, ['push']);
+
+  await writeFile(join(localDir, 'clash.md'), '# Local\nscratch\n', 'utf8');
+
+  const gitService = new GitService({ vaultDir: localDir });
+  const pullResult = await gitService.pullBranch();
+
+  assert.equal(pullResult.pullBackup?.fileCount, 1);
+  assert.equal(await readFile(join(localDir, 'clash.md'), 'utf8'), '# Remote\nincoming\n');
+  assert.equal(
+    await readFile(join(localDir, pullResult.pullBackup.summaryPath.replace('/summary.md', '/files/clash.md')), 'utf8'),
+    '# Local\nscratch\n',
+  );
+  assert.equal((await execFile('git', ['status', '--porcelain=v1'], { cwd: localDir })).stdout.trim(), '');
+});
+
+test('GitService pull rejects diverged history before mutating the worktree', async (t) => {
+  const { localDir, peerDir } = await createRemotePullFixture(t);
+
+  await writeFile(join(localDir, 'tracked.md'), '# Seed\nlocal commit\n', 'utf8');
+  await runGit(localDir, ['add', 'tracked.md']);
+  await runGit(localDir, ['commit', '-m', 'Local commit']);
+
+  await writeFile(join(peerDir, 'tracked.md'), '# Seed\nremote commit\n', 'utf8');
+  await runGit(peerDir, ['add', 'tracked.md']);
+  await runGit(peerDir, ['commit', '-m', 'Remote commit']);
+  await runGit(peerDir, ['push']);
+
+  const gitService = new GitService({ vaultDir: localDir });
+
+  await assert.rejects(
+    gitService.pullBranch(),
+    (error) => error?.statusCode === 409 && error?.requestCode === 'pull_diverged_ff_only',
+  );
+
+  assert.equal(String((await execFile('git', ['log', '-1', '--pretty=%s'], { cwd: localDir })).stdout).trim(), 'Local commit');
+  assert.deepEqual(await gitService.listPullBackups(), []);
 });
 
 test('GitService resets a file to the current branch content', async (t) => {

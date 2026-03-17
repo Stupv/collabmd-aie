@@ -582,6 +582,22 @@ export class VaultFileStore {
     ]);
   }
 
+  async reconcileCollaborationSnapshots({
+    changedPaths = [],
+    deletedPaths = [],
+    renamedPaths = [],
+  } = {}) {
+    const affectedPaths = new Set([
+      ...(changedPaths ?? []).filter(Boolean),
+      ...(deletedPaths ?? []).filter(Boolean),
+      ...((renamedPaths ?? []).flatMap((entry) => [entry?.oldPath, entry?.newPath]).filter(Boolean)),
+    ]);
+
+    await Promise.allSettled(
+      Array.from(affectedPaths, (filePath) => this.deleteCollaborationSnapshot(filePath)),
+    );
+  }
+
   async countFilesInDir(dirPath) {
     let count = 0;
 

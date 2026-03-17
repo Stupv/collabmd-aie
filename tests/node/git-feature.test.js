@@ -72,6 +72,22 @@ function createContext(overrides = {}) {
   return { context, events, gitOperationStatus };
 }
 
+function installWindowStub(t) {
+  const previousWindow = globalThis.window;
+  globalThis.window = {
+    __COLLABMD_CONFIG__: {},
+    location: {
+      host: 'localhost',
+      origin: 'http://localhost',
+      protocol: 'http:',
+      search: '',
+    },
+  };
+  t.after(() => {
+    globalThis.window = previousWindow;
+  });
+}
+
 test('gitFeature finalizes git actions by refreshing locally and publishing a workspace event', async () => {
   const { context, events } = createContext();
 
@@ -138,5 +154,49 @@ test('gitFeature shows and clears the shared git operation status around a long-
   assert.deepEqual(states, [
     ['Resetting file...', false],
     ['', true],
+  ]);
+});
+
+test('gitFeature shows a pull backup toast after a successful overlap backup pull', async (t) => {
+  installWindowStub(t);
+  const { context, events } = createContext({
+    finalizeGitAction: async ({ action, result }) => {
+      events.push(['finalize', action, result.pullBackup?.fileCount ?? 0]);
+    },
+    postGitAction: async () => ({
+      pullBackup: {
+        fileCount: 2,
+      },
+      workspaceChange: {
+        changedPaths: [],
+        deletedPaths: [],
+        refreshExplorer: true,
+        renamedPaths: [],
+      },
+    }),
+  });
+
+  await gitFeature.pullGitBranch.call(context);
+
+  assert.deepEqual(events, [
+    ['finalize', 'pull', 2],
+    ['toast', 'Pulled latest changes. 2 overlapping local files were backed up.'],
+  ]);
+});
+
+test('gitFeature shows a specific toast when pull fails because fast-forward is not possible', async (t) => {
+  installWindowStub(t);
+  const { context, events } = createContext({
+    postGitAction: async () => {
+      const error = new Error('ff only');
+      error.code = 'pull_diverged_ff_only';
+      throw error;
+    },
+  });
+
+  await gitFeature.pullGitBranch.call(context);
+
+  assert.deepEqual(events, [
+    ['toast', 'Cannot pull because local and remote commits have diverged. Fast-forward only pull is not possible.'],
   ]);
 });

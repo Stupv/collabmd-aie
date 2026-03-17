@@ -8,8 +8,13 @@ import { tmpdir } from 'node:os';
 import { basename, join } from 'node:path';
 import { promisify } from 'node:util';
 import { gunzipSync } from 'node:zlib';
+import WebSocket from 'ws';
+import * as Y from 'yjs';
+import { WebsocketProvider } from 'y-websocket';
 
 import { startTestServer } from './helpers/test-server.js';
+import { waitForCondition } from './helpers/test-server.js';
+import { waitForProviderSync } from './helpers/collaboration-protocol.js';
 
 const execFile = promisify(execFileCallback);
 
@@ -279,6 +284,118 @@ test('HTTP server exposes git push and pull endpoints for repos with an upstream
   assert.match(fileResponse.body, /Peer pull change/);
 });
 
+test('HTTP server returns pull backup metadata and lists saved pull backups', async (t) => {
+  const app = await startTestServer();
+  t.after(() => app.close());
+
+  const remoteDir = await mkdtemp(join(tmpdir(), 'collabmd-http-git-remote-backup-'));
+  const peerDir = await mkdtemp(join(tmpdir(), 'collabmd-http-git-peer-backup-'));
+  t.after(async () => {
+    await rm(remoteDir, { force: true, recursive: true });
+    await rm(peerDir, { force: true, recursive: true });
+  });
+
+  const gitEnv = {
+    ...process.env,
+    GIT_AUTHOR_EMAIL: 'tests@example.com',
+    GIT_AUTHOR_NAME: 'CollabMD Tests',
+    GIT_COMMITTER_EMAIL: 'tests@example.com',
+    GIT_COMMITTER_NAME: 'CollabMD Tests',
+  };
+  await execFile('git', ['init'], { cwd: app.vaultDir, env: gitEnv });
+  await execFile('git', ['config', 'user.email', 'tests@example.com'], { cwd: app.vaultDir, env: gitEnv });
+  await execFile('git', ['config', 'user.name', 'CollabMD Tests'], { cwd: app.vaultDir, env: gitEnv });
+  await execFile('git', ['add', 'test.md'], { cwd: app.vaultDir, env: gitEnv });
+  await execFile('git', ['commit', '-m', 'Initial commit'], { cwd: app.vaultDir, env: gitEnv });
+  await execFile('git', ['init', '--bare', remoteDir], { env: gitEnv });
+  await execFile('git', ['remote', 'add', 'origin', remoteDir], { cwd: app.vaultDir, env: gitEnv });
+  await execFile('git', ['push', '-u', 'origin', 'master'], { cwd: app.vaultDir, env: gitEnv });
+
+  await execFile('git', ['clone', remoteDir, peerDir], { env: gitEnv });
+  await execFile('git', ['config', 'user.email', 'tests@example.com'], { cwd: peerDir, env: gitEnv });
+  await execFile('git', ['config', 'user.name', 'CollabMD Tests'], { cwd: peerDir, env: gitEnv });
+  await writeFile(join(peerDir, 'test.md'), '# Test\n\nRemote version.\n', 'utf8');
+  await execFile('git', ['add', 'test.md'], { cwd: peerDir, env: gitEnv });
+  await execFile('git', ['commit', '-m', 'Remote overlap'], { cwd: peerDir, env: gitEnv });
+  await execFile('git', ['push'], { cwd: peerDir, env: gitEnv });
+
+  await writeFile(join(app.vaultDir, 'test.md'), '# Test\n\nLocal overlap.\n', 'utf8');
+
+  const pullResponse = await httpRequest(`${app.baseUrl}/api/git/pull`, {
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    method: 'POST',
+  });
+  assert.equal(pullResponse.statusCode, 200);
+  assert.match(pullResponse.body, /"pullBackup":\{/);
+  assert.match(pullResponse.body, /"fileCount":1/);
+
+  const backupsResponse = await httpRequest(`${app.baseUrl}/api/git/pull-backups`);
+  assert.equal(backupsResponse.statusCode, 200);
+  assert.match(backupsResponse.body, /"summaryPath":"\.collabmd\/pull-backups\/.*\/summary\.md"/);
+
+  const backupsPayload = JSON.parse(backupsResponse.body);
+  const summaryPath = backupsPayload.backups[0].summaryPath;
+  const summaryResponse = await httpRequest(`${app.baseUrl}/api/file?path=${encodeURIComponent(summaryPath)}`);
+  assert.equal(summaryResponse.statusCode, 200);
+  assert.match(summaryResponse.body, /Pull Backup/);
+
+  const fileResponse = await httpRequest(`${app.baseUrl}/api/file?path=test.md`);
+  assert.equal(fileResponse.statusCode, 200);
+  assert.match(fileResponse.body, /Remote version/);
+});
+
+test('HTTP server returns a typed error code when pull cannot fast-forward', async (t) => {
+  const app = await startTestServer();
+  t.after(() => app.close());
+
+  const remoteDir = await mkdtemp(join(tmpdir(), 'collabmd-http-git-remote-diverged-'));
+  const peerDir = await mkdtemp(join(tmpdir(), 'collabmd-http-git-peer-diverged-'));
+  t.after(async () => {
+    await rm(remoteDir, { force: true, recursive: true });
+    await rm(peerDir, { force: true, recursive: true });
+  });
+
+  const gitEnv = {
+    ...process.env,
+    GIT_AUTHOR_EMAIL: 'tests@example.com',
+    GIT_AUTHOR_NAME: 'CollabMD Tests',
+    GIT_COMMITTER_EMAIL: 'tests@example.com',
+    GIT_COMMITTER_NAME: 'CollabMD Tests',
+  };
+  await execFile('git', ['init'], { cwd: app.vaultDir, env: gitEnv });
+  await execFile('git', ['config', 'user.email', 'tests@example.com'], { cwd: app.vaultDir, env: gitEnv });
+  await execFile('git', ['config', 'user.name', 'CollabMD Tests'], { cwd: app.vaultDir, env: gitEnv });
+  await execFile('git', ['add', 'test.md'], { cwd: app.vaultDir, env: gitEnv });
+  await execFile('git', ['commit', '-m', 'Initial commit'], { cwd: app.vaultDir, env: gitEnv });
+  await execFile('git', ['init', '--bare', remoteDir], { env: gitEnv });
+  await execFile('git', ['remote', 'add', 'origin', remoteDir], { cwd: app.vaultDir, env: gitEnv });
+  await execFile('git', ['push', '-u', 'origin', 'master'], { cwd: app.vaultDir, env: gitEnv });
+
+  await writeFile(join(app.vaultDir, 'test.md'), '# Test\n\nLocal commit.\n', 'utf8');
+  await execFile('git', ['add', 'test.md'], { cwd: app.vaultDir, env: gitEnv });
+  await execFile('git', ['commit', '-m', 'Local commit'], { cwd: app.vaultDir, env: gitEnv });
+
+  await execFile('git', ['clone', remoteDir, peerDir], { env: gitEnv });
+  await execFile('git', ['config', 'user.email', 'tests@example.com'], { cwd: peerDir, env: gitEnv });
+  await execFile('git', ['config', 'user.name', 'CollabMD Tests'], { cwd: peerDir, env: gitEnv });
+  await writeFile(join(peerDir, 'test.md'), '# Test\n\nPeer commit.\n', 'utf8');
+  await execFile('git', ['add', 'test.md'], { cwd: peerDir, env: gitEnv });
+  await execFile('git', ['commit', '-m', 'Peer commit'], { cwd: peerDir, env: gitEnv });
+  await execFile('git', ['push'], { cwd: peerDir, env: gitEnv });
+
+  const pullResponse = await httpRequest(`${app.baseUrl}/api/git/pull`, {
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    method: 'POST',
+  });
+
+  assert.equal(pullResponse.statusCode, 409);
+  assert.match(pullResponse.body, /"code":"pull_diverged_ff_only"/);
+});
+
 test('HTTP server exposes git reset-file for restoring a file from the current branch HEAD', async (t) => {
   const app = await startTestServer();
   t.after(() => app.close());
@@ -315,6 +432,60 @@ test('HTTP server exposes git reset-file for restoring a file from the current b
   const fileResponse = await httpRequest(`${app.baseUrl}/api/file?path=test.md`);
   assert.equal(fileResponse.statusCode, 200);
   assert.match(fileResponse.body, /# Test/);
+});
+
+test('HTTP git reset invalidates stale collaboration snapshots so reopening hydrates from disk', async (t) => {
+  const app = await startTestServer();
+  t.after(() => app.close());
+
+  const gitEnv = {
+    ...process.env,
+    GIT_AUTHOR_EMAIL: 'tests@example.com',
+    GIT_AUTHOR_NAME: 'CollabMD Tests',
+    GIT_COMMITTER_EMAIL: 'tests@example.com',
+    GIT_COMMITTER_NAME: 'CollabMD Tests',
+  };
+
+  await execFile('git', ['init'], { cwd: app.vaultDir, env: gitEnv });
+  await execFile('git', ['config', 'user.email', 'tests@example.com'], { cwd: app.vaultDir, env: gitEnv });
+  await execFile('git', ['config', 'user.name', 'CollabMD Tests'], { cwd: app.vaultDir, env: gitEnv });
+  await execFile('git', ['add', 'test.md'], { cwd: app.vaultDir, env: gitEnv });
+  await execFile('git', ['commit', '-m', 'Initial commit'], { cwd: app.vaultDir, env: gitEnv });
+
+  await writeFile(join(app.vaultDir, 'test.md'), '# Local dirty\n', 'utf8');
+
+  const staleDoc = new Y.Doc();
+  t.after(() => staleDoc.destroy());
+  staleDoc.getText('codemirror').insert(0, '# Stale snapshot\n');
+  await app.server.vaultFileStore.writeCollaborationSnapshot('test.md', Y.encodeStateAsUpdate(staleDoc));
+
+  const resetResponse = await httpRequest(`${app.baseUrl}/api/git/reset-file`, {
+    body: JSON.stringify({ path: 'test.md' }),
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    method: 'POST',
+  });
+  assert.equal(resetResponse.statusCode, 200);
+
+  await waitForCondition(async () => {
+    const snapshot = await app.server.vaultFileStore.readCollaborationSnapshot('test.md');
+    return snapshot === null;
+  });
+
+  const serverUrl = `ws://127.0.0.1:${app.port}${app.server.config.wsBasePath}`;
+  const reopenedDoc = new Y.Doc();
+  const provider = new WebsocketProvider(serverUrl, 'test.md', reopenedDoc, {
+    WebSocketPolyfill: WebSocket,
+    disableBc: true,
+  });
+  t.after(() => {
+    provider.destroy();
+    reopenedDoc.destroy();
+  });
+
+  await waitForProviderSync(provider);
+  assert.equal(reopenedDoc.getText('codemirror').toString(), '# Test\n\nHello from test vault.\n');
 });
 
 test('HTTP server supports password auth without blocking static assets', async (t) => {

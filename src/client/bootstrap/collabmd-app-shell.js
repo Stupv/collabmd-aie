@@ -131,6 +131,7 @@ export class CollabMdAppShell {
     this.gitPanel = new GitPanelController({
       enabled: this.runtimeConfig.gitEnabled !== false,
       onCommitStaged: () => this.openGitCommitDialog(),
+      onOpenPullBackup: (filePath) => filePath && this.navigation.navigateToFile(filePath),
       onPullBranch: () => this.pullGitBranch(),
       onPushBranch: () => this.pushGitBranch(),
       onRepoChange: (isGitRepo, status) => this.handleGitRepoChange(isGitRepo, status),

@@ -12,6 +12,17 @@ function normalizeWorkspaceChange(workspaceChange = {}) {
 }
 
 export const gitFeature = {
+  formatPullBackupToast(pullBackup = null) {
+    const fileCount = Number(pullBackup?.fileCount || 0);
+    if (fileCount === 1) {
+      return 'Pulled latest changes. 1 overlapping local file was backed up.';
+    }
+    if (fileCount > 1) {
+      return `Pulled latest changes. ${fileCount} overlapping local files were backed up.`;
+    }
+    return 'Pulled latest changes. Overlapping local changes were recorded in a pull backup.';
+  },
+
   setGitOperationStatus(message = '') {
     const badge = this.elements.gitOperationStatus;
     if (!badge) {
@@ -92,7 +103,11 @@ export const gitFeature = {
     });
     const data = await response.json();
     if (!response.ok) {
-      throw new Error(data.error || 'Git action failed');
+      const error = new Error(data.error || 'Git action failed');
+      if (typeof data?.code === 'string') {
+        error.code = data.code;
+      }
+      throw error;
     }
     return data;
   },
@@ -242,7 +257,20 @@ export const gitFeature = {
           result,
           showLocalFileToast: true,
         });
+        if (result.pullBackup) {
+          this.toastController.show(this.formatPullBackupToast(result.pullBackup), 5000);
+        }
       } catch (error) {
+        if (error?.code === 'pull_diverged_ff_only') {
+          this.toastController.show('Cannot pull because local and remote commits have diverged. Fast-forward only pull is not possible.', 5000);
+          return;
+        }
+
+        if (error?.code === 'pull_conflicted_after_autostash') {
+          this.toastController.show('Pull updated the branch, but reapplying local changes caused conflicts. Review the conflicted files and the pull backup summary.', 6000);
+          return;
+        }
+
         this.toastController.show(error.message || 'Failed to pull branch');
       }
     });

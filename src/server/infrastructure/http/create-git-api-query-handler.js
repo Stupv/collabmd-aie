@@ -21,7 +21,11 @@ function isTruthyParam(value) {
 function handleGitError(req, res, error, message, fallback) {
   const statusCode = getRequestErrorStatusCode(error);
   if (statusCode) {
-    jsonResponse(req, res, statusCode, { error: error.message });
+    const payload = { error: error.message };
+    if (typeof error?.requestCode === 'string') {
+      payload.code = error.requestCode;
+    }
+    jsonResponse(req, res, statusCode, payload);
     return true;
   }
 
@@ -53,6 +57,17 @@ export function createGitApiQueryHandler({ gitService }) {
         }));
       } catch (error) {
         handleGitError(req, res, error, '[api] Failed to read git diff:', 'Failed to read git diff');
+      }
+      return true;
+    }
+
+    if (requestUrl.pathname === '/api/git/pull-backups' && req.method === 'GET') {
+      try {
+        jsonResponse(req, res, 200, {
+          backups: await gitService.listPullBackups(),
+        });
+      } catch (error) {
+        handleGitError(req, res, error, '[api] Failed to read pull backups:', 'Failed to read pull backups');
       }
       return true;
     }
