@@ -14,6 +14,7 @@ import { highlightSelectionMatches, searchKeymap } from '@codemirror/search';
 import { Compartment, EditorSelection, EditorState, Prec } from '@codemirror/state';
 import { oneDark } from '@codemirror/theme-one-dark';
 import {
+  Decoration,
   EditorView,
   crosshairCursor,
   drawSelection,
@@ -33,6 +34,38 @@ import { plantUmlLanguage, plantUmlLanguageDescription } from '../domain/plantum
 import { handleImagePasteEvent } from './editor-paste-utils.js';
 
 const markdownCodeLanguages = [...languages, plantUmlLanguageDescription];
+const pairedMatchingBracketMark = Decoration.mark({ class: 'cm-matchingBracket cm-matchingBracket-paired' });
+const nonmatchingBracketMark = Decoration.mark({ class: 'cm-nonmatchingBracket' });
+
+function isBracketBeforeCaret(range, state) {
+  return state.selection.ranges.some((selectionRange) =>
+    selectionRange.empty && range.to === selectionRange.head
+  );
+}
+
+function renderBracketMatch(match, state) {
+  const decorations = [];
+
+  if (!match.matched) {
+    decorations.push(nonmatchingBracketMark.range(match.start.from, match.start.to));
+    if (match.end) {
+      decorations.push(nonmatchingBracketMark.range(match.end.from, match.end.to));
+    }
+    return decorations;
+  }
+
+  const shouldHideStartBracket = isBracketBeforeCaret(match.start, state);
+  const shouldHideEndBracket = match.end ? isBracketBeforeCaret(match.end, state) : false;
+
+  if (!shouldHideStartBracket) {
+    decorations.push(pairedMatchingBracketMark.range(match.start.from, match.start.to));
+  }
+  if (match.end && !shouldHideEndBracket) {
+    decorations.push(pairedMatchingBracketMark.range(match.end.from, match.end.to));
+  }
+
+  return decorations;
+}
 
 function createEditorTheme(theme) {
   const activeLineBackground = theme === 'dark'
@@ -47,6 +80,21 @@ function createEditorTheme(theme) {
   const selectionBorder = theme === 'dark'
     ? 'oklch(from var(--color-primary) l c h / 0.65)'
     : 'oklch(from var(--color-primary) l c h / 0.5)';
+  const caretColor = theme === 'dark'
+    ? 'color-mix(in oklab, var(--color-primary) 78%, white)'
+    : 'color-mix(in oklab, var(--color-primary) 84%, black)';
+  const bracketPairBackground = theme === 'dark'
+    ? 'oklch(from var(--color-primary) l c h / 0.2)'
+    : 'oklch(from var(--color-primary) l c h / 0.12)';
+  const bracketPairOutline = theme === 'dark'
+    ? 'oklch(from var(--color-primary) calc(l + 0.08) c h / 0.85)'
+    : 'oklch(from var(--color-primary) calc(l - 0.04) c h / 0.7)';
+  const nonmatchingBracketBackground = theme === 'dark'
+    ? 'oklch(from var(--color-error) l c h / 0.12)'
+    : 'oklch(from var(--color-error) l c h / 0.1)';
+  const nonmatchingBracketOutline = theme === 'dark'
+    ? 'oklch(from var(--color-error) calc(l + 0.08) c h / 0.8)'
+    : 'oklch(from var(--color-error) calc(l - 0.04) c h / 0.7)';
 
   return EditorView.theme({
     '&': {
@@ -54,13 +102,14 @@ function createEditorTheme(theme) {
       color: 'var(--color-text)',
     },
     '.cm-content': {
-      caretColor: 'var(--color-primary)',
+      caretColor,
       fontFamily: 'var(--font-mono)',
       padding: '16px 0',
     },
     '.cm-cursor, .cm-dropCursor': {
-      borderLeftColor: 'var(--color-primary)',
-      borderLeftWidth: '2px',
+      borderLeftColor: caretColor,
+      borderLeftWidth: '3px',
+      marginLeft: '-1px',
     },
     '.cm-foldPlaceholder': {
       backgroundColor: 'var(--color-surface-dynamic)',
@@ -86,8 +135,17 @@ function createEditorTheme(theme) {
       color: 'var(--color-text-muted)',
     },
     '.cm-matchingBracket': {
-      backgroundColor: 'var(--color-primary-highlight)',
-      outline: '1px solid var(--color-primary)',
+      borderRadius: '2px',
+      color: 'inherit',
+    },
+    '.cm-matchingBracket.cm-matchingBracket-paired': {
+      backgroundColor: bracketPairBackground,
+      outline: `1px solid ${bracketPairOutline}`,
+    },
+    '.cm-nonmatchingBracket': {
+      backgroundColor: nonmatchingBracketBackground,
+      outline: `1px solid ${nonmatchingBracketOutline}`,
+      borderRadius: '2px',
     },
     '.cm-selectionMatch': {
       backgroundColor: 'var(--color-primary-highlight)',
@@ -191,7 +249,7 @@ export class EditorViewAdapter {
           EditorState.allowMultipleSelections.of(true),
           indentOnInput(),
           syntaxHighlighting(defaultHighlightStyle, { fallback: true }),
-          bracketMatching(),
+          bracketMatching({ renderMatch: renderBracketMatch }),
           closeBrackets(),
           autocompletion({
             override: [wikiLinkCompletions(this.getFileList)],
