@@ -17,6 +17,7 @@ Throughout this guide, **vault** simply means a regular folder on your computer 
 - No migration: your files stay on disk
 - Your filesystem stays the source of truth: CollabMD does not move, rename, or delete files unless you explicitly do that in the app
 - Realtime editing with Yjs
+- External filesystem edits sync back into the app and connected browsers
 - Mermaid, PlantUML, and Excalidraw support
 - Source-anchored comments, chat, and presence
 - Works with plain folders, Obsidian-style vaults, and git-backed docs
@@ -60,6 +61,7 @@ Prefer video? [Open the WebM demo](https://raw.githubusercontent.com/andes90/col
 - **No migration** — point CollabMD at an existing markdown folder, diagram workspace, Obsidian-style vault, or git-backed docs repo
 - **Local-files-first** — your filesystem remains the source of truth
 - **Realtime collaboration** — multiple people can edit the same file at the same time via Yjs
+- **External edit sync** — changes made from tools like Obsidian or direct file writes are reflected back into open documents and the file explorer
 - **Markdown with context** — live preview, wiki-links, backlinks, outline, quick switcher, and scroll sync
 - **Source-anchored comments** — comment on lines or selected text with inline markers, preview bubbles, and thread cards
 - **Collaboration built in** — collaborator presence, follow mode, and team chat
@@ -181,7 +183,7 @@ Comment threads are source-anchored and currently supported for markdown, Mermai
 
 Markdown video embeds are opt-in and use standard image syntax such as `![Video](https://www.youtube.com/watch?v=...)` or `![Video](https://cdn.example.com/demo.webm)`. The preview currently supports public YouTube URLs plus direct public `https` video files ending in `.mp4`, `.webm`, or `.ogg`. The editor toolbar also includes a `Video` action that inserts the same Markdown syntax for you.
 
-Your filesystem is the source of truth. CollabMD reads files from disk, uses Yjs for realtime collaboration, and continuously writes plain text back to disk as you type.
+Your filesystem is the source of truth. CollabMD reads files from disk, uses Yjs for realtime collaboration, and continuously writes plain text back to disk as you type. External changes from tools like Obsidian, direct file writes, or git-driven file updates are watched and reconciled back into live rooms and the explorer.
 
 ## Usage
 
@@ -523,7 +525,7 @@ cp .env.example .env
 - The filesystem is the source of truth; Yjs provides the collaboration layer.
 - When `COLLABMD_GIT_REPO_URL` is set, startup clones the configured repo into `COLLABMD_VAULT_DIR` on first boot and reuses an existing same-origin checkout on later starts.
 - If `COLLABMD_GIT_SSH_KNOWN_HOSTS_FILE` is not set, SSH falls back to `StrictHostKeyChecking=accept-new`.
-- CollabMD assumes it is the only writer while a file is open; there is no live `fs.watch` reconciliation.
+- External filesystem edits are reconciled back into active rooms and the explorer. Ambiguous watcher bursts still fall back to batched workspace reconciliation.
 - `.obsidian`, `.git`, `.trash`, and `node_modules` directories are ignored.
 - Only `.md`, `.markdown`, and `.mdx` files are indexed.
 - PlantUML preview rendering is server-side and uses `PLANTUML_SERVER_URL`; point it at a self-hosted renderer if you do not want to use the public PlantUML service.
