@@ -9,6 +9,9 @@ const COMMENT_CARD_WIDTH = 520;
 const COMMENT_SELECTION_REVEAL_DELAY_MS = 150;
 const COMMENT_SELECTION_CHIP_GAP = 12;
 const COMMENT_CONTROL_SLOT_HEIGHT = 36;
+const COMMENT_PREVIEW_RAIL_SLOT_HEIGHT = 30;
+const COMMENT_PREVIEW_RAIL_MIN_WIDTH = 400;
+const COMMENT_PREVIEW_RAIL_BREAKPOINT = 769;
 const COMMENT_REACTION_PRESET_EMOJIS = Object.freeze(['👍', '❤️', '🎉', '👀', '🚀']);
 const COMMENT_REACTION_MORE_EMOJIS = Object.freeze(['😂', '🔥', '✅', '🙏', '💡', '🤔', '👏', '😄', '🎯', '🙌']);
 
@@ -248,6 +251,25 @@ function createRectFromRects(rects = []) {
   };
 }
 
+function pointIntersectsRect(x, y, rect) {
+  if (!rect) {
+    return false;
+  }
+
+  return x >= rect.left
+    && x <= rect.right
+    && y >= rect.top
+    && y <= rect.bottom;
+}
+
+function normalizeGroupKeys(keys = []) {
+  return [...new Set(keys.filter(Boolean))].sort();
+}
+
+function serializeGroupKeys(keys = []) {
+  return normalizeGroupKeys(keys).join(' ');
+}
+
 function createCommentMarkerContent(count) {
   const fragment = document.createDocumentFragment();
 
@@ -315,6 +337,12 @@ export class CommentUiController {
     this.pointerSelecting = false;
     this.session = null;
     this.activeCard = null;
+    this.hoveredEditorGroupKeys = [];
+    this.hoveredEditorGroupKeysSignature = '';
+    this.hoveredPreviewGroupKeys = [];
+    this.hoveredPreviewGroupKeysSignature = '';
+    this.previewHoverRegions = [];
+    this.lastPreviewPointerPosition = null;
     this.editorLayer = null;
     this.previewLayer = null;
     this.previewHighlightLayer = null;
@@ -331,6 +359,20 @@ export class CommentUiController {
     this.handleEditorScroll = () => this.scheduleLayoutRefresh();
     this.handlePreviewScroll = () => this.scheduleLayoutRefresh();
     this.handleWindowResize = () => this.scheduleLayoutRefresh();
+    this.handlePreviewPointerMove = (event) => {
+      this.lastPreviewPointerPosition = { x: event.clientX, y: event.clientY };
+      this.updateHoveredPreviewGroups(this.getPreviewGroupKeysAtPoint(event.clientX, event.clientY));
+    };
+    this.handlePreviewPointerLeave = () => {
+      this.lastPreviewPointerPosition = null;
+      this.updateHoveredPreviewGroups([]);
+    };
+    this.handlePreviewFocusIn = (event) => {
+      this.updateHoveredPreviewGroups(this.getPreviewGroupKeysForTarget(event.target));
+    };
+    this.handlePreviewFocusOut = (event) => {
+      this.updateHoveredPreviewGroups(this.getPreviewGroupKeysForTarget(event.relatedTarget));
+    };
     this.handleCommentSelectionButtonPointerDown = (event) => {
       event.preventDefault();
     };
@@ -436,6 +478,10 @@ export class CommentUiController {
       this.setDrawerOpen(!this.drawerOpen);
     });
     this.previewContainer?.addEventListener('scroll', this.handlePreviewScroll, { passive: true });
+    this.previewElement?.addEventListener('pointermove', this.handlePreviewPointerMove, { passive: true });
+    this.previewElement?.addEventListener('pointerleave', this.handlePreviewPointerLeave);
+    this.previewElement?.addEventListener('focusin', this.handlePreviewFocusIn);
+    this.previewElement?.addEventListener('focusout', this.handlePreviewFocusOut);
     this.editorContainer?.addEventListener('pointerdown', this.handleEditorPointerDown);
     this.editorContainer?.addEventListener('focusout', this.handleEditorFocusOut);
     window.addEventListener('resize', this.handleWindowResize);
@@ -452,6 +498,10 @@ export class CommentUiController {
     }
     this.attachSession(null);
     this.previewContainer?.removeEventListener('scroll', this.handlePreviewScroll);
+    this.previewElement?.removeEventListener('pointermove', this.handlePreviewPointerMove);
+    this.previewElement?.removeEventListener('pointerleave', this.handlePreviewPointerLeave);
+    this.previewElement?.removeEventListener('focusin', this.handlePreviewFocusIn);
+    this.previewElement?.removeEventListener('focusout', this.handlePreviewFocusOut);
     this.commentSelectionButton?.removeEventListener('pointerdown', this.handleCommentSelectionButtonPointerDown);
     this.editorContainer?.removeEventListener('pointerdown', this.handleEditorPointerDown);
     this.editorContainer?.removeEventListener('focusout', this.handleEditorFocusOut);
@@ -460,6 +510,7 @@ export class CommentUiController {
     document.removeEventListener('pointercancel', this.handleDocumentPointerUp);
     document.removeEventListener('pointerdown', this.handleDocumentPointerDown);
     document.removeEventListener('keydown', this.handleDocumentKeyDown);
+    this.previewHoverRegions = [];
     this.cardRoot?.remove();
     this.editorLayer?.remove();
     this.previewLayer?.remove();
@@ -493,6 +544,10 @@ export class CommentUiController {
       this.clearSelectionRevealTimer();
       this.pointerSelecting = false;
       this.activeCard = null;
+      this.updateHoveredEditorGroups([]);
+      this.updateHoveredPreviewGroups([]);
+      this.previewHoverRegions = [];
+      this.lastPreviewPointerPosition = null;
       this.reactionPicker = null;
     }
     if (!this.supported) {
@@ -504,6 +559,10 @@ export class CommentUiController {
       this.committedSelectionAnchor = null;
       this.clearSelectionRevealTimer();
       this.pointerSelecting = false;
+      this.updateHoveredEditorGroups([]);
+      this.updateHoveredPreviewGroups([]);
+      this.previewHoverRegions = [];
+      this.lastPreviewPointerPosition = null;
       this.reactionPicker = null;
     }
     this.render();
@@ -757,11 +816,19 @@ export class CommentUiController {
       }
 
       const relativeRect = toRelativeRect(rect, containerRect);
+      if (relativeRect.bottom < 0 || relativeRect.top > containerRect.height) {
+        return;
+      }
+
       const button = document.createElement('button');
       button.type = 'button';
       button.className = 'comment-editor-badge';
       button.dataset.count = String(group.threads.length);
-      button.classList.toggle('is-active', this.activeCard?.groupKey === group.key);
+      const isActive = this.activeCard?.groupKey === group.key;
+      const isHovered = this.hoveredEditorGroupKeys.includes(group.key);
+      button.classList.toggle('is-active', isActive);
+      button.classList.toggle('is-hovered', isHovered);
+      button.classList.toggle('is-passive', !isActive && !isHovered);
       button.setAttribute('aria-label', `${group.threads.length} comment thread${group.threads.length === 1 ? '' : 's'}`);
       button.appendChild(createCommentMarkerContent(group.threads.length));
       const top = Math.max(relativeRect.top, 8);
@@ -770,6 +837,18 @@ export class CommentUiController {
       button.title = `${group.threads.length} comment${group.threads.length === 1 ? '' : 's'}`;
       button.addEventListener('pointerdown', (event) => {
         event.preventDefault();
+      });
+      button.addEventListener('pointerenter', () => {
+        this.updateHoveredEditorGroups([group.key]);
+      });
+      button.addEventListener('pointerleave', () => {
+        this.updateHoveredEditorGroups([]);
+      });
+      button.addEventListener('focusin', () => {
+        this.updateHoveredEditorGroups([group.key]);
+      });
+      button.addEventListener('focusout', () => {
+        this.updateHoveredEditorGroups([]);
       });
       button.addEventListener('click', () => {
         this.openThreadGroup(group, {
@@ -840,20 +919,36 @@ export class CommentUiController {
     this.previewHighlightLayer?.replaceChildren();
 
     if (!this.supported || !this.previewElement) {
+      this.previewHoverRegions = [];
       return;
     }
 
     const previewRect = this.previewElement.getBoundingClientRect();
     const groups = this.getThreadGroups();
+    const occupiedTops = [];
+    const hoverRegions = [];
+    const showPassiveMarkers = this.shouldRenderPassivePreviewMarkers();
     groups.forEach((group) => {
       const target = this.resolvePreviewTarget(group.anchor);
       if (!target?.bubbleRect) {
         return;
       }
 
+      hoverRegions.push({
+        key: group.key,
+        rects: target.hoverRects?.length > 0 ? target.hoverRects : [target.bubbleRect],
+      });
+
+      const isActive = this.activeCard?.groupKey === group.key;
+      const isHovered = this.hoveredPreviewGroupKeys.includes(group.key);
+      const isEmphasized = isActive || isHovered;
+
       target.highlightRects?.forEach((rect) => {
         const highlight = document.createElement('div');
         highlight.className = 'comment-preview-highlight';
+        highlight.classList.toggle('is-active', isActive);
+        highlight.classList.toggle('is-hovered', isHovered);
+        highlight.classList.toggle('is-passive', !isEmphasized);
         highlight.style.left = `${rect.left - previewRect.left}px`;
         highlight.style.top = `${rect.top - previewRect.top}px`;
         highlight.style.width = `${rect.width}px`;
@@ -861,14 +956,32 @@ export class CommentUiController {
         this.previewHighlightLayer?.appendChild(highlight);
       });
 
+      if (!showPassiveMarkers && !isEmphasized) {
+        return;
+      }
+
       const bubble = document.createElement('button');
       bubble.type = 'button';
       bubble.className = 'comment-preview-badge';
-      bubble.classList.toggle('is-active', this.activeCard?.groupKey === group.key);
+      bubble.dataset.commentPreviewGroupKeys = group.key;
+      bubble.classList.toggle('is-active', isActive);
+      bubble.classList.toggle('is-hovered', isHovered);
+      bubble.classList.toggle('is-passive', !isEmphasized);
       bubble.setAttribute('aria-label', `${group.threads.length} comment thread${group.threads.length === 1 ? '' : 's'}`);
       bubble.appendChild(createCommentMarkerContent(group.threads.length));
-      bubble.style.left = `${clamp(target.bubbleRect.right - previewRect.left + 6, 6, this.previewElement.clientWidth - 34)}px`;
-      bubble.style.top = `${Math.max(target.bubbleRect.top - previewRect.top, 6)}px`;
+      let bubbleTop = clamp(
+        target.bubbleRect.top - previewRect.top,
+        6,
+        Math.max(this.previewElement.clientHeight - COMMENT_PREVIEW_RAIL_SLOT_HEIGHT, 6),
+      );
+      while (occupiedTops.some((top) => Math.abs(top - bubbleTop) < (COMMENT_PREVIEW_RAIL_SLOT_HEIGHT - 4))) {
+        bubbleTop = clamp(
+          bubbleTop + COMMENT_PREVIEW_RAIL_SLOT_HEIGHT,
+          6,
+          Math.max(this.previewElement.clientHeight - COMMENT_PREVIEW_RAIL_SLOT_HEIGHT, 6),
+        );
+      }
+      bubble.style.top = `${bubbleTop}px`;
       bubble.title = `${group.threads.length} comment${group.threads.length === 1 ? '' : 's'}`;
       bubble.addEventListener('pointerdown', (event) => {
         event.preventDefault();
@@ -877,11 +990,19 @@ export class CommentUiController {
         this.openThreadGroup(group, {
           anchor: group.anchor,
           origin: 'preview',
-          sourceRect: target.bubbleRect,
+          sourceRect: bubble.getBoundingClientRect(),
         });
       });
       this.previewLayer?.appendChild(bubble);
+      occupiedTops.push(bubbleTop);
     });
+
+    this.previewHoverRegions = hoverRegions;
+    if (this.lastPreviewPointerPosition) {
+      this.updateHoveredPreviewGroups(
+        this.getPreviewGroupKeysAtPoint(this.lastPreviewPointerPosition.x, this.lastPreviewPointerPosition.y),
+      );
+    }
   }
 
   resolvePreviewTarget(anchor) {
@@ -895,6 +1016,7 @@ export class CommentUiController {
       return {
         bubbleRect: diagramShell.getBoundingClientRect(),
         highlightRects: [],
+        hoverRects: [diagramShell.getBoundingClientRect()],
       };
     }
 
@@ -911,6 +1033,7 @@ export class CommentUiController {
         return {
           bubbleRect,
           highlightRects: rects,
+          hoverRects: rects,
         };
       }
     }
@@ -923,6 +1046,7 @@ export class CommentUiController {
     return {
       bubbleRect: fallback.getBoundingClientRect(),
       highlightRects: [],
+      hoverRects: [fallback.getBoundingClientRect()],
     };
   }
 
@@ -1113,6 +1237,69 @@ export class CommentUiController {
     root.style.visibility = '';
     this.flushPendingCardFocus();
     this.scheduleLayoutRefresh();
+  }
+
+  getPreviewGroupKeysForTarget(target) {
+    if (!(target instanceof Node)) {
+      return [];
+    }
+
+    const keyCarrier = target.closest?.('[data-comment-preview-group-keys]');
+    return serializeGroupKeys(
+      String(keyCarrier?.dataset?.commentPreviewGroupKeys ?? '')
+        .split(/\s+/)
+        .filter(Boolean),
+    ).split(' ').filter(Boolean);
+  }
+
+  getPreviewGroupKeysAtPoint(x, y) {
+    if (!Number.isFinite(x) || !Number.isFinite(y)) {
+      return [];
+    }
+
+    const targetAtPoint = document.elementFromPoint(x, y);
+    const targetKeys = this.getPreviewGroupKeysForTarget(targetAtPoint);
+    if (targetKeys.length > 0) {
+      return targetKeys;
+    }
+
+    const matchingKeys = this.previewHoverRegions
+      .filter((region) => region.rects.some((rect) => pointIntersectsRect(x, y, rect)))
+      .map((region) => region.key);
+    return normalizeGroupKeys(matchingKeys);
+  }
+
+  updateHoveredPreviewGroups(nextKeys = []) {
+    const normalizedKeys = normalizeGroupKeys(nextKeys);
+    const signature = normalizedKeys.join(' ');
+    if (signature === this.hoveredPreviewGroupKeysSignature) {
+      return;
+    }
+
+    this.hoveredPreviewGroupKeys = normalizedKeys;
+    this.hoveredPreviewGroupKeysSignature = signature;
+    this.scheduleLayoutRefresh();
+  }
+
+  updateHoveredEditorGroups(nextKeys = []) {
+    const normalizedKeys = normalizeGroupKeys(nextKeys);
+    const signature = normalizedKeys.join(' ');
+    if (signature === this.hoveredEditorGroupKeysSignature) {
+      return;
+    }
+
+    this.hoveredEditorGroupKeys = normalizedKeys;
+    this.hoveredEditorGroupKeysSignature = signature;
+    this.scheduleLayoutRefresh();
+  }
+
+  syncHoveredPreviewGroupsFromTarget(target) {
+    this.updateHoveredPreviewGroups(this.getPreviewGroupKeysForTarget(target));
+  }
+
+  shouldRenderPassivePreviewMarkers() {
+    const previewWidth = this.previewContainer?.clientWidth ?? this.previewElement?.clientWidth ?? 0;
+    return window.innerWidth >= COMMENT_PREVIEW_RAIL_BREAKPOINT && previewWidth >= COMMENT_PREVIEW_RAIL_MIN_WIDTH;
   }
 
   updateReactionPickerPosition(card) {

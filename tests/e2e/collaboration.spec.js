@@ -266,6 +266,44 @@ function createSeededMultiplayerScene() {
   };
 }
 
+async function hoverPreviewQuotedText(page, quote) {
+  const rect = await page.evaluate((targetQuote) => {
+    const root = document.getElementById('previewContent');
+    if (!root) {
+      return null;
+    }
+
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+    while (walker.nextNode()) {
+      const node = walker.currentNode;
+      const text = node.textContent || '';
+      const start = text.indexOf(targetQuote);
+      if (start < 0) {
+        continue;
+      }
+
+      const range = document.createRange();
+      range.setStart(node, start);
+      range.setEnd(node, start + targetQuote.length);
+      const rects = Array.from(range.getClientRects());
+      const firstRect = rects[0];
+      if (!firstRect) {
+        continue;
+      }
+
+      return {
+        x: firstRect.left + Math.min(firstRect.width / 2, 12),
+        y: firstRect.top + Math.max(firstRect.height / 2, 4),
+      };
+    }
+
+    return null;
+  }, quote);
+
+  expect(rect).toBeTruthy();
+  await page.mouse.move(rect.x, rect.y);
+}
+
 async function seedExcalidrawMultiplayerScene(page) {
   const scene = createSeededMultiplayerScene();
   await page.evaluate((nextScene) => {
@@ -906,6 +944,96 @@ test('renders icon-based thread markers with counts for grouped comments', async
   await expect(previewBadge.locator('.comment-marker-count')).toHaveText('2');
 });
 
+test('hides editor thread markers when their anchor scrolls out of view', async ({ page }) => {
+  await clearReadmeCollaborationSidecars();
+  await openFile(page, 'README.md');
+  await replaceEditorContent(page, createLongMarkdownDocument(180));
+
+  await createComment(page, {
+    body: 'Scroll-away editor anchor.',
+    collapseSelection: true,
+    targetText: 'Line 4 for follow testing.',
+  });
+
+  const editorBadge = page.locator('.comment-editor-badge[aria-label="1 comment thread"]').first();
+  await expect(editorBadge).toBeVisible();
+
+  await page.locator('.cm-scroller').evaluate((element) => {
+    element.scrollTop = element.scrollHeight;
+    element.dispatchEvent(new Event('scroll'));
+  });
+
+  await expect(editorBadge).toHaveCount(0);
+});
+
+test('aligns preview thread markers to a fixed right rail', async ({ page }) => {
+  await clearReadmeCollaborationSidecars();
+  await openFile(page, 'README.md');
+  await replaceEditorContent(page, README_TEST_DOCUMENT);
+
+  await createComment(page, {
+    body: 'Anchor the intro in the rail.',
+    targetText: 'Welcome to the test vault',
+    useInlineChip: true,
+  });
+  await createComment(page, {
+    body: 'Anchor the links header in the rail.',
+    targetText: 'Links',
+    useInlineChip: true,
+  });
+
+  const badges = page.locator('#previewContent .comment-preview-badge[aria-label="1 comment thread"]');
+  await expect(badges).toHaveCount(2);
+
+  const [firstBox, secondBox, contentBox] = await Promise.all([
+    badges.nth(0).boundingBox(),
+    badges.nth(1).boundingBox(),
+    page.locator('#previewContent').boundingBox(),
+  ]);
+
+  expect(firstBox).toBeTruthy();
+  expect(secondBox).toBeTruthy();
+  expect(contentBox).toBeTruthy();
+  expect(Math.abs((firstBox?.x ?? 0) - (secondBox?.x ?? 0))).toBeLessThanOrEqual(2);
+
+  const firstRightInset = ((contentBox?.x ?? 0) + (contentBox?.width ?? 0)) - ((firstBox?.x ?? 0) + (firstBox?.width ?? 0));
+  const secondRightInset = ((contentBox?.x ?? 0) + (contentBox?.width ?? 0)) - ((secondBox?.x ?? 0) + (secondBox?.width ?? 0));
+  expect(firstRightInset).toBeGreaterThanOrEqual(4);
+  expect(firstRightInset).toBeLessThanOrEqual(24);
+  expect(secondRightInset).toBeGreaterThanOrEqual(4);
+  expect(secondRightInset).toBeLessThanOrEqual(24);
+});
+
+test('stacks nearby preview thread markers without overlap in the right rail', async ({ page }) => {
+  await clearReadmeCollaborationSidecars();
+  await openFile(page, 'README.md');
+  await replaceEditorContent(page, README_TEST_DOCUMENT);
+
+  await createComment(page, {
+    body: 'First sentence comment.',
+    targetText: 'Welcome to the test vault',
+    useInlineChip: true,
+  });
+  await createComment(page, {
+    body: 'Second sentence comment.',
+    targetText: 'This is the top-level readme.',
+    useInlineChip: true,
+  });
+
+  const badges = page.locator('#previewContent .comment-preview-badge[aria-label="1 comment thread"]');
+  await expect(badges).toHaveCount(2);
+
+  const [firstBox, secondBox] = await Promise.all([
+    badges.nth(0).boundingBox(),
+    badges.nth(1).boundingBox(),
+  ]);
+
+  expect(firstBox).toBeTruthy();
+  expect(secondBox).toBeTruthy();
+  expect(Math.abs((firstBox?.x ?? 0) - (secondBox?.x ?? 0))).toBeLessThanOrEqual(2);
+  expect(Math.abs((firstBox?.y ?? 0) - (secondBox?.y ?? 0))).toBeGreaterThanOrEqual(24);
+});
+
 test('keeps reply action aligned by using an active Reply toggle state', async ({ page }) => {
   await clearReadmeCollaborationSidecars();
   await openFile(page, 'README.md');
@@ -944,6 +1072,80 @@ test('creates a selected-text comment and surfaces it in the preview bubble card
   await page.locator('#previewContent .comment-preview-badge[aria-label="1 comment thread"]').first().click();
   await expect(page.locator('.comment-card')).toContainText('Welcome to the test vault');
   await expect(page.locator('.comment-card')).toContainText('This phrase should stay visible in preview.');
+});
+
+test('promotes preview markers and highlights on hover and active thread selection', async ({ page }) => {
+  await clearReadmeCollaborationSidecars();
+  await openFile(page, 'README.md');
+  await replaceEditorContent(page, README_TEST_DOCUMENT);
+
+  await createComment(page, {
+    body: 'Hover promotion check.',
+    targetText: 'Welcome to the test vault',
+    useInlineChip: true,
+  });
+
+  const badge = page.locator('#previewContent .comment-preview-badge[aria-label="1 comment thread"]').first();
+  const highlight = page.locator('#previewContent .comment-preview-highlight').first();
+  await expect(badge).toHaveClass(/is-passive/);
+  await expect(highlight).toHaveClass(/is-passive/);
+
+  await hoverPreviewQuotedText(page, 'Welcome to the test vault');
+  await expect(badge).toHaveClass(/is-hovered/);
+  await expect(highlight).toHaveClass(/is-hovered/);
+
+  await badge.click();
+  await expect(badge).toHaveClass(/is-active/);
+  await expect(highlight).toHaveClass(/is-active/);
+});
+
+test('uses matching passive and hover states for editor and preview markers', async ({ page }) => {
+  await clearReadmeCollaborationSidecars();
+  await openFile(page, 'README.md');
+  await replaceEditorContent(page, README_TEST_DOCUMENT);
+
+  await createComment(page, {
+    body: 'State parity check.',
+    targetText: 'Welcome to the test vault',
+    useInlineChip: true,
+  });
+
+  const editorBadge = page.locator('.comment-editor-badge[aria-label="1 comment thread"]').first();
+  const previewBadge = page.locator('#previewContent .comment-preview-badge[aria-label="1 comment thread"]').first();
+
+  await expect(editorBadge).toHaveClass(/is-passive/);
+  await expect(previewBadge).toHaveClass(/is-passive/);
+
+  await editorBadge.hover();
+  await expect(editorBadge).toHaveClass(/is-hovered/);
+
+  await hoverPreviewQuotedText(page, 'Welcome to the test vault');
+  await expect(previewBadge).toHaveClass(/is-hovered/);
+});
+
+test('only promotes the hovered preview marker when a paragraph has multiple comment anchors', async ({ page }) => {
+  await clearReadmeCollaborationSidecars();
+  await openFile(page, 'README.md');
+  await replaceEditorContent(page, README_TEST_DOCUMENT);
+
+  await createComment(page, {
+    body: 'First anchored phrase.',
+    targetText: 'Welcome',
+    useInlineChip: true,
+  });
+  await createComment(page, {
+    body: 'Second anchored phrase.',
+    targetText: 'readme',
+    useInlineChip: true,
+  });
+
+  const badges = page.locator('#previewContent .comment-preview-badge[aria-label="1 comment thread"]');
+  await expect(badges).toHaveCount(2);
+  await expect(page.locator('#previewContent .comment-preview-badge.is-hovered')).toHaveCount(0);
+
+  await hoverPreviewQuotedText(page, 'Welcome');
+
+  await expect(page.locator('#previewContent .comment-preview-badge.is-hovered')).toHaveCount(1);
 });
 
 test('renders multiline markdown comments with fenced code blocks in the thread card', async ({ page }) => {
@@ -1093,6 +1295,7 @@ test('keeps the refreshed comment card within a narrow viewport', async ({ page 
     useInlineChip: true,
   });
 
+  await hoverPreviewQuotedText(page, 'Welcome to the test vault');
   await page.locator('#previewContent .comment-preview-badge[aria-label="1 comment thread"]').first().click();
   await expect(page.locator('.comment-card-scroll')).toBeVisible();
   await expect.poll(async () => (
@@ -1105,6 +1308,30 @@ test('keeps the refreshed comment card within a narrow viewport', async ({ page 
   expect((box?.y ?? 0) >= 0).toBe(true);
   expect((box?.x ?? 0) + (box?.width ?? 0)).toBeLessThanOrEqual(780);
   expect((box?.y ?? 0) + (box?.height ?? 0)).toBeLessThanOrEqual(900);
+});
+
+test('hides passive preview markers in narrow split layouts while keeping comments accessible', async ({ page }) => {
+  await page.setViewportSize({ height: 900, width: 780 });
+  await clearReadmeCollaborationSidecars();
+  await openFile(page, 'README.md');
+  await replaceEditorContent(page, README_TEST_DOCUMENT);
+  await expect(page.locator('#editorLayout')).toHaveAttribute('data-view', 'split');
+
+  await createComment(page, {
+    body: 'Narrow layout comment.',
+    targetText: 'Welcome to the test vault',
+    useInlineChip: true,
+  });
+
+  const previewBadge = page.locator('#previewContent .comment-preview-badge[aria-label="1 comment thread"]');
+  await expect(previewBadge).toHaveCount(0);
+
+  await hoverPreviewQuotedText(page, 'Welcome to the test vault');
+  await expect(previewBadge).toHaveCount(1);
+
+  await page.locator('#commentsToggle').click();
+  await expect(page.locator('#commentsDrawer')).toBeVisible();
+  await expect(page.locator('.comments-drawer-item')).toHaveCount(1);
 });
 
 test('toggles a preset emoji reaction on a comment message', async ({ page }) => {
