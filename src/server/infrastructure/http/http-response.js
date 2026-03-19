@@ -1,4 +1,8 @@
-import { brotliCompressSync, constants as zlibConstants, gzipSync } from 'node:zlib';
+import {
+  brotliCompress,
+  constants as zlibConstants,
+  gzip,
+} from 'node:zlib';
 
 const COMPRESSIBLE_CONTENT_TYPE_PATTERN = /^(?:text\/|application\/(?:javascript|json|xml)|image\/svg\+xml)/i;
 const MIN_COMPRESSIBLE_BYTES = 1024;
@@ -41,9 +45,9 @@ function resolveCompressionEncoding(acceptEncodingHeader) {
   return null;
 }
 
-function maybeCompressBody(req, body, contentType) {
+function prepareBody(req, body, contentType) {
   if (body === undefined || body === null) {
-    return { body: null, compressed: false, encoding: null };
+    return { body: null, encoding: null };
   }
 
   const bodyBuffer = Buffer.isBuffer(body)
@@ -54,27 +58,48 @@ function maybeCompressBody(req, body, contentType) {
     bodyBuffer.byteLength < MIN_COMPRESSIBLE_BYTES
     || !COMPRESSIBLE_CONTENT_TYPE_PATTERN.test(String(contentType || ''))
   ) {
-    return { body: bodyBuffer, compressed: false, encoding: null };
+    return { body: bodyBuffer, encoding: null };
   }
 
   const encoding = resolveCompressionEncoding(req.headers['accept-encoding']);
   if (!encoding) {
-    return { body: bodyBuffer, compressed: false, encoding: null };
+    return { body: bodyBuffer, encoding: null };
   }
 
-  const compressedBody = encoding === 'br'
-    ? brotliCompressSync(bodyBuffer, {
+  return { body: bodyBuffer, encoding };
+}
+
+function compressBody(bodyBuffer, encoding, callback) {
+  if (encoding === 'br') {
+    brotliCompress(bodyBuffer, {
       params: {
         [zlibConstants.BROTLI_PARAM_QUALITY]: 5,
       },
-    })
-    : gzipSync(bodyBuffer, { level: 6 });
-
-  if (compressedBody.byteLength >= bodyBuffer.byteLength) {
-    return { body: bodyBuffer, compressed: false, encoding: null };
+    }, callback);
+    return;
   }
 
-  return { body: compressedBody, compressed: true, encoding };
+  gzip(bodyBuffer, { level: 6 }, callback);
+}
+
+function writeResponseHead(res, statusCode, headers, bodyBuffer) {
+  const responseHeaders = { ...headers };
+  if (bodyBuffer) {
+    responseHeaders['Content-Length'] = String(bodyBuffer.byteLength);
+  }
+
+  res.writeHead(statusCode, responseHeaders);
+}
+
+function writePreparedBody(req, res, statusCode, headers, bodyBuffer) {
+  writeResponseHead(res, statusCode, headers, bodyBuffer);
+
+  if (req.method === 'HEAD' || statusCode === 204 || statusCode === 304) {
+    res.end();
+    return;
+  }
+
+  res.end(bodyBuffer ?? undefined);
 }
 
 export function setHeaders(res, headers) {
@@ -116,30 +141,42 @@ export function sendResponse(req, res, {
   statusCode = 200,
 } = {}) {
   const contentType = headers['Content-Type'] || headers['content-type'] || '';
-  const prepared = maybeCompressBody(req, body, contentType);
+  const prepared = prepareBody(req, body, contentType);
 
   if (body !== null) {
     appendVaryHeader(res, 'Accept-Encoding');
   }
 
-  const responseHeaders = { ...headers };
-
-  if (prepared.compressed && prepared.encoding) {
-    responseHeaders['Content-Encoding'] = prepared.encoding;
-  }
-
-  if (prepared.body) {
-    responseHeaders['Content-Length'] = String(prepared.body.byteLength);
-  }
-
-  res.writeHead(statusCode, responseHeaders);
-
-  if (req.method === 'HEAD' || statusCode === 204 || statusCode === 304) {
-    res.end();
+  if (!prepared.body || !prepared.encoding || req.method === 'HEAD' || statusCode === 204 || statusCode === 304) {
+    writePreparedBody(req, res, statusCode, headers, prepared.body);
     return;
   }
 
-  res.end(prepared.body ?? undefined);
+  compressBody(prepared.body, prepared.encoding, (error, compressedBody) => {
+    if (res.writableEnded || res.destroyed) {
+      return;
+    }
+
+    if (error) {
+      console.error('[http] Failed to compress response body:', error.message);
+      if (!res.headersSent) {
+        writePreparedBody(req, res, statusCode, headers, prepared.body);
+        return;
+      }
+      res.destroy(error);
+      return;
+    }
+
+    if (!compressedBody || compressedBody.byteLength >= prepared.body.byteLength) {
+      writePreparedBody(req, res, statusCode, headers, prepared.body);
+      return;
+    }
+
+    writePreparedBody(req, res, statusCode, {
+      ...headers,
+      'Content-Encoding': prepared.encoding,
+    }, compressedBody);
+  });
 }
 
 export function jsonResponse(req, res, statusCode, data) {

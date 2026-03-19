@@ -234,7 +234,9 @@ export function createVaultApiCommandHandler({
           action: 'create-directory',
           origin: 'api',
           requestId: readRequestId(req),
-          workspaceChange: createWorkspaceChange(),
+          workspaceChange: createWorkspaceChange({
+            changedPaths: [body.path],
+          }),
         });
 
         jsonResponse(req, res, 201, { ok: true });

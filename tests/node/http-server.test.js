@@ -119,6 +119,27 @@ test('HTTP server serves health, runtime config, and static assets', async (t) =
   assert.match(gunzipSync(compressedAssetResponse.bodyBuffer).toString('utf8'), /--color-bg/);
 });
 
+test('HTTP server compresses large JSON API responses without changing payloads', async (t) => {
+  const app = await startTestServer();
+  t.after(() => app.close());
+
+  const largeContent = '# Large\n\n' + 'payload '.repeat(400);
+  await writeFile(join(app.vaultDir, 'large.md'), largeContent, 'utf8');
+
+  const fileResponse = await httpRequest(`${app.baseUrl}/api/file?path=large.md`, {
+    headers: {
+      'Accept-Encoding': 'gzip',
+    },
+  });
+
+  assert.equal(fileResponse.statusCode, 200);
+  assert.equal(fileResponse.headers['content-encoding'], 'gzip');
+
+  const payload = JSON.parse(gunzipSync(fileResponse.bodyBuffer).toString('utf8'));
+  assert.equal(payload.path, 'large.md');
+  assert.equal(payload.content, largeContent);
+});
+
 test('HTTP server serves prefixed routes when BASE_PATH is configured', async (t) => {
   const app = await startTestServer({
     auth: {
