@@ -401,6 +401,8 @@ To use an existing vault on your machine instead of `./data/vault`:
 HOST_VAULT_DIR=/absolute/path/to/vault docker compose up
 ```
 
+`HOST_VAULT_DIR` controls the host-side bind mount source. The app uses `COLLABMD_VAULT_DIR` for the in-container vault path and defaults that to `/data` in Docker.
+
 To bootstrap the compose-managed vault from a private repo, set the git env vars in `.env` and keep `HOST_VAULT_DIR` on a persistent host path. For file-based SSH auth, point `COLLABMD_GIT_SSH_PRIVATE_KEY_FILE` and `COLLABMD_GIT_SSH_KNOWN_HOSTS_FILE` at mounted secret paths; for simpler setups, set `COLLABMD_GIT_SSH_PRIVATE_KEY_B64` instead.
 
 If you want the in-app Git commit action to work inside the container without OIDC, also set `COLLABMD_GIT_USER_NAME` and `COLLABMD_GIT_USER_EMAIL` so CollabMD can configure the checkout identity automatically. With `AUTH_STRATEGY=oidc`, CollabMD uses the signed-in Google identity for each commit instead.
@@ -554,7 +556,7 @@ scripts/
 | `AUTH_OIDC_ALLOWED_DOMAINS` | Comma-separated email domain allowlist for `AUTH_STRATEGY=oidc` | |
 | `BASE_PATH` | URL path prefix for subpath deployments | |
 | `PLANTUML_SERVER_URL` | Upstream PlantUML server base URL used for server-side SVG rendering | `https://www.plantuml.com/plantuml` |
-| `COLLABMD_VAULT_DIR` | Vault directory path | current directory |
+| `COLLABMD_VAULT_DIR` | Vault directory path | CLI: current directory, server entrypoint: `data/vault`, Docker: `/data` |
 | `COLLABMD_GIT_ENABLED` | Enable or disable git integration in the UI and API | `true` |
 | `COLLABMD_GIT_REPO_URL` | Remote git repository used to bootstrap the vault checkout | |
 | `COLLABMD_GIT_SSH_PRIVATE_KEY_FILE` | SSH private key file path for remote git auth; preferred over base64 input | |

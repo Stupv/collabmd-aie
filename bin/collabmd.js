@@ -61,11 +61,13 @@ if (values.help) {
   process.exit(0);
 }
 
-const vaultPath = resolve(positionals[0] || '.');
 const port = parseInt(values.port ?? process.env.PORT ?? '1234', 10) || 1234;
 const host = values.host || process.env.HOST || '127.0.0.1';
 const enableTunnel = !values['no-tunnel'];
 const useLocalPlantUml = values['local-plantuml'];
+
+const { resolveCliVaultDir, loadConfig } = await import('../src/server/config/env.js');
+const vaultPath = resolveCliVaultDir(positionals);
 
 process.env.COLLABMD_VAULT_DIR = vaultPath;
 process.env.PORT = String(port);
@@ -101,7 +103,6 @@ if (useLocalPlantUml) {
 }
 
 const { createAppServer } = await import('../src/server/create-app-server.js');
-const { loadConfig } = await import('../src/server/config/env.js');
 const { prepareConfigForStartup } = await import('../src/server/startup/git-remote-bootstrap.js');
 
 const config = loadConfig({ vaultDir: vaultPath });

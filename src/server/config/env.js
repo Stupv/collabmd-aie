@@ -116,6 +116,16 @@ function normalizeDomainAllowlist(value) {
 
 const projectRoot = resolve(fileURLToPath(new URL('../../../', import.meta.url)));
 
+export function resolveConfiguredVaultDir(overrides = {}, env = process.env) {
+  return overrides.vaultDir
+    || env.COLLABMD_VAULT_DIR
+    || resolve(projectRoot, 'data/vault');
+}
+
+export function resolveCliVaultDir(positionals = [], env = process.env) {
+  return resolve(positionals[0] || env.COLLABMD_VAULT_DIR || '.');
+}
+
 function getDefaultHost(nodeEnv) {
   return nodeEnv === 'production' ? '0.0.0.0' : '127.0.0.1';
 }
@@ -238,9 +248,7 @@ function loadOidcConfig(overrides = {}, { basePath = '' } = {}) {
 
 export function loadConfig(overrides = {}) {
   const nodeEnv = process.env.NODE_ENV || 'development';
-  const vaultDir = overrides.vaultDir
-    || process.env.COLLABMD_VAULT_DIR
-    || resolve(projectRoot, 'data/vault');
+  const vaultDir = resolveConfiguredVaultDir(overrides);
   const basePath = normalizeAppBasePath(process.env.BASE_PATH || '');
   const authOverrides = overrides.auth ?? {};
   const authStrategy = normalizeAuthStrategy(

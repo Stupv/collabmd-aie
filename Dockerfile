@@ -34,4 +34,4 @@ EXPOSE 1234
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=45s --retries=3 CMD wget -qO- http://127.0.0.1:1234/health || exit 1
 
-CMD ["node", "bin/collabmd.js", "/data", "--no-tunnel"]
+CMD ["node", "bin/collabmd.js", "--no-tunnel"]

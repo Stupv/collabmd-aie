@@ -18,6 +18,7 @@ services:
       BASE_PATH: ${BASE_PATH:-}
       PUBLIC_WS_BASE_URL: ${PUBLIC_WS_BASE_URL:-}
       PLANTUML_SERVER_URL: http://plantuml:8080
+      COLLABMD_VAULT_DIR: ${COLLABMD_VAULT_DIR:-/data}
       COLLABMD_GIT_REPO_URL: ${COLLABMD_GIT_REPO_URL:-}
       COLLABMD_GIT_SSH_PRIVATE_KEY_FILE: ${COLLABMD_GIT_SSH_PRIVATE_KEY_FILE:-}
       COLLABMD_GIT_SSH_PRIVATE_KEY_B64: ${COLLABMD_GIT_SSH_PRIVATE_KEY_B64:-}
@@ -36,7 +37,7 @@ services:
     volumes:
       - type: bind
         source: ${HOST_VAULT_DIR:-./data/vault}
-        target: /data
+        target: ${COLLABMD_VAULT_DIR:-/data}
       # Optional: mount secret files when using file-based SSH auth.
       # - type: bind
       #   source: ${HOST_SSH_KEY_FILE}
