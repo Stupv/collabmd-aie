@@ -149,6 +149,7 @@ if (isTestMode) {
       && collabReady
       && roomClient.canWriteToRoom === true
       && roomClient.waitingForAuthoritativeSync === false
+      && roomClient.isApplyingSharedSnapshot() === false
     ),
     isReady: () => collabReady && Boolean(excalidrawAPI) && Boolean(getNativeHistoryButton('undo')) && Boolean(getNativeHistoryButton('redo')),
     redoShared: () => triggerNativeHistory('redo'),
@@ -506,7 +507,7 @@ window.addEventListener('message', (event) => {
 });
 
 function scheduleSyncToRoom(elements, appState, files) {
-  if (!collabReady || suppressOnChange || roomClient.isApplyingSharedSnapshot()) {
+  if (!collabReady || suppressOnChange) {
     return;
   }
 
