@@ -3,6 +3,7 @@ import { createGitApiCommandHandler } from './create-git-api-command-handler.js'
 import { createGitApiQueryHandler } from './create-git-api-query-handler.js';
 
 export function createGitApiHandler({
+  authService = null,
   backlinkIndex = null,
   gitService = null,
   roomRegistry = null,
@@ -11,6 +12,7 @@ export function createGitApiHandler({
 }) {
   const handleGitApiQuery = createGitApiQueryHandler({ gitService });
   const handleGitApiCommand = createGitApiCommandHandler({
+    authService,
     backlinkIndex,
     gitService,
     roomRegistry,

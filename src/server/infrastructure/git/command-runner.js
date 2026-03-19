@@ -31,13 +31,14 @@ export class GitCommandRunner {
     }
   }
 
-  async execGit(args) {
+  async execGit(args, { env = null } = {}) {
     const result = await this.execFileImpl('git', ['-c', 'core.quotepath=false', ...args], {
       cwd: this.vaultDir,
       encoding: 'utf8',
       env: {
         ...process.env,
         ...(this.commandEnv ?? {}),
+        ...(env ?? {}),
       },
       maxBuffer: 5 * 1024 * 1024,
       timeout: 10_000,

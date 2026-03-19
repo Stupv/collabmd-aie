@@ -374,6 +374,44 @@ test('GitService can commit staged changes when identity is provided through com
   assert.equal(commitResult.commit.message, 'Commit with env identity');
 });
 
+test('GitService can override commit identity per request author', async (t) => {
+  const repoDir = await mkdtemp(join(tmpdir(), 'collabmd-git-service-author-'));
+  t.after(async () => {
+    await rm(repoDir, { force: true, recursive: true });
+  });
+
+  await runGit(repoDir, ['init']);
+  await writeFile(join(repoDir, 'a.md'), '# A\n', 'utf8');
+  await runGit(repoDir, ['add', 'a.md']);
+  await runGit(repoDir, ['commit', '-m', 'Initial commit']);
+  await runGit(repoDir, ['config', '--unset-all', 'user.name']).catch(() => undefined);
+  await runGit(repoDir, ['config', '--unset-all', 'user.email']).catch(() => undefined);
+
+  await writeFile(join(repoDir, 'a.md'), '# A\nauthor override\n', 'utf8');
+
+  const gitService = new GitService({
+    commandEnv: {
+      GIT_AUTHOR_EMAIL: 'bot@example.com',
+      GIT_AUTHOR_NAME: 'CollabMD Bot',
+      GIT_COMMITTER_EMAIL: 'bot@example.com',
+      GIT_COMMITTER_NAME: 'CollabMD Bot',
+    },
+    vaultDir: repoDir,
+  });
+
+  await gitService.stageFile('a.md');
+  await gitService.commitStaged({
+    author: {
+      email: 'google@example.com',
+      name: 'Google User',
+    },
+    message: 'Commit with request author',
+  });
+
+  const headAuthor = await execFile('git', ['log', '-1', '--pretty=%an <%ae>'], { cwd: repoDir });
+  assert.equal(String(headAuthor.stdout).trim(), 'Google User <google@example.com>');
+});
+
 test('GitService pushes and pulls against an upstream branch', async (t) => {
   const remoteDir = await mkdtemp(join(tmpdir(), 'collabmd-git-remote-'));
   const seedDir = await mkdtemp(join(tmpdir(), 'collabmd-git-seed-'));

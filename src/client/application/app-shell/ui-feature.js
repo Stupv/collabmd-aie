@@ -16,6 +16,7 @@ export const uiFeature = {
     this.gitPanel.initialize();
     this.gitDiffView.initialize();
     this.initializePreviewLayoutObserver();
+    this.syncIdentityManagementUi();
     this.syncCurrentUserName();
     this.syncWrapToggle();
     this.syncChatNotificationButton();
@@ -37,6 +38,11 @@ export const uiFeature = {
       }
       return undefined;
     });
+  },
+
+  isIdentityManagedByAuth() {
+    return this.runtimeConfig?.auth?.strategy === 'oidc'
+      && this.runtimeConfig?.auth?.provider === 'google';
   },
 
   bindEvents() {
@@ -398,6 +404,10 @@ export const uiFeature = {
   },
 
   openDisplayNameDialog({ mode = 'edit' } = {}) {
+    if (this.isIdentityManagedByAuth()) {
+      return;
+    }
+
     if (!this.isTabActive) {
       return;
     }
@@ -439,7 +449,12 @@ export const uiFeature = {
   },
 
   promptForDisplayNameIfNeeded() {
-    if (!this.isTabActive || this._hasPromptedForDisplayName || this.getStoredUserName()) {
+    if (
+      !this.isTabActive
+      || this._hasPromptedForDisplayName
+      || this.getStoredUserName()
+      || this.isIdentityManagedByAuth()
+    ) {
       return;
     }
 
@@ -450,6 +465,10 @@ export const uiFeature = {
   },
 
   handleDisplayNameSubmit() {
+    if (this.isIdentityManagedByAuth()) {
+      return;
+    }
+
     const input = this.elements.displayNameInput;
     const dialog = this.elements.displayNameDialog;
     if (!input || !dialog) return;
@@ -501,10 +520,21 @@ export const uiFeature = {
     const name = this.getCurrentUserName();
     el.textContent = name || 'Set name';
     el.classList.toggle('has-name', Boolean(name));
-    this.elements.editNameButton?.setAttribute(
-      'aria-label',
-      `${name || 'Set name'}. Change display name`,
-    );
+    if (!this.isIdentityManagedByAuth()) {
+      this.elements.editNameButton?.setAttribute(
+        'aria-label',
+        `${name || 'Set name'}. Change display name`,
+      );
+    }
+  },
+
+  syncIdentityManagementUi() {
+    const isManaged = this.isIdentityManagedByAuth();
+    this.elements.editNameButton?.classList.toggle('hidden', isManaged);
+    this.elements.editNameButton?.toggleAttribute('disabled', isManaged);
+    if (isManaged && this.elements.displayNameDialog?.open) {
+      this.elements.displayNameDialog.close();
+    }
   },
 
   toggleLineWrapping() {

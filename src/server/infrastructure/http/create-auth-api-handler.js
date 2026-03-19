@@ -7,6 +7,14 @@ function applyAuthResponse(req, res, result) {
     res.setHeader('Set-Cookie', result.setCookie);
   }
 
+  if (result?.redirectTo) {
+    res.writeHead(result?.statusCode ?? 302, {
+      Location: result.redirectTo,
+    });
+    res.end();
+    return true;
+  }
+
   jsonResponse(req, res, result?.statusCode ?? 200, result?.body ?? { ok: true });
   return true;
 }
@@ -21,10 +29,30 @@ export function createAuthApiHandler({ authService }) {
       return applyAuthResponse(req, res, authService.getStatus(req));
     }
 
+    if (requestUrl.pathname === '/api/auth/oidc/login' && req.method === 'GET') {
+      try {
+        return applyAuthResponse(req, res, await authService.beginOidcLogin(req, requestUrl));
+      } catch (error) {
+        console.error('[api] Failed to start OIDC login:', error.message);
+        jsonResponse(req, res, 500, { error: 'Failed to start OIDC login' });
+        return true;
+      }
+    }
+
+    if (requestUrl.pathname === '/api/auth/oidc/callback' && req.method === 'GET') {
+      try {
+        return applyAuthResponse(req, res, await authService.completeOidcLogin(req, requestUrl));
+      } catch (error) {
+        console.error('[api] Failed to complete OIDC login:', error.message);
+        jsonResponse(req, res, 500, { error: 'Failed to complete OIDC login' });
+        return true;
+      }
+    }
+
     if (requestUrl.pathname === '/api/auth/session' && req.method === 'POST') {
       try {
         const body = await parseJsonBody(req);
-        return applyAuthResponse(req, res, authService.createSession(req, body));
+        return applyAuthResponse(req, res, await authService.createSession(req, body));
       } catch (error) {
         const statusCode = getRequestErrorStatusCode(error);
         if (statusCode) {
@@ -39,7 +67,7 @@ export function createAuthApiHandler({ authService }) {
     }
 
     if (requestUrl.pathname === '/api/auth/session' && req.method === 'DELETE') {
-      return applyAuthResponse(req, res, authService.clearSession(req));
+      return applyAuthResponse(req, res, await authService.clearSession(req));
     }
 
     jsonResponse(req, res, 404, { error: 'Auth endpoint not found' });

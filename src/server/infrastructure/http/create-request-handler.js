@@ -49,6 +49,7 @@ export function createRequestHandler(
   const handleStaticRequest = createStaticHandler(config, authService);
   const handleAuthApi = createAuthApiHandler({ authService });
   const handleGitApi = createGitApiHandler({
+    authService,
     backlinkIndex,
     gitService,
     roomRegistry,

@@ -8,6 +8,22 @@ import { GitStatusService } from './status-service.js';
 import { GitUntrackedFileService } from './untracked-files.js';
 import { PullBackupStore } from '../persistence/pull-backup-store.js';
 
+function buildAuthorEnv(author = null) {
+  const name = String(author?.name ?? '').trim();
+  const email = String(author?.email ?? '').trim();
+
+  if (!name || !email) {
+    return null;
+  }
+
+  return {
+    GIT_AUTHOR_EMAIL: email,
+    GIT_AUTHOR_NAME: name,
+    GIT_COMMITTER_EMAIL: email,
+    GIT_COMMITTER_NAME: name,
+  };
+}
+
 export class GitService {
   constructor({
     commandEnv = null,
@@ -87,7 +103,7 @@ export class GitService {
     };
   }
 
-  async commitStaged({ message } = {}) {
+  async commitStaged({ author = null, message } = {}) {
     const normalizedMessage = String(message ?? '').trim();
     if (!normalizedMessage) {
       throw createGitRequestError(400, 'Missing commit message');
@@ -98,7 +114,9 @@ export class GitService {
       throw createGitRequestError(409, 'No staged changes to commit');
     }
 
-    await this.commandRunner.execGit(['commit', '-m', normalizedMessage]);
+    await this.commandRunner.execGit(['commit', '-m', normalizedMessage], {
+      env: buildAuthorEnv(author),
+    });
     const hash = (await this.commandRunner.execGit(['rev-parse', 'HEAD'])).trim();
     const shortHash = (await this.commandRunner.execGit(['rev-parse', '--short', 'HEAD'])).trim();
     this.invalidateStatusCache();

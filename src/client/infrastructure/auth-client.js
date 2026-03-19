@@ -3,13 +3,17 @@ import { getRuntimeConfig } from './runtime-config.js';
 const DEFAULT_AUTH_CONFIG = {
   enabled: false,
   implemented: true,
+  loginEndpoint: '/api/auth/oidc/login',
   passwordLabel: 'Password',
+  provider: '',
   requiresLogin: false,
   sessionEndpoint: '/api/auth/session',
   statusEndpoint: '/api/auth/status',
   strategy: 'none',
   submitLabel: 'Continue',
 };
+
+const GOOGLE_G_LOGO_DATA_URL = 'data:image/png;base64,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';
 
 let authGateStylesInjected = false;
 
@@ -29,99 +33,182 @@ function ensureAuthGateStyles() {
       justify-content: center;
       padding: 24px;
       background:
-        radial-gradient(circle at top, rgba(59, 130, 246, 0.18), transparent 42%),
-        rgba(10, 15, 29, 0.74);
-      backdrop-filter: blur(14px);
+        radial-gradient(circle at 50% 8%, rgba(37, 99, 235, 0.18), transparent 28%),
+        radial-gradient(circle at 60% 45%, rgba(14, 165, 233, 0.08), transparent 18%),
+        linear-gradient(180deg, rgba(8, 12, 24, 0.9), rgba(6, 10, 22, 0.96));
+      backdrop-filter: blur(18px);
     }
 
     .auth-gate-card {
-      width: min(100%, 420px);
-      padding: 28px;
-      border-radius: 18px;
-      border: 1px solid rgba(148, 163, 184, 0.24);
-      background: rgba(15, 23, 42, 0.94);
+      width: min(100%, 440px);
+      padding: 32px;
+      border-radius: 24px;
+      border: 1px solid rgba(148, 163, 184, 0.2);
+      background:
+        linear-gradient(180deg, rgba(17, 24, 39, 0.96), rgba(12, 18, 32, 0.96));
       color: #e2e8f0;
-      box-shadow: 0 24px 80px rgba(15, 23, 42, 0.36);
-      font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      box-shadow:
+        0 28px 90px rgba(15, 23, 42, 0.42),
+        inset 0 1px 0 rgba(255, 255, 255, 0.04);
+      font-family: "Geist", "Inter", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     }
 
     .auth-gate-card h1 {
       margin: 0 0 10px;
-      font-size: 1.35rem;
-      line-height: 1.2;
+      font-size: 2rem;
+      line-height: 1.05;
+      letter-spacing: -0.04em;
     }
 
     .auth-gate-card p {
-      margin: 0 0 18px;
+      margin: 0 0 22px;
       color: #cbd5e1;
       line-height: 1.5;
+      font-size: 1rem;
     }
 
     .auth-gate-form {
       display: grid;
-      gap: 12px;
+      gap: 14px;
     }
 
     .auth-gate-label {
       display: grid;
-      gap: 8px;
+      gap: 10px;
       font-size: 0.92rem;
+      font-weight: 500;
       color: #cbd5e1;
     }
 
     .auth-gate-input {
       width: 100%;
-      padding: 12px 14px;
+      padding: 14px 16px;
       border: 1px solid rgba(148, 163, 184, 0.28);
-      border-radius: 12px;
+      border-radius: 16px;
       background: rgba(15, 23, 42, 0.72);
       color: inherit;
       font: inherit;
+      box-sizing: border-box;
     }
 
     .auth-gate-input:focus {
-      outline: 2px solid rgba(59, 130, 246, 0.5);
-      outline-offset: 2px;
+      outline: none;
+      border-color: rgba(56, 189, 248, 0.72);
+      box-shadow: 0 0 0 4px rgba(56, 189, 248, 0.12);
     }
 
     .auth-gate-actions {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
+      display: grid;
       gap: 12px;
     }
 
     .auth-gate-button,
     .auth-gate-secondary-button {
       border: 0;
-      border-radius: 999px;
+      border-radius: 16px;
       font: inherit;
       cursor: pointer;
+      transition:
+        transform 160ms ease,
+        box-shadow 160ms ease,
+        border-color 160ms ease,
+        background-color 160ms ease;
+    }
+
+    .auth-gate-button:hover,
+    .auth-gate-secondary-button:hover {
+      transform: translateY(-1px);
+    }
+
+    .auth-gate-button:focus-visible,
+    .auth-gate-secondary-button:focus-visible {
+      outline: 3px solid rgba(125, 211, 252, 0.3);
+      outline-offset: 2px;
     }
 
     .auth-gate-button {
-      padding: 11px 16px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 14px;
+      width: 100%;
+      padding: 14px 18px;
       background: linear-gradient(135deg, #0f766e, #0284c7);
       color: #f8fafc;
       font-weight: 600;
+      box-shadow: 0 16px 40px rgba(2, 132, 199, 0.24);
+    }
+
+    .auth-gate-button:hover {
+      box-shadow: 0 18px 44px rgba(2, 132, 199, 0.28);
     }
 
     .auth-gate-secondary-button {
-      padding: 10px 0;
-      background: transparent;
-      color: #93c5fd;
+      padding: 13px 16px;
+      background: rgba(15, 23, 42, 0.48);
+      color: #cbd5e1;
+      border: 1px solid rgba(148, 163, 184, 0.22);
     }
 
     .auth-gate-button[disabled],
     .auth-gate-secondary-button[disabled] {
       opacity: 0.7;
       cursor: wait;
+      transform: none;
+    }
+
+    .auth-gate-button--google {
+      background: rgba(255, 255, 255, 0.98);
+      color: #111827;
+      border: 1px solid rgba(148, 163, 184, 0.22);
+      box-shadow:
+        0 22px 40px rgba(15, 23, 42, 0.2),
+        inset 0 1px 0 rgba(255, 255, 255, 0.65);
+    }
+
+    .auth-gate-button--google:hover {
+      background: #ffffff;
+      box-shadow:
+        0 24px 44px rgba(15, 23, 42, 0.24),
+        inset 0 1px 0 rgba(255, 255, 255, 0.8);
+    }
+
+    .auth-gate-button__icon {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex: 0 0 auto;
+      width: 22px;
+      height: 22px;
+    }
+
+    .auth-gate-button__icon img {
+      display: block;
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
     }
 
     .auth-gate-error {
       min-height: 1.25rem;
       color: #fca5a5;
       font-size: 0.92rem;
+      margin-bottom: 4px;
+    }
+
+    @media (max-width: 640px) {
+      .auth-gate-overlay {
+        padding: 16px;
+      }
+
+      .auth-gate-card {
+        padding: 24px;
+        border-radius: 20px;
+      }
+
+      .auth-gate-card h1 {
+        font-size: 1.7rem;
+      }
     }
   `;
 
@@ -159,6 +246,24 @@ function removePasswordFromHash() {
   window.history.replaceState(null, '', nextUrl);
 }
 
+function consumeHashParam(name) {
+  const params = getHashParams();
+  const value = params.get(name) || '';
+  if (!value) {
+    return '';
+  }
+
+  params.delete(name);
+  const nextHash = params.toString();
+  const nextUrl = `${window.location.pathname}${window.location.search}${nextHash ? `#${nextHash}` : ''}`;
+  window.history.replaceState(null, '', nextUrl);
+  return value;
+}
+
+function getCurrentReturnTo() {
+  return `${window.location.pathname}${window.location.search}${window.location.hash}`;
+}
+
 async function fetchAuthStatus(config) {
   const response = await fetch(config.statusEndpoint, {
     headers: {
@@ -172,6 +277,24 @@ async function fetchAuthStatus(config) {
   }
 
   return payload;
+}
+
+function syncOidcIdentityToLocalState(status) {
+  const authConfig = status?.auth ?? {};
+  if (authConfig.strategy !== 'oidc' || authConfig.provider !== 'google') {
+    return;
+  }
+
+  const userName = String(status?.user?.name ?? '').trim();
+  if (!userName) {
+    return;
+  }
+
+  try {
+    window.localStorage.setItem('collabmd-user-name', userName);
+  } catch {
+    // Ignore storage errors.
+  }
 }
 
 async function submitPassword(config, password) {
@@ -204,6 +327,53 @@ function createOverlayShell() {
   return { card, overlay };
 }
 
+function createGoogleIcon() {
+  const icon = document.createElement('span');
+  icon.className = 'auth-gate-button__icon';
+  icon.setAttribute('aria-hidden', 'true');
+  const image = document.createElement('img');
+  image.alt = '';
+  image.decoding = 'async';
+  image.height = 20;
+  image.loading = 'eager';
+  image.src = GOOGLE_G_LOGO_DATA_URL;
+  image.width = 20;
+  icon.append(image);
+  return icon;
+}
+
+function renderOidcPrompt(card, config, {
+  errorMessage = '',
+}) {
+  card.replaceChildren();
+
+  const heading = document.createElement('h1');
+  heading.textContent = 'Authentication required';
+
+  const copy = document.createElement('p');
+  copy.textContent = 'Sign in with Google to join this session.';
+
+  const actions = document.createElement('div');
+  actions.className = 'auth-gate-actions';
+
+  const signInButton = document.createElement('button');
+  signInButton.className = 'auth-gate-button auth-gate-button--google';
+  signInButton.type = 'button';
+  signInButton.append(createGoogleIcon(), document.createTextNode(config.submitLabel || 'Continue with Google'));
+
+  const error = document.createElement('div');
+  error.className = 'auth-gate-error';
+  error.textContent = errorMessage;
+
+  actions.append(signInButton);
+  card.append(heading, copy, error, actions);
+  signInButton.addEventListener('click', () => {
+    const loginUrl = new URL(config.loginEndpoint, window.location.origin);
+    loginUrl.searchParams.set('returnTo', getCurrentReturnTo());
+    window.location.assign(loginUrl.toString());
+  });
+}
+
 function renderStatusCard(card, {
   title,
   body,
@@ -234,7 +404,6 @@ function renderStatusCard(card, {
 
 function renderPasswordPrompt(card, config, {
   onSubmit,
-  onRetryStatus,
 }) {
   card.replaceChildren();
 
@@ -264,31 +433,21 @@ function renderPasswordPrompt(card, config, {
   const actions = document.createElement('div');
   actions.className = 'auth-gate-actions';
 
-  const retryButton = document.createElement('button');
-  retryButton.className = 'auth-gate-secondary-button';
-  retryButton.type = 'button';
-  retryButton.textContent = 'Retry status';
-
   const submitButton = document.createElement('button');
   submitButton.className = 'auth-gate-button';
   submitButton.type = 'submit';
   submitButton.textContent = config.submitLabel;
 
-  actions.append(retryButton, submitButton);
+  actions.append(submitButton);
   label.append(input);
   form.append(heading, copy, label, error, actions);
   card.append(form);
-
-  retryButton.addEventListener('click', () => {
-    void onRetryStatus();
-  });
 
   form.addEventListener('submit', (event) => {
     event.preventDefault();
     const password = input.value;
     input.disabled = true;
     submitButton.disabled = true;
-    retryButton.disabled = true;
     error.textContent = '';
 
     void onSubmit(password).catch((submissionError) => {
@@ -297,7 +456,6 @@ function renderPasswordPrompt(card, config, {
         : 'Authentication failed';
       input.disabled = false;
       submitButton.disabled = false;
-      retryButton.disabled = false;
       input.select();
       input.focus();
     });
@@ -316,11 +474,17 @@ export async function ensureClientAuthenticated() {
 
   const { card, overlay } = createOverlayShell();
   document.body.append(overlay);
+  let pendingOidcError = consumeHashParam('auth_error');
   return new Promise((resolve) => {
-    const resolveAuthenticated = () => {
+    const resolveAuthenticated = (status = null) => {
       removePasswordFromHash();
+      syncOidcIdentityToLocalState(status);
       overlay.remove();
-      resolve({ authenticated: true, auth: config });
+      resolve({
+        authenticated: true,
+        auth: status?.auth ?? config,
+        user: status?.user ?? null,
+      });
     };
 
     const verifyAccess = async () => {
@@ -332,15 +496,15 @@ export async function ensureClientAuthenticated() {
       try {
         const status = await fetchAuthStatus(config);
         if (status.authenticated) {
-          resolveAuthenticated();
+          resolveAuthenticated(status);
           return;
         }
       } catch (error) {
         renderStatusCard(card, {
-          body: error instanceof Error ? error.message : 'Failed to contact the auth service.',
-          secondaryActionLabel: 'Retry',
+          body: error instanceof Error
+            ? `${error.message} Refresh the page and try again.`
+            : 'Failed to contact the auth service. Refresh the page and try again.',
           title: 'Cannot verify access',
-          onSecondaryAction: verifyAccess,
         });
         return;
       }
@@ -359,7 +523,6 @@ export async function ensureClientAuthenticated() {
         }
 
         renderPasswordPrompt(card, config, {
-          onRetryStatus: verifyAccess,
           onSubmit: async (password) => {
             await submitPassword(config, password);
             resolveAuthenticated();
@@ -368,13 +531,17 @@ export async function ensureClientAuthenticated() {
         return;
       }
 
+      if (config.strategy === 'oidc') {
+        renderOidcPrompt(card, config, {
+          errorMessage: pendingOidcError,
+        });
+        pendingOidcError = '';
+        return;
+      }
+
       renderStatusCard(card, {
-        body: config.strategy === 'oidc'
-          ? 'OIDC authentication is configured but not implemented in this build yet.'
-          : 'This authentication strategy is not available.',
-        secondaryActionLabel: 'Retry status',
+        body: 'This authentication strategy is not available.',
         title: 'Authentication unavailable',
-        onSecondaryAction: verifyAccess,
       });
     };
 

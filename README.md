@@ -152,13 +152,14 @@ Then share the printed URL and password with your collaborator. If `cloudflared`
 
 - Treat the URL as write access to the vault unless you enable auth
 - `--auth password` protects `/api/*` and `/ws/*` with a host password and signed session cookie
+- `--auth oidc` signs users in with Google and uses the verified Google name/email as the in-app identity and git commit author
 - If `cloudflared` is installed, CollabMD may expose the app through a Cloudflare Quick Tunnel unless you pass `--no-tunnel`
-- `oidc` is reserved for a future implementation and is not usable yet
+- `--auth oidc` requires a stable `PUBLIC_BASE_URL`; Quick Tunnel URLs are not supported for OIDC
 
 ## Current limitations
 
 - Single-instance deployment only: collaboration room state is kept in-process and is not shared across replicas
-- `oidc` auth is reserved for a future implementation and is not usable yet
+- `oidc` currently supports Google only
 - Source-anchored comments currently support markdown, Mermaid, and PlantUML text files, but not `.excalidraw`
 - Windows use is supported via WSL2 rather than native Windows execution
 
@@ -203,7 +204,7 @@ collabmd [directory] [options]
 |--------|-------------|---------|
 | `-p, --port` | Port to listen on | `1234` |
 | `--host` | Host to bind to | `127.0.0.1` |
-| `--auth` | Auth strategy: `none`, `password`, `oidc` (`oidc` is reserved and not yet available) | `none` |
+| `--auth` | Auth strategy: `none`, `password`, `oidc` | `none` |
 | `--auth-password` | Password for `--auth password` | generated per run |
 | `--local-plantuml` | Start the bundled local docker-compose PlantUML service | off |
 | `--no-tunnel` | Don't start Cloudflare Tunnel | tunnel on |
@@ -227,6 +228,12 @@ collabmd --auth password
 
 # Require an explicit password
 collabmd --auth password --auth-password "shared-secret"
+
+# Use Google OIDC on a stable public domain
+PUBLIC_BASE_URL=https://notes.example.com \
+AUTH_OIDC_CLIENT_ID=your-google-client-id \
+AUTH_OIDC_CLIENT_SECRET=your-google-client-secret \
+collabmd --auth oidc --no-tunnel
 
 # Use the local docker-compose PlantUML service
 collabmd --local-plantuml
@@ -257,6 +264,39 @@ To disable the tunnel:
 ```bash
 collabmd --no-tunnel
 ```
+
+### Google OIDC setup
+
+`--auth oidc` uses Google OpenID Connect with the authorization code + PKCE flow.
+
+For the full Google Cloud Console walkthrough, including where to create the OAuth client and copy the client ID/client secret, see [docs/google-oidc-setup.md](https://github.com/andes90/collabmd/blob/master/docs/google-oidc-setup.md).
+
+Required environment variables:
+
+```bash
+PUBLIC_BASE_URL=https://notes.example.com
+AUTH_OIDC_CLIENT_ID=your-google-client-id
+AUTH_OIDC_CLIENT_SECRET=your-google-client-secret
+```
+
+In Google Cloud Console, create a Web application OAuth client and register this redirect URI:
+
+```text
+https://notes.example.com/api/auth/oidc/callback
+```
+
+If you mount the app under a subpath with `BASE_PATH=/collabmd`, the redirect URI becomes:
+
+```text
+https://notes.example.com/collabmd/api/auth/oidc/callback
+```
+
+Notes:
+
+- OIDC requires a stable public URL and is not compatible with ephemeral Cloudflare Quick Tunnel URLs
+- After sign-in, the verified Google name/email become the displayed app identity and the default in-app git commit author
+- You can restrict sign-in to exact users with `AUTH_OIDC_ALLOWED_EMAILS` or entire domains with `AUTH_OIDC_ALLOWED_DOMAINS`
+- The CLI disables the tunnel automatically when `--auth oidc` is active
 
 You can also configure the tunnel via environment variables:
 
@@ -324,6 +364,24 @@ docker compose up
 
 Open `http://localhost:1234`.
 
+To test Google OIDC locally with the included compose setup, register this redirect URI in Google Cloud Console:
+
+```text
+http://localhost:1234/api/auth/oidc/callback
+```
+
+Then start compose with the OIDC env vars:
+
+```bash
+AUTH_STRATEGY=oidc \
+PUBLIC_BASE_URL=http://localhost:1234 \
+AUTH_OIDC_CLIENT_ID=your-google-client-id \
+AUTH_OIDC_CLIENT_SECRET=your-google-client-secret \
+docker compose up
+```
+
+If you change `COLLABMD_HOST_PORT`, update `PUBLIC_BASE_URL` and the Google redirect URI to match that host port.
+
 By default, compose uses `COLLABMD_IMAGE=ghcr.io/andes90/collabmd:latest`. If you want to test a local image while developing instead:
 
 ```bash
@@ -345,7 +403,7 @@ HOST_VAULT_DIR=/absolute/path/to/vault docker compose up
 
 To bootstrap the compose-managed vault from a private repo, set the git env vars in `.env` and keep `HOST_VAULT_DIR` on a persistent host path. For file-based SSH auth, point `COLLABMD_GIT_SSH_PRIVATE_KEY_FILE` and `COLLABMD_GIT_SSH_KNOWN_HOSTS_FILE` at mounted secret paths; for simpler setups, set `COLLABMD_GIT_SSH_PRIVATE_KEY_B64` instead.
 
-If you want the in-app Git commit action to work inside the container, also set `COLLABMD_GIT_USER_NAME` and `COLLABMD_GIT_USER_EMAIL` so CollabMD can configure the checkout identity automatically.
+If you want the in-app Git commit action to work inside the container without OIDC, also set `COLLABMD_GIT_USER_NAME` and `COLLABMD_GIT_USER_EMAIL` so CollabMD can configure the checkout identity automatically. With `AUTH_STRATEGY=oidc`, CollabMD uses the signed-in Google identity for each commit instead.
 
 To change the host port:
 
@@ -381,6 +439,8 @@ Health check: `GET /health`
 - The app is reachable only from localhost: pass `--host 0.0.0.0` or set `HOST=0.0.0.0` when you intend to expose it on your network
 - Port `1234` is already in use: pass `--port 3000` or set `PORT` to another free port
 - Tunnel did not start: install `cloudflared`, or pass `--no-tunnel` to stay local-only
+- `--auth oidc` fails on startup: set `PUBLIC_BASE_URL`, `AUTH_OIDC_CLIENT_ID`, and `AUTH_OIDC_CLIENT_SECRET`, and make sure the Google redirect URI matches `/api/auth/oidc/callback`
+- Google login loops back to the auth screen: verify the configured `PUBLIC_BASE_URL` matches the browser URL and that your reverse proxy forwards HTTPS correctly
 - `--local-plantuml` fails: make sure Docker is installed and running, or point `PLANTUML_SERVER_URL` at another PlantUML server
 - Private git bootstrap fails on startup: verify `COLLABMD_GIT_REPO_URL` plus either `COLLABMD_GIT_SSH_PRIVATE_KEY_FILE` or `COLLABMD_GIT_SSH_PRIVATE_KEY_B64`
 - WSL2 path issues: run CollabMD against a directory inside your Linux filesystem when possible rather than a mounted Windows path
@@ -487,6 +547,11 @@ scripts/
 | `AUTH_PASSWORD` | Shared password for `AUTH_STRATEGY=password` | generated per run |
 | `AUTH_SESSION_COOKIE_NAME` | Session cookie name | `collabmd_auth` |
 | `AUTH_SESSION_SECRET` | Cookie signing secret | generated per run |
+| `PUBLIC_BASE_URL` | Stable public app origin required for `AUTH_STRATEGY=oidc` | |
+| `AUTH_OIDC_CLIENT_ID` | Google OAuth client ID used for `AUTH_STRATEGY=oidc` | |
+| `AUTH_OIDC_CLIENT_SECRET` | Google OAuth client secret used for `AUTH_STRATEGY=oidc` | |
+| `AUTH_OIDC_ALLOWED_EMAILS` | Comma-separated exact email allowlist for `AUTH_STRATEGY=oidc` | |
+| `AUTH_OIDC_ALLOWED_DOMAINS` | Comma-separated email domain allowlist for `AUTH_STRATEGY=oidc` | |
 | `BASE_PATH` | URL path prefix for subpath deployments | |
 | `PLANTUML_SERVER_URL` | Upstream PlantUML server base URL used for server-side SVG rendering | `https://www.plantuml.com/plantuml` |
 | `COLLABMD_VAULT_DIR` | Vault directory path | current directory |
@@ -495,8 +560,8 @@ scripts/
 | `COLLABMD_GIT_SSH_PRIVATE_KEY_FILE` | SSH private key file path for remote git auth; preferred over base64 input | |
 | `COLLABMD_GIT_SSH_PRIVATE_KEY_B64` | Base64-encoded SSH private key used when no key file path is provided | |
 | `COLLABMD_GIT_SSH_KNOWN_HOSTS_FILE` | Optional `known_hosts` file path for strict SSH host verification | |
-| `COLLABMD_GIT_USER_NAME` | Git author/committer name configured for in-app commits in git-backed deployments | |
-| `COLLABMD_GIT_USER_EMAIL` | Git author/committer email configured for in-app commits in git-backed deployments | |
+| `COLLABMD_GIT_USER_NAME` | Fallback git author/committer name for in-app commits when OIDC is not active | |
+| `COLLABMD_GIT_USER_EMAIL` | Fallback git author/committer email for in-app commits when OIDC is not active | |
 | `WS_BASE_PATH` | WebSocket base path | `/ws` |
 | `PUBLIC_WS_BASE_URL` | Public WebSocket URL override for reverse proxies | |
 | `HTTP_KEEP_ALIVE_TIMEOUT_MS` | Keep-alive timeout | `5000` |

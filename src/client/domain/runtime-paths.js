@@ -63,6 +63,8 @@ export function getClientRuntimeConfig() {
     auth: {
       enabled: false,
       implemented: true,
+      loginEndpoint: '/api/auth/oidc/login',
+      provider: '',
       requiresLogin: false,
       sessionEndpoint: '/api/auth/session',
       statusEndpoint: '/api/auth/status',
@@ -79,6 +81,8 @@ export function getClientRuntimeConfig() {
   const authConfig = {
     enabled: false,
     implemented: true,
+    loginEndpoint: '/api/auth/oidc/login',
+    provider: '',
     requiresLogin: false,
     sessionEndpoint: '/api/auth/session',
     statusEndpoint: '/api/auth/status',
@@ -90,6 +94,7 @@ export function getClientRuntimeConfig() {
     ...rawConfig,
     auth: {
       ...authConfig,
+      loginEndpoint: applyBasePath(basePath, authConfig.loginEndpoint),
       sessionEndpoint: applyBasePath(basePath, authConfig.sessionEndpoint),
       statusEndpoint: applyBasePath(basePath, authConfig.statusEndpoint),
     },

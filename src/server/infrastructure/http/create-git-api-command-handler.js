@@ -58,6 +58,7 @@ async function applyWorkspaceMutationEffects({
 }
 
 export function createGitApiCommandHandler({
+  authService = null,
   gitService,
   workspaceMutationCoordinator = null,
 }) {
@@ -116,6 +117,7 @@ export function createGitApiCommandHandler({
           req,
           responsePayload: await workspaceMutationCoordinator.runManagedWorkspaceMutation(
             () => gitService.commitStaged({
+              author: authService?.getAuthenticatedUser?.(req) ?? null,
               message: body.message,
             }),
           ),

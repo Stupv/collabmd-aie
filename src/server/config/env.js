@@ -3,6 +3,7 @@ import { fileURLToPath } from 'url';
 
 import {
   AUTH_STRATEGY_NONE,
+  AUTH_STRATEGY_OIDC,
   AUTH_STRATEGY_PASSWORD,
   SUPPORTED_AUTH_STRATEGIES,
   createRandomAuthPassword,
@@ -54,6 +55,30 @@ function normalizeWsBasePath(basePath) {
   return normalizeRoutePath(basePath, '/ws');
 }
 
+function normalizePublicBaseUrl(rawValue) {
+  const normalized = normalizeOptionalString(rawValue);
+  if (!normalized) {
+    return '';
+  }
+
+  let parsedUrl;
+  try {
+    parsedUrl = new URL(normalized);
+  } catch {
+    throw new Error('PUBLIC_BASE_URL must be an absolute URL.');
+  }
+
+  if (parsedUrl.protocol !== 'https:' && parsedUrl.hostname !== 'localhost' && parsedUrl.hostname !== '127.0.0.1') {
+    throw new Error('PUBLIC_BASE_URL must use https unless it points to localhost.');
+  }
+
+  if ((parsedUrl.pathname && parsedUrl.pathname !== '/') || parsedUrl.search || parsedUrl.hash) {
+    throw new Error('PUBLIC_BASE_URL must not include a path, query string, or hash.');
+  }
+
+  return parsedUrl.origin;
+}
+
 function normalizeAuthStrategy(rawStrategy) {
   const normalized = String(rawStrategy ?? AUTH_STRATEGY_NONE).trim().toLowerCase();
   if (!SUPPORTED_AUTH_STRATEGIES.has(normalized)) {
@@ -63,6 +88,30 @@ function normalizeAuthStrategy(rawStrategy) {
   }
 
   return normalized;
+}
+
+function normalizeCsvList(value) {
+  if (Array.isArray(value)) {
+    return value
+      .map((entry) => String(entry ?? '').trim())
+      .filter(Boolean);
+  }
+
+  return String(value ?? '')
+    .split(',')
+    .map((entry) => entry.trim())
+    .filter(Boolean);
+}
+
+function normalizeEmailAllowlist(value) {
+  return normalizeCsvList(value)
+    .map((entry) => entry.toLowerCase());
+}
+
+function normalizeDomainAllowlist(value) {
+  return normalizeCsvList(value)
+    .map((entry) => entry.replace(/^@+/, '').toLowerCase())
+    .filter(Boolean);
 }
 
 const projectRoot = resolve(fileURLToPath(new URL('../../../', import.meta.url)));
@@ -134,11 +183,65 @@ function loadGitConfig(overrides = {}) {
   };
 }
 
+function loadOidcConfig(overrides = {}, { basePath = '' } = {}) {
+  const clientId = normalizeOptionalString(
+    overrides.clientId
+    ?? process.env.AUTH_OIDC_CLIENT_ID,
+  );
+  const clientSecret = normalizeOptionalString(
+    overrides.clientSecret
+    ?? process.env.AUTH_OIDC_CLIENT_SECRET,
+  );
+  const publicBaseUrl = normalizePublicBaseUrl(
+    overrides.publicBaseUrl
+    ?? process.env.PUBLIC_BASE_URL,
+  );
+  const issuer = normalizeOptionalString(
+    overrides.issuer
+    ?? process.env.AUTH_OIDC_ISSUER_URL,
+  ) || 'https://accounts.google.com';
+  const flowCookieName = normalizeOptionalString(
+    overrides.flowCookieName
+    ?? process.env.AUTH_OIDC_FLOW_COOKIE_NAME,
+  ) || 'collabmd_auth_flow';
+  const allowedEmails = normalizeEmailAllowlist(
+    overrides.allowedEmails
+    ?? process.env.AUTH_OIDC_ALLOWED_EMAILS,
+  );
+  const allowedDomains = normalizeDomainAllowlist(
+    overrides.allowedDomains
+    ?? process.env.AUTH_OIDC_ALLOWED_DOMAINS,
+  );
+
+  if (!publicBaseUrl) {
+    throw new Error('OIDC auth requires PUBLIC_BASE_URL.');
+  }
+  if (!clientId) {
+    throw new Error('OIDC auth requires AUTH_OIDC_CLIENT_ID.');
+  }
+  if (!clientSecret) {
+    throw new Error('OIDC auth requires AUTH_OIDC_CLIENT_SECRET.');
+  }
+
+  return {
+    allowedDomains,
+    allowedEmails,
+    callbackUrl: `${publicBaseUrl}${basePath}/api/auth/oidc/callback`,
+    clientId,
+    clientSecret,
+    flowCookieName,
+    issuer,
+    provider: 'google',
+    publicBaseUrl,
+  };
+}
+
 export function loadConfig(overrides = {}) {
   const nodeEnv = process.env.NODE_ENV || 'development';
   const vaultDir = overrides.vaultDir
     || process.env.COLLABMD_VAULT_DIR
     || resolve(projectRoot, 'data/vault');
+  const basePath = normalizeAppBasePath(process.env.BASE_PATH || '');
   const authOverrides = overrides.auth ?? {};
   const authStrategy = normalizeAuthStrategy(
     authOverrides.strategy
@@ -150,18 +253,22 @@ export function loadConfig(overrides = {}) {
   const password = authStrategy === AUTH_STRATEGY_PASSWORD
     ? (authOverrides.password || process.env.AUTH_PASSWORD || createRandomAuthPassword())
     : '';
+  const oidc = authStrategy === AUTH_STRATEGY_OIDC
+    ? loadOidcConfig(authOverrides.oidc, { basePath })
+    : null;
   const git = loadGitConfig(overrides.git);
 
   return {
     auth: {
       generatedPassword: passwordWasGenerated ? password : '',
+      oidc,
       password,
       passwordWasGenerated,
       sessionCookieName: authOverrides.sessionCookieName || process.env.AUTH_SESSION_COOKIE_NAME || 'collabmd_auth',
       sessionSecret: authOverrides.sessionSecret || process.env.AUTH_SESSION_SECRET || createRandomSessionSecret(),
       strategy: authStrategy,
     },
-    basePath: normalizeAppBasePath(process.env.BASE_PATH || ''),
+    basePath,
     host: process.env.HOST || getDefaultHost(nodeEnv),
     httpHeadersTimeoutMs: parsePositiveInt(process.env.HTTP_HEADERS_TIMEOUT_MS, 60_000),
     httpKeepAliveTimeoutMs: parsePositiveInt(process.env.HTTP_KEEP_ALIVE_TIMEOUT_MS, 5_000),

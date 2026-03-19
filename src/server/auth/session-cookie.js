@@ -52,6 +52,32 @@ export function createSessionCookieManager({
   cookiePath = '/',
   secret,
 }) {
+  const signedCookieManager = createSignedCookieManager({
+    cookieName,
+    cookiePath,
+    secret,
+  });
+
+  return {
+    clearSession(req) {
+      return signedCookieManager.clear(req);
+    },
+
+    createSessionCookie(req, payload, options = {}) {
+      return signedCookieManager.create(req, payload, options);
+    },
+
+    readSession(req) {
+      return signedCookieManager.read(req);
+    },
+  };
+}
+
+export function createSignedCookieManager({
+  cookieName,
+  cookiePath = '/',
+  secret,
+}) {
   function createCookieAttributes(req, { expires = null } = {}) {
     const attributes = [
       'HttpOnly',
@@ -71,24 +97,24 @@ export function createSessionCookieManager({
   }
 
   return {
-    clearSession(req) {
+    clear(req) {
       return [
         `${cookieName}=`,
         ...createCookieAttributes(req, { expires: new Date(0) }),
       ].join('; ');
     },
 
-    createSessionCookie(req, payload) {
+    create(req, payload, { expires = null } = {}) {
       const serializedPayload = JSON.stringify(payload);
       const encodedPayload = encodeBase64Url(serializedPayload);
       const signature = encodeBase64Url(createSignature(encodedPayload, secret));
       return [
         `${cookieName}=${encodedPayload}.${signature}`,
-        ...createCookieAttributes(req),
+        ...createCookieAttributes(req, { expires }),
       ].join('; ');
     },
 
-    readSession(req) {
+    read(req) {
       const token = parseCookieHeader(req.headers.cookie).get(cookieName);
       if (!token) {
         return null;

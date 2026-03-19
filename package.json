@@ -71,6 +71,7 @@
     "lib0": "^0.2.0",
     "markdown-it": "^14.1.0",
     "mermaid": "^11.13.0",
+    "openid-client": "^6.8.2",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "ws": "^8.0.0",

@@ -60,7 +60,9 @@ server.listen().then(({ host, port, wsPath }) => {
   if (server.config.auth.strategy === 'password') {
     console.log(`  auth: password (${server.config.auth.password})`);
   } else if (server.config.auth.strategy === 'oidc') {
-    console.log('  auth: oidc (not implemented yet)');
+    console.log(`  auth: oidc (${server.config.auth.oidc.provider})`);
+    console.log(`  public: ${server.config.auth.oidc.publicBaseUrl}`);
+    console.log(`  callback: ${server.config.auth.oidc.callbackUrl}`);
   } else {
     console.log('  auth: none');
   }
