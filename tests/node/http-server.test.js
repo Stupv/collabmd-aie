@@ -140,6 +140,29 @@ test('HTTP server compresses large JSON API responses without changing payloads'
   assert.equal(payload.content, largeContent);
 });
 
+test('HTTP server serves /api/files from the cached workspace tree', async (t) => {
+  const app = await startTestServer();
+  t.after(() => app.close());
+
+  const createResponse = await httpRequest(`${app.baseUrl}/api/file`, {
+    body: JSON.stringify({ content: '# Cached\n', path: 'docs/cached.md' }),
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    method: 'POST',
+  });
+  assert.equal(createResponse.statusCode, 201);
+
+  app.server.vaultFileStore.tree = async () => {
+    throw new Error('tree() should not be called for /api/files');
+  };
+
+  const treeResponse = await httpRequest(`${app.baseUrl}/api/files`);
+  assert.equal(treeResponse.statusCode, 200);
+  assert.match(treeResponse.body, /"path":"docs\/cached\.md"/);
+  assert.match(treeResponse.body, /"type":"directory"/);
+});
+
 test('HTTP server serves prefixed routes when BASE_PATH is configured', async (t) => {
   const app = await startTestServer({
     auth: {

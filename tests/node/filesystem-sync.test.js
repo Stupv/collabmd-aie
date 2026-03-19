@@ -76,6 +76,37 @@ test('external renames update workspace entries and preserve active rooms under 
   assert.notEqual(app.server.roomRegistry.get('docs/renamed.md'), undefined);
 });
 
+test('external renames avoid a full workspace rescan for small rename events', async (t) => {
+  const app = await startTestServer();
+  t.after(() => app.close());
+
+  const workspaceDoc = new Y.Doc();
+  const workspaceProvider = createProvider(app, WORKSPACE_ROOM_NAME, workspaceDoc);
+  t.after(() => {
+    workspaceProvider.destroy();
+    workspaceDoc.destroy();
+  });
+
+  await waitForProviderSync(workspaceProvider);
+
+  let scanCalls = 0;
+  const originalScanWorkspaceState = app.server.vaultFileStore.scanWorkspaceState.bind(app.server.vaultFileStore);
+  app.server.vaultFileStore.scanWorkspaceState = async (...args) => {
+    scanCalls += 1;
+    return originalScanWorkspaceState(...args);
+  };
+
+  await mkdir(join(app.vaultDir, 'docs'), { recursive: true });
+  await rename(join(app.vaultDir, 'test.md'), join(app.vaultDir, 'docs', 'renamed.md'));
+
+  await waitForCondition(() => {
+    const entries = workspaceDoc.getMap('entries').toJSON();
+    return entries['docs/renamed.md'] && !entries['test.md'] ? true : null;
+  });
+
+  assert.equal(scanCalls, 0);
+});
+
 test('external deletes remove active rooms and drop workspace entries', async (t) => {
   const app = await startTestServer();
   t.after(() => app.close());

@@ -12,6 +12,7 @@ export function createVaultApiHandler({
   const handleVaultApiQuery = createVaultApiQueryHandler({
     backlinkIndex,
     vaultFileStore,
+    workspaceMutationCoordinator,
   });
   const handleVaultApiCommand = createVaultApiCommandHandler({
     backlinkIndex,

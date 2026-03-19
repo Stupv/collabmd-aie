@@ -1,13 +1,15 @@
 import { watch } from 'fs';
-import { stat } from 'fs/promises';
-import { basename } from 'path';
+import { readdir, stat } from 'fs/promises';
+import { basename, dirname, join } from 'path';
 
 import { createWorkspaceChange } from '../../../domain/workspace-change.js';
-import { isVaultFilePath } from '../../../domain/file-kind.js';
+import { getVaultTreeNodeType, isVaultFilePath } from '../../../domain/file-kind.js';
 import {
   isIgnoredVaultEntry,
   sanitizeVaultPath,
 } from '../persistence/path-utils.js';
+
+const MAX_INCREMENTAL_PENDING_PATHS = 16;
 
 function entrySignature(entry = {}) {
   return `${entry.type}:${entry.inode}:${entry.size}:${entry.mtimeMs}`;
@@ -48,6 +50,41 @@ function isIgnoredWatchedPath(pathValue) {
   }
 
   return basename(pathValue).includes('.collabmd-');
+}
+
+function normalizeWorkspacePath(pathValue = '') {
+  return String(pathValue ?? '').replace(/\\/g, '/').trim();
+}
+
+function getParentDirectoryPath(pathValue = '') {
+  const parentPath = dirname(normalizeWorkspacePath(pathValue)).replace(/\\/g, '/');
+  return parentPath === '.' ? '' : parentPath;
+}
+
+function createWorkspaceEntry(pathValue, nodeType) {
+  const normalizedPath = normalizeWorkspacePath(pathValue);
+  return {
+    fileKind: nodeType === 'directory' ? null : getVaultTreeNodeType(normalizedPath),
+    name: basename(normalizedPath),
+    nodeType,
+    parentPath: getParentDirectoryPath(normalizedPath),
+    path: normalizedPath,
+    type: nodeType === 'directory' ? 'directory' : getVaultTreeNodeType(normalizedPath),
+  };
+}
+
+function createWorkspaceMetadata(pathValue, type, info) {
+  return {
+    inode: Number(info.ino || 0),
+    mtimeMs: Number(info.mtimeMs || 0),
+    path: pathValue,
+    size: type === 'directory' ? 0 : Number(info.size || 0),
+    type,
+  };
+}
+
+function isPathWithinPrefix(pathValue, prefix) {
+  return pathValue === prefix || pathValue.startsWith(`${prefix}/`);
 }
 
 function buildPrefixRenameEntries(previousState, nextState, oldPrefix, newPrefix) {
@@ -198,10 +235,7 @@ export class FileSystemSyncService {
     bucket.add(String(eventType || 'change'));
     this.pendingEventTypesByPath.set(normalizedPath, bucket);
 
-    if (
-      this.pendingEventTypesByPath.size > 4
-      || bucket.has('rename')
-    ) {
+    if (this.pendingEventTypesByPath.size > MAX_INCREMENTAL_PENDING_PATHS) {
       this.forceFullScan = true;
     }
 
@@ -237,86 +271,173 @@ export class FileSystemSyncService {
     this.lastState = this.mutationCoordinator.workspaceState ?? await this.vaultFileStore.scanWorkspaceState();
   }
 
-  async readWorkspaceFileState(pathValue) {
-    if (!pathValue || !isVaultFilePath(pathValue)) {
+  async readWorkspacePathSnapshot(pathValue) {
+    const normalizedPath = normalizeWorkspacePath(pathValue);
+    if (!normalizedPath) {
       return null;
     }
 
-    const absolutePath = sanitizeVaultPath(this.vaultFileStore.vaultDir, pathValue);
+    const absolutePath = sanitizeVaultPath(this.vaultFileStore.vaultDir, normalizedPath);
     if (!absolutePath) {
       return null;
     }
 
     try {
       const info = await stat(absolutePath);
-      if (!info.isFile()) {
-        return null;
+      const entries = new Map();
+      const metadata = new Map();
+
+      if (info.isDirectory()) {
+        const visitDirectory = async (directoryPath, relativePath) => {
+          entries.set(relativePath, createWorkspaceEntry(relativePath, 'directory'));
+          metadata.set(relativePath, createWorkspaceMetadata(relativePath, 'directory', await stat(directoryPath)));
+
+          let dirEntries;
+          try {
+            dirEntries = await readdir(directoryPath, { withFileTypes: true });
+          } catch {
+            return;
+          }
+
+          for (const entry of dirEntries) {
+            if (isIgnoredVaultEntry(entry.name)) {
+              continue;
+            }
+
+            const childAbsolutePath = join(directoryPath, entry.name);
+            const childRelativePath = `${relativePath}/${entry.name}`.replace(/\\/g, '/');
+
+            if (entry.isDirectory()) {
+              await visitDirectory(childAbsolutePath, childRelativePath);
+              continue;
+            }
+
+            if (!isVaultFilePath(childRelativePath)) {
+              continue;
+            }
+
+            try {
+              const childInfo = await stat(childAbsolutePath);
+              if (!childInfo.isFile()) {
+                continue;
+              }
+
+              entries.set(childRelativePath, createWorkspaceEntry(childRelativePath, 'file'));
+              metadata.set(childRelativePath, createWorkspaceMetadata(childRelativePath, 'file', childInfo));
+            } catch (error) {
+              if (error?.code !== 'ENOENT' && error?.code !== 'ENOTDIR') {
+                throw error;
+              }
+            }
+          }
+        };
+
+        await visitDirectory(absolutePath, normalizedPath);
+        return { entries, metadata };
       }
 
-      return {
-        entry: this.lastState?.entries?.get(pathValue) ?? {
-          fileKind: null,
-          name: basename(pathValue),
-          nodeType: 'file',
-          parentPath: pathValue.includes('/') ? pathValue.slice(0, pathValue.lastIndexOf('/')) : '',
-          path: pathValue,
-          type: this.lastState?.entries?.get(pathValue)?.type ?? null,
-        },
-        metadata: {
-          inode: Number(info.ino || 0),
-          mtimeMs: Number(info.mtimeMs || 0),
-          path: pathValue,
-          size: Number(info.size || 0),
-          type: 'file',
-        },
-      };
+      if (!info.isFile() || !isVaultFilePath(normalizedPath)) {
+        return { entries, metadata };
+      }
+
+      entries.set(normalizedPath, createWorkspaceEntry(normalizedPath, 'file'));
+      metadata.set(normalizedPath, createWorkspaceMetadata(normalizedPath, 'file', info));
+      return { entries, metadata };
     } catch (error) {
       if (error?.code === 'ENOENT' || error?.code === 'ENOTDIR') {
-        return null;
+        return {
+          entries: new Map(),
+          metadata: new Map(),
+        };
       }
 
       throw error;
     }
   }
 
-  async buildIncrementalSingleFileResult() {
-    if (this.forceFullScan || this.pendingEventTypesByPath.size !== 1 || !this.lastState) {
+  async ensureAncestorDirectories(nextEntries, nextMetadata, pathValue) {
+    const parentPath = getParentDirectoryPath(pathValue);
+    if (!parentPath) {
+      return true;
+    }
+
+    const segments = parentPath.split('/').filter(Boolean);
+    let currentPath = '';
+    for (const segment of segments) {
+      currentPath = currentPath ? `${currentPath}/${segment}` : segment;
+      if (nextEntries.has(currentPath) && nextMetadata.has(currentPath)) {
+        continue;
+      }
+
+      const directorySnapshot = await this.readWorkspacePathSnapshot(currentPath);
+      if (!directorySnapshot?.entries?.has(currentPath) || !directorySnapshot.metadata?.has(currentPath)) {
+        return false;
+      }
+
+      nextEntries.set(currentPath, directorySnapshot.entries.get(currentPath));
+      nextMetadata.set(currentPath, directorySnapshot.metadata.get(currentPath));
+    }
+
+    return true;
+  }
+
+  async buildIncrementalResult() {
+    if (this.forceFullScan || this.pendingEventTypesByPath.size === 0 || !this.lastState) {
       return null;
     }
 
-    const [[pathValue, eventTypes]] = this.pendingEventTypesByPath.entries();
-    if (!pathValue || !eventTypes || eventTypes.size !== 1 || !eventTypes.has('change')) {
-      return null;
-    }
-
-    const previousMetadata = this.lastState.metadata?.get(pathValue);
-    const previousEntry = this.lastState.entries?.get(pathValue);
-    if (!previousMetadata || previousMetadata.type !== 'file' || !previousEntry) {
-      return null;
-    }
-
-    const nextStateForPath = await this.readWorkspaceFileState(pathValue);
-    if (!nextStateForPath?.metadata || entrySignature(previousMetadata) === entrySignature(nextStateForPath.metadata)) {
+    const pendingPaths = Array.from(this.pendingEventTypesByPath.keys())
+      .filter(Boolean)
+      .sort((left, right) => left.localeCompare(right, undefined, { sensitivity: 'base' }));
+    if (pendingPaths.length === 0 || pendingPaths.length > MAX_INCREMENTAL_PENDING_PATHS) {
       return null;
     }
 
     const nextEntries = new Map(this.lastState.entries);
     const nextMetadata = new Map(this.lastState.metadata);
-    nextEntries.set(pathValue, previousEntry);
-    nextMetadata.set(pathValue, nextStateForPath.metadata);
+    const previousState = this.lastState;
+
+    for (const pathValue of pendingPaths) {
+      Array.from(previousState.entries.keys())
+        .filter((candidatePath) => isPathWithinPrefix(candidatePath, pathValue))
+        .forEach((candidatePath) => {
+          nextEntries.delete(candidatePath);
+        });
+      Array.from(previousState.metadata.keys())
+        .filter((candidatePath) => isPathWithinPrefix(candidatePath, pathValue))
+        .forEach((candidatePath) => {
+          nextMetadata.delete(candidatePath);
+        });
+
+      const snapshot = await this.readWorkspacePathSnapshot(pathValue);
+      if (!snapshot) {
+        return null;
+      }
+
+      if (snapshot.entries.size > 0) {
+        if (!(await this.ensureAncestorDirectories(nextEntries, nextMetadata, pathValue))) {
+          return null;
+        }
+      }
+
+      snapshot.entries.forEach((entry, entryPath) => {
+        nextEntries.set(entryPath, entry);
+      });
+      snapshot.metadata.forEach((metadata, metadataPath) => {
+        nextMetadata.set(metadataPath, metadata);
+      });
+    }
+
+    const nextState = {
+      entries: nextEntries,
+      metadata: nextMetadata,
+      scannedAt: Date.now(),
+    };
+    const workspaceChange = detectWorkspaceChange(this.lastState, nextState);
 
     return {
-      nextState: {
-        entries: nextEntries,
-        metadata: nextMetadata,
-        scannedAt: Date.now(),
-      },
-      workspaceChange: createWorkspaceChange({
-        changedPaths: [pathValue],
-        deletedPaths: [],
-        renamedPaths: [],
-        refreshExplorer: true,
-      }),
+      nextState,
+      workspaceChange,
     };
   }
 
@@ -328,7 +449,7 @@ export class FileSystemSyncService {
   }
 
   async flush() {
-    const incrementalResult = await this.buildIncrementalSingleFileResult();
+    const incrementalResult = await this.buildIncrementalResult();
     this.consumePendingEvents();
 
     const previousWorkspaceState = this.mutationCoordinator.workspaceState;
@@ -341,7 +462,7 @@ export class FileSystemSyncService {
       this.mutationCoordinator.syncWorkspaceEntries(nextState, {
         previousState: previousWorkspaceState,
       });
-      this.mutationCoordinator.workspaceState = nextState;
+      this.mutationCoordinator.replaceWorkspaceState(nextState);
       return;
     }
 

@@ -61,6 +61,70 @@ function createWorkspaceMetadata(pathValue, type, info) {
   };
 }
 
+function compareWorkspaceTreeNodes(left = {}, right = {}) {
+  const leftIsDirectory = left.type === 'directory';
+  const rightIsDirectory = right.type === 'directory';
+  if (leftIsDirectory && !rightIsDirectory) {
+    return -1;
+  }
+  if (!leftIsDirectory && rightIsDirectory) {
+    return 1;
+  }
+
+  return String(left.name ?? '').localeCompare(String(right.name ?? ''), undefined, { sensitivity: 'base' });
+}
+
+function sortWorkspaceTree(nodes = []) {
+  nodes.sort(compareWorkspaceTreeNodes);
+  nodes.forEach((node) => {
+    if (node.type === 'directory') {
+      sortWorkspaceTree(node.children);
+    }
+  });
+  return nodes;
+}
+
+function createWorkspaceTree(entries = new Map()) {
+  const nodesByPath = new Map();
+  const rootNodes = [];
+
+  entries.forEach((entry, pathValue) => {
+    const normalizedPath = normalizeWorkspacePath(pathValue);
+    if (!normalizedPath) {
+      return;
+    }
+
+    if (entry?.type === 'directory' || entry?.nodeType === 'directory') {
+      nodesByPath.set(normalizedPath, {
+        children: [],
+        name: entry?.name ?? basename(normalizedPath),
+        path: normalizedPath,
+        type: 'directory',
+      });
+      return;
+    }
+
+    nodesByPath.set(normalizedPath, {
+      name: entry?.name ?? basename(normalizedPath),
+      path: normalizedPath,
+      type: entry?.type ?? getVaultTreeNodeType(normalizedPath),
+    });
+  });
+
+  nodesByPath.forEach((node, pathValue) => {
+    const parentPath = getParentDirectoryPath(pathValue);
+    const parentNode = parentPath ? nodesByPath.get(parentPath) : null;
+    if (parentNode?.type === 'directory') {
+      parentNode.children.push(node);
+      return;
+    }
+
+    rootNodes.push(node);
+  });
+
+  return sortWorkspaceTree(rootNodes);
+}
+
 function workspaceEntriesEqual(left = {}, right = {}) {
   return (
     left.fileKind === right.fileKind
@@ -111,6 +175,17 @@ export class WorkspaceMutationCoordinator {
     this.managedPathExpiry = new Map();
     this.globalSuppressionUntil = 0;
     this.workspaceState = null;
+    this.workspaceTree = [];
+  }
+
+  replaceWorkspaceState(nextState) {
+    this.workspaceState = nextState ?? null;
+    this.workspaceTree = createWorkspaceTree(nextState?.entries ?? new Map());
+    return this.workspaceState;
+  }
+
+  getWorkspaceTree() {
+    return this.workspaceTree;
   }
 
   isIncrementalApiAction(action) {
@@ -293,7 +368,7 @@ export class WorkspaceMutationCoordinator {
 
   async initialize() {
     const snapshot = await this.vaultFileStore.scanWorkspaceState();
-    this.workspaceState = snapshot;
+    this.replaceWorkspaceState(snapshot);
     this.getWorkspaceRoom()?.replaceWorkspaceEntries(snapshot.entries, {
       generatedAt: snapshot.scannedAt,
     });
@@ -453,7 +528,7 @@ export class WorkspaceMutationCoordinator {
     this.syncWorkspaceEntries(resolvedState, {
       previousState,
     });
-    this.workspaceState = resolvedState;
+    this.replaceWorkspaceState(resolvedState);
 
     if (!publishEvent) {
       return null;

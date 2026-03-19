@@ -59,11 +59,13 @@ function selectReadOperation(vaultFileStore, filePath) {
 export function createVaultApiQueryHandler({
   backlinkIndex,
   vaultFileStore,
+  workspaceMutationCoordinator = null,
 }) {
   return async function handleVaultApiQuery(req, res, requestUrl) {
     if (requestUrl.pathname === '/api/files' && req.method === 'GET') {
       try {
-        jsonResponse(req, res, 200, { tree: await vaultFileStore.tree() });
+        const tree = workspaceMutationCoordinator?.getWorkspaceTree?.() ?? await vaultFileStore.tree();
+        jsonResponse(req, res, 200, { tree });
       } catch (error) {
         console.error('[api] Failed to read file tree:', error.message);
         jsonResponse(req, res, 500, { error: 'Failed to read file tree' });
