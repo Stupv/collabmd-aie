@@ -1,9 +1,9 @@
-import { WebsocketProvider } from 'y-websocket';
-import * as Y from 'yjs';
+import { WebsocketProvider } from "y-websocket";
+import * as Y from "yjs";
 
-import { createRandomUser, normalizeUserName } from '../domain/room.js';
-import { resolveWsBaseUrl } from './runtime-config.js';
-import { stopReconnectOnControlledClose } from './yjs-provider-reset-guard.js';
+import { createRandomUser, normalizeUserName } from "../domain/room.js";
+import { resolveWsBaseUrl } from "./runtime-config.js";
+import { stopReconnectOnControlledClose } from "./yjs-provider-reset-guard.js";
 
 export class EditorCollaborationClient {
   constructor({
@@ -26,14 +26,14 @@ export class EditorCollaborationClient {
     this.ydoc = null;
     this.ytext = null;
     this.commentThreads = null;
-    this.wsBaseUrl = '';
+    this.wsBaseUrl = "";
     this.initialSyncComplete = false;
     this.initialSyncPromise = Promise.resolve();
     this.resolveInitialSync = null;
   }
 
   normalizeViewport(viewport) {
-    if (!viewport || typeof viewport !== 'object') {
+    if (!viewport || typeof viewport !== "object") {
       return null;
     }
 
@@ -45,24 +45,32 @@ export class EditorCollaborationClient {
 
     return {
       topLine: Math.max(1, Math.round(topLine)),
-      viewportRatio: Number.isFinite(viewportRatio) ? Math.min(Math.max(viewportRatio, 0), 1) : 0.35,
+      viewportRatio: Number.isFinite(viewportRatio)
+        ? Math.min(Math.max(viewportRatio, 0), 1)
+        : 0.35,
     };
   }
 
   async initialize(filePath) {
     this.wsBaseUrl = resolveWsBaseUrl();
     this.ydoc = new Y.Doc();
-    this.ytext = this.ydoc.getText('codemirror');
-    this.commentThreads = this.ydoc.getArray('comments');
+    this.ytext = this.ydoc.getText("codemirror");
+    this.commentThreads = this.ydoc.getArray("comments");
 
     const undoManager = new Y.UndoManager(this.ytext);
-    const provider = new WebsocketProvider(this.wsBaseUrl, filePath, this.ydoc, {
-      disableBc: true,
-      maxBackoffTime: 5000,
-    });
+    const provider = new WebsocketProvider(
+      this.wsBaseUrl,
+      filePath,
+      this.ydoc,
+      {
+        disableBc: true,
+        maxBackoffTime: 5000,
+      },
+    );
     stopReconnectOnControlledClose(provider);
     const awareness = provider.awareness;
-    const user = this.providedLocalUser ?? createRandomUser(this.preferredUserName);
+    const user =
+      this.providedLocalUser ?? createRandomUser(this.preferredUserName);
 
     this.provider = provider;
     this.awareness = awareness;
@@ -72,15 +80,15 @@ export class EditorCollaborationClient {
       this.resolveInitialSync = resolve;
     });
 
-    awareness.setLocalStateField('user', user);
-    awareness.on('change', () => {
+    awareness.setLocalStateField("user", user);
+    awareness.on("change", () => {
       this.onAwarenessChange?.(this.collectUsers(this.resolveAwarenessCursor));
     });
 
     this.trackConnectionStatus();
 
     let initialSyncDone = false;
-    provider.on('sync', (isSynced) => {
+    provider.on("sync", (isSynced) => {
       if (!isSynced || initialSyncDone) {
         return;
       }
@@ -138,7 +146,7 @@ export class EditorCollaborationClient {
   }
 
   getText() {
-    return this.ytext?.toString() ?? '';
+    return this.ytext?.toString() ?? "";
   }
 
   getLocalUser() {
@@ -155,7 +163,7 @@ export class EditorCollaborationClient {
       ...this.localUser,
       name: normalizedName,
     };
-    this.awareness.setLocalStateField('user', this.localUser);
+    this.awareness.setLocalStateField("user", this.localUser);
     return normalizedName;
   }
 
@@ -183,7 +191,7 @@ export class EditorCollaborationClient {
     }
 
     const nextViewport = this.normalizeViewport(viewport);
-    this.awareness.setLocalStateField('viewport', nextViewport);
+    this.awareness.setLocalStateField("viewport", nextViewport);
     return nextViewport;
   }
 
@@ -220,13 +228,13 @@ export class EditorCollaborationClient {
     let attempts = 0;
     let hasEverConnected = false;
 
-    this.provider.on('status', ({ status }) => {
-      if (status === 'connecting') {
+    this.provider.on("status", ({ status }) => {
+      if (status === "connecting") {
         attempts += 1;
       }
 
-      const firstConnection = status === 'connected' && !hasEverConnected;
-      if (status === 'connected') {
+      const firstConnection = status === "connected" && !hasEverConnected;
+      if (status === "connected") {
         attempts = 0;
         hasEverConnected = true;
       }

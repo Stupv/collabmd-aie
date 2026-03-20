@@ -1,10 +1,10 @@
 function normalizeWikiTarget(target) {
-  const trimmed = String(target ?? '').trim();
+  const trimmed = String(target ?? "").trim();
   if (!trimmed) {
     return null;
   }
 
-  return trimmed.endsWith('.md') ? trimmed : `${trimmed}.md`;
+  return trimmed.endsWith(".md") ? trimmed : `${trimmed}.md`;
 }
 
 export function createWikiTargetIndex(files = []) {
@@ -13,20 +13,20 @@ export function createWikiTargetIndex(files = []) {
   const suffixMatch = new Map();
 
   for (const filePath of files) {
-    if (typeof filePath !== 'string' || filePath.length === 0) {
+    if (typeof filePath !== "string" || filePath.length === 0) {
       continue;
     }
 
     exactPaths.add(filePath);
 
-    const rawPath = filePath.replace(/\.md$/i, '');
+    const rawPath = filePath.replace(/\.md$/i, "");
     if (!pathWithoutMd.has(rawPath)) {
       pathWithoutMd.set(rawPath, filePath);
     }
 
-    const segments = filePath.split('/');
+    const segments = filePath.split("/");
     for (let index = 0; index < segments.length; index += 1) {
-      const suffix = segments.slice(index).join('/');
+      const suffix = segments.slice(index).join("/");
       if (!suffixMatch.has(suffix)) {
         suffixMatch.set(suffix, filePath);
       }
@@ -55,7 +55,7 @@ export function resolveWikiTargetWithIndex(target, index) {
     return suffixMatch;
   }
 
-  const rawTarget = String(target ?? '').trim();
+  const rawTarget = String(target ?? "").trim();
   return index.pathWithoutMd?.get(rawTarget) ?? null;
 }
 
@@ -65,7 +65,7 @@ export function resolveWikiTargetPath(target, files) {
     return null;
   }
 
-  const rawTarget = String(target ?? '').trim();
+  const rawTarget = String(target ?? "").trim();
   let fallbackSuffixMatch = null;
 
   for (const filePath of files) {
@@ -73,7 +73,7 @@ export function resolveWikiTargetPath(target, files) {
       return filePath;
     }
 
-    if (filePath.replace(/\.md$/i, '') === rawTarget) {
+    if (filePath.replace(/\.md$/i, "") === rawTarget) {
       return filePath;
     }
 

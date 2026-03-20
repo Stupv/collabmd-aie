@@ -1,45 +1,42 @@
-import {
-  brotliCompress,
-  constants as zlibConstants,
-  gzip,
-} from 'node:zlib';
+import { brotliCompress, constants as zlibConstants, gzip } from "node:zlib";
 
-const COMPRESSIBLE_CONTENT_TYPE_PATTERN = /^(?:text\/|application\/(?:javascript|json|xml)|image\/svg\+xml)/i;
+const COMPRESSIBLE_CONTENT_TYPE_PATTERN =
+  /^(?:text\/|application\/(?:javascript|json|xml)|image\/svg\+xml)/i;
 const MIN_COMPRESSIBLE_BYTES = 1024;
 
 export const SECURITY_HEADERS = {
-  'Referrer-Policy': 'strict-origin-when-cross-origin',
-  'X-Content-Type-Options': 'nosniff',
-  'X-Frame-Options': 'SAMEORIGIN',
+  "Referrer-Policy": "strict-origin-when-cross-origin",
+  "X-Content-Type-Options": "nosniff",
+  "X-Frame-Options": "SAMEORIGIN",
 };
 
-export const WRITE_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
+export const WRITE_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
 
 function appendVaryHeader(res, token) {
-  const normalizedToken = String(token || '').trim();
+  const normalizedToken = String(token || "").trim();
   if (!normalizedToken) {
     return;
   }
 
-  const existingHeader = String(res.getHeader('Vary') || '');
+  const existingHeader = String(res.getHeader("Vary") || "");
   const varyTokens = new Set(
     existingHeader
-      .split(',')
+      .split(",")
       .map((value) => value.trim())
       .filter(Boolean),
   );
   varyTokens.add(normalizedToken);
-  res.setHeader('Vary', Array.from(varyTokens).join(', '));
+  res.setHeader("Vary", Array.from(varyTokens).join(", "));
 }
 
 function resolveCompressionEncoding(acceptEncodingHeader) {
-  const value = String(acceptEncodingHeader || '').toLowerCase();
-  if (value.includes('br')) {
-    return 'br';
+  const value = String(acceptEncodingHeader || "").toLowerCase();
+  if (value.includes("br")) {
+    return "br";
   }
 
-  if (value.includes('gzip')) {
-    return 'gzip';
+  if (value.includes("gzip")) {
+    return "gzip";
   }
 
   return null;
@@ -52,16 +49,16 @@ function prepareBody(req, body, contentType) {
 
   const bodyBuffer = Buffer.isBuffer(body)
     ? body
-    : Buffer.from(String(body), 'utf8');
+    : Buffer.from(String(body), "utf8");
 
   if (
-    bodyBuffer.byteLength < MIN_COMPRESSIBLE_BYTES
-    || !COMPRESSIBLE_CONTENT_TYPE_PATTERN.test(String(contentType || ''))
+    bodyBuffer.byteLength < MIN_COMPRESSIBLE_BYTES ||
+    !COMPRESSIBLE_CONTENT_TYPE_PATTERN.test(String(contentType || ""))
   ) {
     return { body: bodyBuffer, encoding: null };
   }
 
-  const encoding = resolveCompressionEncoding(req.headers['accept-encoding']);
+  const encoding = resolveCompressionEncoding(req.headers["accept-encoding"]);
   if (!encoding) {
     return { body: bodyBuffer, encoding: null };
   }
@@ -70,12 +67,16 @@ function prepareBody(req, body, contentType) {
 }
 
 function compressBody(bodyBuffer, encoding, callback) {
-  if (encoding === 'br') {
-    brotliCompress(bodyBuffer, {
-      params: {
-        [zlibConstants.BROTLI_PARAM_QUALITY]: 5,
+  if (encoding === "br") {
+    brotliCompress(
+      bodyBuffer,
+      {
+        params: {
+          [zlibConstants.BROTLI_PARAM_QUALITY]: 5,
+        },
       },
-    }, callback);
+      callback,
+    );
     return;
   }
 
@@ -85,7 +86,7 @@ function compressBody(bodyBuffer, encoding, callback) {
 function writeResponseHead(res, statusCode, headers, bodyBuffer) {
   const responseHeaders = { ...headers };
   if (bodyBuffer) {
-    responseHeaders['Content-Length'] = String(bodyBuffer.byteLength);
+    responseHeaders["Content-Length"] = String(bodyBuffer.byteLength);
   }
 
   res.writeHead(statusCode, responseHeaders);
@@ -94,7 +95,7 @@ function writeResponseHead(res, statusCode, headers, bodyBuffer) {
 function writePreparedBody(req, res, statusCode, headers, bodyBuffer) {
   writeResponseHead(res, statusCode, headers, bodyBuffer);
 
-  if (req.method === 'HEAD' || statusCode === 204 || statusCode === 304) {
+  if (req.method === "HEAD" || statusCode === 204 || statusCode === 304) {
     res.end();
     return;
   }
@@ -127,27 +128,33 @@ export function applyCorsHeaders(res, origin) {
     return;
   }
 
-  appendVaryHeader(res, 'Origin');
+  appendVaryHeader(res, "Origin");
   setHeaders(res, {
-    'Access-Control-Allow-Origin': origin,
-    'Access-Control-Allow-Methods': 'GET, POST, PUT, PATCH, DELETE, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type',
+    "Access-Control-Allow-Origin": origin,
+    "Access-Control-Allow-Methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+    "Access-Control-Allow-Headers": "Content-Type",
   });
 }
 
-export function sendResponse(req, res, {
-  body = null,
-  headers = {},
-  statusCode = 200,
-} = {}) {
-  const contentType = headers['Content-Type'] || headers['content-type'] || '';
+export function sendResponse(
+  req,
+  res,
+  { body = null, headers = {}, statusCode = 200 } = {},
+) {
+  const contentType = headers["Content-Type"] || headers["content-type"] || "";
   const prepared = prepareBody(req, body, contentType);
 
   if (body !== null) {
-    appendVaryHeader(res, 'Accept-Encoding');
+    appendVaryHeader(res, "Accept-Encoding");
   }
 
-  if (!prepared.body || !prepared.encoding || req.method === 'HEAD' || statusCode === 204 || statusCode === 304) {
+  if (
+    !prepared.body ||
+    !prepared.encoding ||
+    req.method === "HEAD" ||
+    statusCode === 204 ||
+    statusCode === 304
+  ) {
     writePreparedBody(req, res, statusCode, headers, prepared.body);
     return;
   }
@@ -158,7 +165,7 @@ export function sendResponse(req, res, {
     }
 
     if (error) {
-      console.error('[http] Failed to compress response body:', error.message);
+      console.error("[http] Failed to compress response body:", error.message);
       if (!res.headersSent) {
         writePreparedBody(req, res, statusCode, headers, prepared.body);
         return;
@@ -167,15 +174,24 @@ export function sendResponse(req, res, {
       return;
     }
 
-    if (!compressedBody || compressedBody.byteLength >= prepared.body.byteLength) {
+    if (
+      !compressedBody ||
+      compressedBody.byteLength >= prepared.body.byteLength
+    ) {
       writePreparedBody(req, res, statusCode, headers, prepared.body);
       return;
     }
 
-    writePreparedBody(req, res, statusCode, {
-      ...headers,
-      'Content-Encoding': prepared.encoding,
-    }, compressedBody);
+    writePreparedBody(
+      req,
+      res,
+      statusCode,
+      {
+        ...headers,
+        "Content-Encoding": prepared.encoding,
+      },
+      compressedBody,
+    );
   });
 }
 
@@ -184,8 +200,8 @@ export function jsonResponse(req, res, statusCode, data) {
   sendResponse(req, res, {
     body,
     headers: {
-      'Content-Type': 'application/json; charset=utf-8',
-      'Cache-Control': 'no-store',
+      "Content-Type": "application/json; charset=utf-8",
+      "Cache-Control": "no-store",
     },
     statusCode,
   });
@@ -195,7 +211,7 @@ export function textResponse(req, res, statusCode, body, headers = {}) {
   sendResponse(req, res, {
     body,
     headers: {
-      'Content-Type': 'text/plain; charset=utf-8',
+      "Content-Type": "text/plain; charset=utf-8",
       ...headers,
     },
     statusCode,

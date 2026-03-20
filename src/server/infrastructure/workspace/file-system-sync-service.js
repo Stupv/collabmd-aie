@@ -1,13 +1,16 @@
-import { watch } from 'fs';
-import { readdir, stat } from 'fs/promises';
-import { basename, dirname, join } from 'path';
+import { watch } from "fs";
+import { readdir, stat } from "fs/promises";
+import { basename, dirname, join } from "path";
 
-import { createWorkspaceChange } from '../../../domain/workspace-change.js';
-import { getVaultTreeNodeType, isVaultFilePath } from '../../../domain/file-kind.js';
+import { createWorkspaceChange } from "../../../domain/workspace-change.js";
+import {
+  getVaultTreeNodeType,
+  isVaultFilePath,
+} from "../../../domain/file-kind.js";
 import {
   isIgnoredVaultEntry,
   sanitizeVaultPath,
-} from '../persistence/path-utils.js';
+} from "../persistence/path-utils.js";
 
 const MAX_INCREMENTAL_PENDING_PATHS = 16;
 
@@ -16,23 +19,25 @@ function entrySignature(entry = {}) {
 }
 
 function sortByPath(values = []) {
-  return [...values].sort((left, right) => left.localeCompare(right, undefined, { sensitivity: 'base' }));
+  return [...values].sort((left, right) =>
+    left.localeCompare(right, undefined, { sensitivity: "base" }),
+  );
 }
 
 function normalizeWatchedPath(filename) {
-  if (typeof filename !== 'string' && !Buffer.isBuffer(filename)) {
-    return '';
+  if (typeof filename !== "string" && !Buffer.isBuffer(filename)) {
+    return "";
   }
 
-  const normalized = String(filename).trim().replace(/\\/g, '/').replace(/^\.\/+/, '');
-  if (!normalized || normalized === '.') {
-    return '';
+  const normalized = String(filename)
+    .trim()
+    .replace(/\\/g, "/")
+    .replace(/^\.\/+/, "");
+  if (!normalized || normalized === ".") {
+    return "";
   }
 
-  return normalized
-    .split('/')
-    .filter(Boolean)
-    .join('/');
+  return normalized.split("/").filter(Boolean).join("/");
 }
 
 function isIgnoredWatchedPath(pathValue) {
@@ -40,7 +45,7 @@ function isIgnoredWatchedPath(pathValue) {
     return true;
   }
 
-  const segments = String(pathValue).split('/').filter(Boolean);
+  const segments = String(pathValue).split("/").filter(Boolean);
   if (segments.length === 0) {
     return true;
   }
@@ -49,27 +54,36 @@ function isIgnoredWatchedPath(pathValue) {
     return true;
   }
 
-  return basename(pathValue).includes('.collabmd-');
+  return basename(pathValue).includes(".collabmd-");
 }
 
-function normalizeWorkspacePath(pathValue = '') {
-  return String(pathValue ?? '').replace(/\\/g, '/').trim();
+function normalizeWorkspacePath(pathValue = "") {
+  return String(pathValue ?? "")
+    .replace(/\\/g, "/")
+    .trim();
 }
 
-function getParentDirectoryPath(pathValue = '') {
-  const parentPath = dirname(normalizeWorkspacePath(pathValue)).replace(/\\/g, '/');
-  return parentPath === '.' ? '' : parentPath;
+function getParentDirectoryPath(pathValue = "") {
+  const parentPath = dirname(normalizeWorkspacePath(pathValue)).replace(
+    /\\/g,
+    "/",
+  );
+  return parentPath === "." ? "" : parentPath;
 }
 
 function createWorkspaceEntry(pathValue, nodeType) {
   const normalizedPath = normalizeWorkspacePath(pathValue);
   return {
-    fileKind: nodeType === 'directory' ? null : getVaultTreeNodeType(normalizedPath),
+    fileKind:
+      nodeType === "directory" ? null : getVaultTreeNodeType(normalizedPath),
     name: basename(normalizedPath),
     nodeType,
     parentPath: getParentDirectoryPath(normalizedPath),
     path: normalizedPath,
-    type: nodeType === 'directory' ? 'directory' : getVaultTreeNodeType(normalizedPath),
+    type:
+      nodeType === "directory"
+        ? "directory"
+        : getVaultTreeNodeType(normalizedPath),
   };
 }
 
@@ -78,7 +92,7 @@ function createWorkspaceMetadata(pathValue, type, info) {
     inode: Number(info.ino || 0),
     mtimeMs: Number(info.mtimeMs || 0),
     path: pathValue,
-    size: type === 'directory' ? 0 : Number(info.size || 0),
+    size: type === "directory" ? 0 : Number(info.size || 0),
     type,
   };
 }
@@ -87,16 +101,21 @@ function isPathWithinPrefix(pathValue, prefix) {
   return pathValue === prefix || pathValue.startsWith(`${prefix}/`);
 }
 
-function buildPrefixRenameEntries(previousState, nextState, oldPrefix, newPrefix) {
+function buildPrefixRenameEntries(
+  previousState,
+  nextState,
+  oldPrefix,
+  newPrefix,
+) {
   const renames = [];
   previousState.metadata.forEach((entry, pathValue) => {
-    if (entry.type !== 'file' || !pathValue.startsWith(`${oldPrefix}/`)) {
+    if (entry.type !== "file" || !pathValue.startsWith(`${oldPrefix}/`)) {
       return;
     }
 
     const suffix = pathValue.slice(oldPrefix.length + 1);
     const nextPath = `${newPrefix}/${suffix}`;
-    if (nextState.metadata.get(nextPath)?.type === 'file') {
+    if (nextState.metadata.get(nextPath)?.type === "file") {
       renames.push({ oldPath: pathValue, newPath: nextPath });
     }
   });
@@ -114,19 +133,22 @@ function detectWorkspaceChange(previousState, nextState) {
   previousMetadata.forEach((previousEntry, pathValue) => {
     const nextEntry = nextMetadata.get(pathValue);
     if (!nextEntry) {
-      if (previousEntry.type === 'file') {
+      if (previousEntry.type === "file") {
         deletedPaths.add(pathValue);
       }
       return;
     }
 
-    if (entrySignature(previousEntry) !== entrySignature(nextEntry) && nextEntry.type === 'file') {
+    if (
+      entrySignature(previousEntry) !== entrySignature(nextEntry) &&
+      nextEntry.type === "file"
+    ) {
       changedPaths.add(pathValue);
     }
   });
 
   nextMetadata.forEach((nextEntry, pathValue) => {
-    if (!previousMetadata.has(pathValue) && nextEntry.type === 'file') {
+    if (!previousMetadata.has(pathValue) && nextEntry.type === "file") {
       addedPaths.add(pathValue);
     }
   });
@@ -159,19 +181,29 @@ function detectWorkspaceChange(previousState, nextState) {
     }
   });
 
-  const previousDirectories = Array.from(previousMetadata.entries())
-    .filter(([, entry]) => entry.type === 'directory' && !nextMetadata.has(entry.path));
-  const nextDirectories = Array.from(nextMetadata.entries())
-    .filter(([, entry]) => entry.type === 'directory' && !previousMetadata.has(entry.path));
+  const previousDirectories = Array.from(previousMetadata.entries()).filter(
+    ([, entry]) => entry.type === "directory" && !nextMetadata.has(entry.path),
+  );
+  const nextDirectories = Array.from(nextMetadata.entries()).filter(
+    ([, entry]) =>
+      entry.type === "directory" && !previousMetadata.has(entry.path),
+  );
 
   previousDirectories.forEach(([oldPath, oldEntry]) => {
-    const match = nextDirectories.find(([, nextEntry]) => entrySignature(oldEntry) === entrySignature(nextEntry));
+    const match = nextDirectories.find(
+      ([, nextEntry]) => entrySignature(oldEntry) === entrySignature(nextEntry),
+    );
     if (!match) {
       return;
     }
 
     const [newPath] = match;
-    buildPrefixRenameEntries(previousState, nextState, oldPath, newPath).forEach((entry) => {
+    buildPrefixRenameEntries(
+      previousState,
+      nextState,
+      oldPath,
+      newPath,
+    ).forEach((entry) => {
       renamedPaths.push(entry);
       deletedPaths.delete(entry.oldPath);
       addedPaths.delete(entry.newPath);
@@ -191,11 +223,7 @@ function detectWorkspaceChange(previousState, nextState) {
 }
 
 export class FileSystemSyncService {
-  constructor({
-    debounceMs = 180,
-    mutationCoordinator,
-    vaultFileStore,
-  }) {
+  constructor({ debounceMs = 180, mutationCoordinator, vaultFileStore }) {
     this.debounceMs = debounceMs;
     this.mutationCoordinator = mutationCoordinator;
     this.vaultFileStore = vaultFileStore;
@@ -209,10 +237,16 @@ export class FileSystemSyncService {
   }
 
   async start() {
-    this.lastState = this.mutationCoordinator.workspaceState ?? await this.vaultFileStore.scanWorkspaceState();
-    this.watcher = watch(this.vaultFileStore.vaultDir, { recursive: true }, (eventType, filename) => {
-      this.handleWatchEvent(eventType, filename);
-    });
+    this.lastState =
+      this.mutationCoordinator.workspaceState ??
+      (await this.vaultFileStore.scanWorkspaceState());
+    this.watcher = watch(
+      this.vaultFileStore.vaultDir,
+      { recursive: true },
+      (eventType, filename) => {
+        this.handleWatchEvent(eventType, filename);
+      },
+    );
   }
 
   handleWatchEvent(eventType, filename) {
@@ -231,8 +265,9 @@ export class FileSystemSyncService {
       return;
     }
 
-    const bucket = this.pendingEventTypesByPath.get(normalizedPath) ?? new Set();
-    bucket.add(String(eventType || 'change'));
+    const bucket =
+      this.pendingEventTypesByPath.get(normalizedPath) ?? new Set();
+    bucket.add(String(eventType || "change"));
     this.pendingEventTypesByPath.set(normalizedPath, bucket);
 
     if (this.pendingEventTypesByPath.size > MAX_INCREMENTAL_PENDING_PATHS) {
@@ -254,7 +289,10 @@ export class FileSystemSyncService {
   }
 
   async resetForExternalStateChange() {
-    this.suspendWatchEventsUntil = Math.max(this.suspendWatchEventsUntil, Date.now() + 750);
+    this.suspendWatchEventsUntil = Math.max(
+      this.suspendWatchEventsUntil,
+      Date.now() + 750,
+    );
     clearTimeout(this.debounceTimer);
     this.debounceTimer = null;
     this.pendingEventTypesByPath.clear();
@@ -268,7 +306,9 @@ export class FileSystemSyncService {
 
     this.pendingEventTypesByPath.clear();
     this.forceFullScan = false;
-    this.lastState = this.mutationCoordinator.workspaceState ?? await this.vaultFileStore.scanWorkspaceState();
+    this.lastState =
+      this.mutationCoordinator.workspaceState ??
+      (await this.vaultFileStore.scanWorkspaceState());
   }
 
   async readWorkspacePathSnapshot(pathValue) {
@@ -277,7 +317,10 @@ export class FileSystemSyncService {
       return null;
     }
 
-    const absolutePath = sanitizeVaultPath(this.vaultFileStore.vaultDir, normalizedPath);
+    const absolutePath = sanitizeVaultPath(
+      this.vaultFileStore.vaultDir,
+      normalizedPath,
+    );
     if (!absolutePath) {
       return null;
     }
@@ -289,8 +332,18 @@ export class FileSystemSyncService {
 
       if (info.isDirectory()) {
         const visitDirectory = async (directoryPath, relativePath) => {
-          entries.set(relativePath, createWorkspaceEntry(relativePath, 'directory'));
-          metadata.set(relativePath, createWorkspaceMetadata(relativePath, 'directory', await stat(directoryPath)));
+          entries.set(
+            relativePath,
+            createWorkspaceEntry(relativePath, "directory"),
+          );
+          metadata.set(
+            relativePath,
+            createWorkspaceMetadata(
+              relativePath,
+              "directory",
+              await stat(directoryPath),
+            ),
+          );
 
           let dirEntries;
           try {
@@ -305,7 +358,10 @@ export class FileSystemSyncService {
             }
 
             const childAbsolutePath = join(directoryPath, entry.name);
-            const childRelativePath = `${relativePath}/${entry.name}`.replace(/\\/g, '/');
+            const childRelativePath = `${relativePath}/${entry.name}`.replace(
+              /\\/g,
+              "/",
+            );
 
             if (entry.isDirectory()) {
               await visitDirectory(childAbsolutePath, childRelativePath);
@@ -322,10 +378,16 @@ export class FileSystemSyncService {
                 continue;
               }
 
-              entries.set(childRelativePath, createWorkspaceEntry(childRelativePath, 'file'));
-              metadata.set(childRelativePath, createWorkspaceMetadata(childRelativePath, 'file', childInfo));
+              entries.set(
+                childRelativePath,
+                createWorkspaceEntry(childRelativePath, "file"),
+              );
+              metadata.set(
+                childRelativePath,
+                createWorkspaceMetadata(childRelativePath, "file", childInfo),
+              );
             } catch (error) {
-              if (error?.code !== 'ENOENT' && error?.code !== 'ENOTDIR') {
+              if (error?.code !== "ENOENT" && error?.code !== "ENOTDIR") {
                 throw error;
               }
             }
@@ -340,11 +402,14 @@ export class FileSystemSyncService {
         return { entries, metadata };
       }
 
-      entries.set(normalizedPath, createWorkspaceEntry(normalizedPath, 'file'));
-      metadata.set(normalizedPath, createWorkspaceMetadata(normalizedPath, 'file', info));
+      entries.set(normalizedPath, createWorkspaceEntry(normalizedPath, "file"));
+      metadata.set(
+        normalizedPath,
+        createWorkspaceMetadata(normalizedPath, "file", info),
+      );
       return { entries, metadata };
     } catch (error) {
-      if (error?.code === 'ENOENT' || error?.code === 'ENOTDIR') {
+      if (error?.code === "ENOENT" || error?.code === "ENOTDIR") {
         return {
           entries: new Map(),
           metadata: new Map(),
@@ -361,35 +426,51 @@ export class FileSystemSyncService {
       return true;
     }
 
-    const segments = parentPath.split('/').filter(Boolean);
-    let currentPath = '';
+    const segments = parentPath.split("/").filter(Boolean);
+    let currentPath = "";
     for (const segment of segments) {
       currentPath = currentPath ? `${currentPath}/${segment}` : segment;
       if (nextEntries.has(currentPath) && nextMetadata.has(currentPath)) {
         continue;
       }
 
-      const directorySnapshot = await this.readWorkspacePathSnapshot(currentPath);
-      if (!directorySnapshot?.entries?.has(currentPath) || !directorySnapshot.metadata?.has(currentPath)) {
+      const directorySnapshot =
+        await this.readWorkspacePathSnapshot(currentPath);
+      if (
+        !directorySnapshot?.entries?.has(currentPath) ||
+        !directorySnapshot.metadata?.has(currentPath)
+      ) {
         return false;
       }
 
       nextEntries.set(currentPath, directorySnapshot.entries.get(currentPath));
-      nextMetadata.set(currentPath, directorySnapshot.metadata.get(currentPath));
+      nextMetadata.set(
+        currentPath,
+        directorySnapshot.metadata.get(currentPath),
+      );
     }
 
     return true;
   }
 
   async buildIncrementalResult() {
-    if (this.forceFullScan || this.pendingEventTypesByPath.size === 0 || !this.lastState) {
+    if (
+      this.forceFullScan ||
+      this.pendingEventTypesByPath.size === 0 ||
+      !this.lastState
+    ) {
       return null;
     }
 
     const pendingPaths = Array.from(this.pendingEventTypesByPath.keys())
       .filter(Boolean)
-      .sort((left, right) => left.localeCompare(right, undefined, { sensitivity: 'base' }));
-    if (pendingPaths.length === 0 || pendingPaths.length > MAX_INCREMENTAL_PENDING_PATHS) {
+      .sort((left, right) =>
+        left.localeCompare(right, undefined, { sensitivity: "base" }),
+      );
+    if (
+      pendingPaths.length === 0 ||
+      pendingPaths.length > MAX_INCREMENTAL_PENDING_PATHS
+    ) {
       return null;
     }
 
@@ -415,7 +496,13 @@ export class FileSystemSyncService {
       }
 
       if (snapshot.entries.size > 0) {
-        if (!(await this.ensureAncestorDirectories(nextEntries, nextMetadata, pathValue))) {
+        if (
+          !(await this.ensureAncestorDirectories(
+            nextEntries,
+            nextMetadata,
+            pathValue,
+          ))
+        ) {
           return null;
         }
       }
@@ -442,7 +529,8 @@ export class FileSystemSyncService {
   }
 
   consumePendingEvents() {
-    const hadPendingEvents = this.pendingEventTypesByPath.size > 0 || this.forceFullScan;
+    const hadPendingEvents =
+      this.pendingEventTypesByPath.size > 0 || this.forceFullScan;
     this.pendingEventTypesByPath.clear();
     this.forceFullScan = false;
     return hadPendingEvents;
@@ -453,11 +541,16 @@ export class FileSystemSyncService {
     this.consumePendingEvents();
 
     const previousWorkspaceState = this.mutationCoordinator.workspaceState;
-    const nextState = incrementalResult?.nextState ?? await this.vaultFileStore.scanWorkspaceState();
-    const workspaceChange = incrementalResult?.workspaceChange ?? detectWorkspaceChange(this.lastState, nextState);
+    const nextState =
+      incrementalResult?.nextState ??
+      (await this.vaultFileStore.scanWorkspaceState());
+    const workspaceChange =
+      incrementalResult?.workspaceChange ??
+      detectWorkspaceChange(this.lastState, nextState);
     this.lastState = nextState;
 
-    const filteredChange = this.mutationCoordinator.filterManagedWorkspaceChange(workspaceChange);
+    const filteredChange =
+      this.mutationCoordinator.filterManagedWorkspaceChange(workspaceChange);
     if (!filteredChange) {
       this.mutationCoordinator.syncWorkspaceEntries(nextState, {
         previousState: previousWorkspaceState,
@@ -467,8 +560,8 @@ export class FileSystemSyncService {
     }
 
     await this.mutationCoordinator.apply({
-      action: 'filesystem-sync',
-      origin: 'filesystem',
+      action: "filesystem-sync",
+      origin: "filesystem",
       nextState,
       workspaceChange: filteredChange,
     });

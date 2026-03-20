@@ -1,31 +1,34 @@
-import { spawn } from 'node:child_process';
-import { mkdir, rename, rm, writeFile } from 'node:fs/promises';
-import { dirname, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
-import { setTimeout as delay } from 'node:timers/promises';
-import { chromium } from '@playwright/test';
-import { resetE2EVaultSnapshot, runtimeVaultDir } from '../tests/e2e/helpers/vault-snapshot.js';
+import { spawn } from "node:child_process";
+import { mkdir, rename, rm, writeFile } from "node:fs/promises";
+import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
+import { setTimeout as delay } from "node:timers/promises";
+import { chromium } from "@playwright/test";
+import {
+  resetE2EVaultSnapshot,
+  runtimeVaultDir,
+} from "../tests/e2e/helpers/vault-snapshot.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const projectRoot = resolve(__dirname, '..');
-const docsAssetsDir = resolve(projectRoot, 'docs/assets');
-const tempCaptureDir = resolve(projectRoot, '.tmp/readme-capture');
-const tempVideoDir = resolve(tempCaptureDir, 'video');
+const projectRoot = resolve(__dirname, "..");
+const docsAssetsDir = resolve(projectRoot, "docs/assets");
+const tempCaptureDir = resolve(projectRoot, ".tmp/readme-capture");
+const tempVideoDir = resolve(tempCaptureDir, "video");
 
-const HOST = '127.0.0.1';
+const HOST = "127.0.0.1";
 const PORT = 4173;
 const BASE_URL = `http://${HOST}:${PORT}`;
-const HERO_PATH = resolve(docsAssetsDir, 'collabmd-hero.webp');
-const DEMO_WEBM_PATH = resolve(docsAssetsDir, 'collabmd-demo.webm');
-const DEMO_GIF_PATH = resolve(docsAssetsDir, 'collabmd-demo.gif');
+const HERO_PATH = resolve(docsAssetsDir, "collabmd-hero.webp");
+const DEMO_WEBM_PATH = resolve(docsAssetsDir, "collabmd-demo.webm");
+const DEMO_GIF_PATH = resolve(docsAssetsDir, "collabmd-demo.gif");
 
 const HERO_VIEWPORT = { width: 1600, height: 1000 };
 const DEMO_VIEWPORT = { width: 1440, height: 900 };
-const DEMO_TRIM_START_SECONDS = '1.0';
-const DEMO_TRIM_DURATION_SECONDS = '5.0';
+const DEMO_TRIM_START_SECONDS = "1.0";
+const DEMO_TRIM_DURATION_SECONDS = "5.0";
 
-const HERO_FILE = 'showcase.md';
-const DEMO_FILE = 'live-demo.md';
+const HERO_FILE = "showcase.md";
+const DEMO_FILE = "live-demo.md";
 
 const HERO_MARKDOWN = `# CollabMD
 
@@ -66,16 +69,18 @@ async function runCommand(command, args, { cwd = projectRoot } = {}) {
     const child = spawn(command, args, {
       cwd,
       env: process.env,
-      stdio: 'inherit',
+      stdio: "inherit",
     });
 
-    child.on('error', rejectPromise);
-    child.on('exit', (code) => {
+    child.on("error", rejectPromise);
+    child.on("exit", (code) => {
       if (code === 0) {
         resolvePromise();
         return;
       }
-      rejectPromise(new Error(`${command} ${args.join(' ')} exited with code ${code}`));
+      rejectPromise(
+        new Error(`${command} ${args.join(" ")} exited with code ${code}`),
+      );
     });
   });
 }
@@ -85,7 +90,9 @@ async function waitForServer(serverProcess, url) {
 
   while (Date.now() < deadline) {
     if (serverProcess.exitCode != null) {
-      throw new Error(`CollabMD server exited early with code ${serverProcess.exitCode}`);
+      throw new Error(
+        `CollabMD server exited early with code ${serverProcess.exitCode}`,
+      );
     }
 
     try {
@@ -100,20 +107,28 @@ async function waitForServer(serverProcess, url) {
     await delay(500);
   }
 
-  throw new Error('Timed out waiting for CollabMD to become healthy');
+  throw new Error("Timed out waiting for CollabMD to become healthy");
 }
 
 function startServer() {
   return spawn(
-    'node',
-    ['bin/collabmd.js', '--no-tunnel', '--port', String(PORT), '--host', HOST, runtimeVaultDir],
+    "node",
+    [
+      "bin/collabmd.js",
+      "--no-tunnel",
+      "--port",
+      String(PORT),
+      "--host",
+      HOST,
+      runtimeVaultDir,
+    ],
     {
       cwd: projectRoot,
       env: {
         ...process.env,
-        NODE_ENV: 'test',
+        NODE_ENV: "test",
       },
-      stdio: 'inherit',
+      stdio: "inherit",
     },
   );
 }
@@ -125,12 +140,12 @@ async function stopServer(serverProcess) {
 
   await new Promise((resolvePromise) => {
     const finish = () => resolvePromise();
-    serverProcess.once('exit', finish);
-    serverProcess.kill('SIGTERM');
+    serverProcess.once("exit", finish);
+    serverProcess.kill("SIGTERM");
 
     setTimeout(() => {
       if (serverProcess.exitCode == null) {
-        serverProcess.kill('SIGKILL');
+        serverProcess.kill("SIGKILL");
       }
     }, 5_000);
   });
@@ -144,27 +159,27 @@ async function prepareVault() {
 
 async function openFile(page, filePath) {
   await page.goto(`${BASE_URL}/#file=${encodeURIComponent(filePath)}`);
-  await page.locator('.cm-editor').waitFor({ state: 'visible' });
+  await page.locator(".cm-editor").waitFor({ state: "visible" });
 }
 
 async function appendEditorContent(page, content) {
-  const editor = page.locator('.cm-content').first();
+  const editor = page.locator(".cm-content").first();
   await editor.click();
-  await editor.press('Control+End');
-  await page.keyboard.press('Enter');
-  await page.keyboard.press('Enter');
+  await editor.press("Control+End");
+  await page.keyboard.press("Enter");
+  await page.keyboard.press("Enter");
   await page.keyboard.type(content, { delay: 20 });
 }
 
 async function openChat(page) {
-  await page.locator('#chatToggleBtn').click();
-  await page.locator('#chatPanel').waitFor({ state: 'visible' });
+  await page.locator("#chatToggleBtn").click();
+  await page.locator("#chatPanel").waitFor({ state: "visible" });
 }
 
 async function sendChatMessage(page, message) {
   await openChat(page);
-  await page.locator('#chatInput').fill(message);
-  await page.locator('#chatForm').getByRole('button', { name: 'Send' }).click();
+  await page.locator("#chatInput").fill(message);
+  await page.locator("#chatForm").getByRole("button", { name: "Send" }).click();
 }
 
 async function createHero(browser) {
@@ -172,11 +187,11 @@ async function createHero(browser) {
   const contextB = await browser.newContext({ viewport: HERO_VIEWPORT });
 
   await contextA.addInitScript((name) => {
-    window.localStorage.setItem('collabmd-user-name', name);
-  }, 'Ava');
+    window.localStorage.setItem("collabmd-user-name", name);
+  }, "Ava");
   await contextB.addInitScript((name) => {
-    window.localStorage.setItem('collabmd-user-name', name);
-  }, 'Ben');
+    window.localStorage.setItem("collabmd-user-name", name);
+  }, "Ben");
 
   const pageA = await contextA.newPage();
   const pageB = await contextB.newPage();
@@ -184,21 +199,25 @@ async function createHero(browser) {
   await openFile(pageA, HERO_FILE);
   await openFile(pageB, HERO_FILE);
 
-  await pageA.locator('#userCount').waitFor({ state: 'visible' });
-  await pageA.waitForFunction(
-    () => document.getElementById('userCount')?.textContent?.includes('2 online'),
+  await pageA.locator("#userCount").waitFor({ state: "visible" });
+  await pageA.waitForFunction(() =>
+    document.getElementById("userCount")?.textContent?.includes("2 online"),
   );
-  await pageA.locator('#previewContent .mermaid-frame svg').waitFor({
-    state: 'visible',
+  await pageA.locator("#previewContent .mermaid-frame svg").waitFor({
+    state: "visible",
     timeout: 60_000,
   });
-  await pageA.locator('#previewContent .mermaid-zoom-btn[aria-label="Zoom out"]').click();
-  await pageA.locator('#previewContent .mermaid-zoom-btn[aria-label="Zoom out"]').click();
+  await pageA
+    .locator('#previewContent .mermaid-zoom-btn[aria-label="Zoom out"]')
+    .click();
+  await pageA
+    .locator('#previewContent .mermaid-zoom-btn[aria-label="Zoom out"]')
+    .click();
   await delay(500);
 
   await pageA.screenshot({
     path: HERO_PATH,
-    animations: 'disabled',
+    animations: "disabled",
   });
 
   await contextB.close();
@@ -216,11 +235,11 @@ async function createDemo(browser) {
   const contextB = await browser.newContext({ viewport: DEMO_VIEWPORT });
 
   await contextA.addInitScript((name) => {
-    window.localStorage.setItem('collabmd-user-name', name);
-  }, 'Ava');
+    window.localStorage.setItem("collabmd-user-name", name);
+  }, "Ava");
   await contextB.addInitScript((name) => {
-    window.localStorage.setItem('collabmd-user-name', name);
-  }, 'Ben');
+    window.localStorage.setItem("collabmd-user-name", name);
+  }, "Ben");
 
   const pageA = await contextA.newPage();
   const pageB = await contextB.newPage();
@@ -228,29 +247,35 @@ async function createDemo(browser) {
 
   await openFile(pageA, DEMO_FILE);
   await openFile(pageB, DEMO_FILE);
-  await pageA.waitForFunction(
-    () => document.getElementById('userCount')?.textContent?.includes('2 online'),
+  await pageA.waitForFunction(() =>
+    document.getElementById("userCount")?.textContent?.includes("2 online"),
   );
 
   await delay(1000);
 
   await appendEditorContent(
     pageB,
-    '## Shared update\n\nThe preview, presence, and chat stay in sync.',
+    "## Shared update\n\nThe preview, presence, and chat stay in sync.",
   );
-  await pageA.locator('#previewContent').getByText('Shared update').waitFor({ state: 'visible' });
+  await pageA
+    .locator("#previewContent")
+    .getByText("Shared update")
+    .waitFor({ state: "visible" });
 
   await delay(750);
 
   await sendChatMessage(pageB, "Let's ship the README refresh.");
-  await pageA.locator('#chatToggleBadge').waitFor({ state: 'visible' });
+  await pageA.locator("#chatToggleBadge").waitFor({ state: "visible" });
 
   await delay(500);
 
   await openChat(pageA);
-  await pageA.locator('#chatMessages').getByText("Let's ship the README refresh.").waitFor({
-    state: 'visible',
-  });
+  await pageA
+    .locator("#chatMessages")
+    .getByText("Let's ship the README refresh.")
+    .waitFor({
+      state: "visible",
+    });
 
   await delay(1500);
 
@@ -258,7 +283,7 @@ async function createDemo(browser) {
   await contextA.close();
 
   if (!pageAVideo) {
-    throw new Error('Playwright did not produce a demo recording');
+    throw new Error("Playwright did not produce a demo recording");
   }
 
   const rawVideoPath = await pageAVideo.path();
@@ -266,37 +291,37 @@ async function createDemo(browser) {
 }
 
 async function convertDemoToGif() {
-  const palettePath = resolve(tempCaptureDir, 'palette.png');
+  const palettePath = resolve(tempCaptureDir, "palette.png");
 
-  await runCommand('ffmpeg', [
-    '-y',
-    '-ss',
+  await runCommand("ffmpeg", [
+    "-y",
+    "-ss",
     DEMO_TRIM_START_SECONDS,
-    '-t',
+    "-t",
     DEMO_TRIM_DURATION_SECONDS,
-    '-i',
+    "-i",
     DEMO_WEBM_PATH,
-    '-frames:v',
-    '1',
-    '-update',
-    '1',
-    '-vf',
-    'fps=10,scale=1100:-1:flags=lanczos,palettegen',
+    "-frames:v",
+    "1",
+    "-update",
+    "1",
+    "-vf",
+    "fps=10,scale=1100:-1:flags=lanczos,palettegen",
     palettePath,
   ]);
 
-  await runCommand('ffmpeg', [
-    '-y',
-    '-ss',
+  await runCommand("ffmpeg", [
+    "-y",
+    "-ss",
     DEMO_TRIM_START_SECONDS,
-    '-t',
+    "-t",
     DEMO_TRIM_DURATION_SECONDS,
-    '-i',
+    "-i",
     DEMO_WEBM_PATH,
-    '-i',
+    "-i",
     palettePath,
-    '-lavfi',
-    'fps=10,scale=1100:-1:flags=lanczos[x];[x][1:v]paletteuse=dither=bayer:bayer_scale=5',
+    "-lavfi",
+    "fps=10,scale=1100:-1:flags=lanczos[x];[x][1:v]paletteuse=dither=bayer:bayer_scale=5",
     DEMO_GIF_PATH,
   ]);
 }
@@ -310,7 +335,7 @@ async function main() {
     await mkdir(tempVideoDir, { recursive: true });
     await mkdir(docsAssetsDir, { recursive: true });
 
-    await runCommand('npm', ['run', 'build']);
+    await runCommand("npm", ["run", "build"]);
     await prepareVault();
 
     serverProcess = startServer();

@@ -1,21 +1,27 @@
 import {
   createEmptyWorkspaceChange as createSharedEmptyWorkspaceChange,
   createWorkspaceChange as createSharedWorkspaceChange,
-} from '../../../domain/workspace-change.js';
+} from "../../../domain/workspace-change.js";
 
 const STATUS_MAP = {
-  A: { code: 'A', label: 'added', status: 'added' },
-  C: { code: 'C', label: 'copied', status: 'copied' },
-  D: { code: 'D', label: 'deleted', status: 'deleted' },
-  M: { code: 'M', label: 'modified', status: 'modified' },
-  R: { code: 'R', label: 'renamed', status: 'renamed' },
-  T: { code: 'T', label: 'type change', status: 'type-changed' },
-  U: { code: 'U', label: 'conflicted', status: 'conflicted' },
-  '?': { code: 'U', label: 'untracked', status: 'untracked' },
+  A: { code: "A", label: "added", status: "added" },
+  C: { code: "C", label: "copied", status: "copied" },
+  D: { code: "D", label: "deleted", status: "deleted" },
+  M: { code: "M", label: "modified", status: "modified" },
+  R: { code: "R", label: "renamed", status: "renamed" },
+  T: { code: "T", label: "type change", status: "type-changed" },
+  U: { code: "U", label: "conflicted", status: "conflicted" },
+  "?": { code: "U", label: "untracked", status: "untracked" },
 };
 
 export function createStatusInfo(symbol) {
-  return STATUS_MAP[symbol] ?? { code: symbol || 'M', label: 'modified', status: 'modified' };
+  return (
+    STATUS_MAP[symbol] ?? {
+      code: symbol || "M",
+      label: "modified",
+      status: "modified",
+    }
+  );
 }
 
 export function createEmptyStats() {
@@ -56,9 +62,9 @@ export function createEmptyStatusResponse() {
     branch: createEmptyBranchStatus(),
     isGitRepo: false,
     sections: [
-      { files: [], key: 'staged', label: 'Staged Changes' },
-      { files: [], key: 'working-tree', label: 'Changes' },
-      { files: [], key: 'untracked', label: 'Untracked' },
+      { files: [], key: "staged", label: "Staged Changes" },
+      { files: [], key: "working-tree", label: "Changes" },
+      { files: [], key: "untracked", label: "Untracked" },
     ],
     summary: createEmptySummary(),
   };
@@ -69,7 +75,7 @@ export function createDiffResponse({
   isGitRepo = true,
   metaOnly = false,
   path = null,
-  scope = 'working-tree',
+  scope = "working-tree",
   summary = {
     additions: 0,
     deletions: 0,

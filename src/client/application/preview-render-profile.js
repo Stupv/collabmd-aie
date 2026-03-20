@@ -7,15 +7,24 @@ function countMatches(source, pattern) {
   return source.match(pattern)?.length ?? 0;
 }
 
-export function analyzeMarkdownComplexity(markdownText = '') {
+export function analyzeMarkdownComplexity(markdownText = "") {
   const source = String(markdownText);
-  const mermaidEmbeds = countMatches(source, /!\[\[[^\]]+\.(?:mmd|mermaid)(?:\|[^\]]+)?\]\]/gi);
+  const mermaidEmbeds = countMatches(
+    source,
+    /!\[\[[^\]]+\.(?:mmd|mermaid)(?:\|[^\]]+)?\]\]/gi,
+  );
   const plantUmlFences = countMatches(source, /(^|\n)```(?:plantuml|puml)\b/gi);
-  const plantUmlEmbeds = countMatches(source, /!\[\[[^\]]+\.(?:puml|plantuml)(?:\|[^\]]+)?\]\]/gi);
+  const plantUmlEmbeds = countMatches(
+    source,
+    /!\[\[[^\]]+\.(?:puml|plantuml)(?:\|[^\]]+)?\]\]/gi,
+  );
 
   return {
     chars: source.length,
-    excalidrawEmbeds: countMatches(source, /!\[\[[^\]]+\.excalidraw(?:\|[^\]]+)?\]\]/gi),
+    excalidrawEmbeds: countMatches(
+      source,
+      /!\[\[[^\]]+\.excalidraw(?:\|[^\]]+)?\]\]/gi,
+    ),
     mermaidBlocks: countMatches(source, /(^|\n)```mermaid\b/gi) + mermaidEmbeds,
     plantumlBlocks: plantUmlFences + plantUmlEmbeds,
   };
@@ -23,23 +32,25 @@ export function analyzeMarkdownComplexity(markdownText = '') {
 
 export function isLargeDocumentStats(stats) {
   return Boolean(
-    stats
-    && (
-      stats.chars >= LARGE_DOCUMENT_CHAR_THRESHOLD
-      || stats.mermaidBlocks >= LARGE_DOCUMENT_MERMAID_THRESHOLD
-      || stats.excalidrawEmbeds >= LARGE_DOCUMENT_EXCALIDRAW_THRESHOLD
-      || stats.plantumlBlocks >= LARGE_DOCUMENT_PLANTUML_THRESHOLD
-    )
+    stats &&
+    (stats.chars >= LARGE_DOCUMENT_CHAR_THRESHOLD ||
+      stats.mermaidBlocks >= LARGE_DOCUMENT_MERMAID_THRESHOLD ||
+      stats.excalidrawEmbeds >= LARGE_DOCUMENT_EXCALIDRAW_THRESHOLD ||
+      stats.plantumlBlocks >= LARGE_DOCUMENT_PLANTUML_THRESHOLD),
   );
 }
 
-export function getRenderProfile(markdownText = '') {
+export function getRenderProfile(markdownText = "") {
   const source = String(markdownText);
-  const hasMermaid = /(^|\n)```mermaid\b/i.test(source)
-    || /!\[\[[^\]]+\.(?:mmd|mermaid)(?:\|[^\]]+)?\]\]/i.test(source);
-  const hasExcalidrawEmbed = /!\[\[[^\]]+\.excalidraw(?:\|[^\]]+)?\]\]/i.test(source);
-  const hasPlantUml = /(^|\n)```(?:plantuml|puml)\b/i.test(source)
-    || /!\[\[[^\]]+\.(?:puml|plantuml)(?:\|[^\]]+)?\]\]/i.test(source);
+  const hasMermaid =
+    /(^|\n)```mermaid\b/i.test(source) ||
+    /!\[\[[^\]]+\.(?:mmd|mermaid)(?:\|[^\]]+)?\]\]/i.test(source);
+  const hasExcalidrawEmbed = /!\[\[[^\]]+\.excalidraw(?:\|[^\]]+)?\]\]/i.test(
+    source,
+  );
+  const hasPlantUml =
+    /(^|\n)```(?:plantuml|puml)\b/i.test(source) ||
+    /!\[\[[^\]]+\.(?:puml|plantuml)(?:\|[^\]]+)?\]\]/i.test(source);
   const isLargeByLength = source.length >= LARGE_DOCUMENT_CHAR_THRESHOLD;
 
   if (isLargeByLength) {

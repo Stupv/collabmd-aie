@@ -1,1 +1,1 @@
-export { GitService } from '../infrastructure/git/git-service.js';
+export { GitService } from "../infrastructure/git/git-service.js";

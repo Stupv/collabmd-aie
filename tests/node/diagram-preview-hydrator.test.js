@@ -1,11 +1,11 @@
-import test from 'node:test';
-import assert from 'node:assert/strict';
+import test from "node:test";
+import assert from "node:assert/strict";
 
-import { DiagramPreviewHydrator } from '../../src/client/application/diagram-preview-hydrator.js';
+import { DiagramPreviewHydrator } from "../../src/client/application/diagram-preview-hydrator.js";
 
 function attributeNameToDatasetKey(attributeName) {
   return attributeName
-    .replace(/^data-/, '')
+    .replace(/^data-/, "")
     .replace(/-([a-z])/g, (_, letter) => letter.toUpperCase());
 }
 
@@ -28,7 +28,7 @@ class FakeClassList {
 }
 
 class FakeSourceNode {
-  constructor(textContent = '') {
+  constructor(textContent = "") {
     this.textContent = textContent;
     this.hidden = true;
   }
@@ -41,20 +41,19 @@ class FakeSourceNode {
 }
 
 class FakeShell {
-  constructor({
-    dataset = {},
-    source = '',
-    maximized = false,
-  } = {}) {
+  constructor({ dataset = {}, source = "", maximized = false } = {}) {
     this.dataset = { ...dataset };
-    this.classList = new FakeClassList(['diagram-shell', ...(maximized ? ['is-maximized'] : [])]);
+    this.classList = new FakeClassList([
+      "diagram-shell",
+      ...(maximized ? ["is-maximized"] : []),
+    ]);
     this.isConnected = true;
     this.replacedWith = null;
     this.sourceNode = new FakeSourceNode(source);
   }
 
   querySelector(selector) {
-    if (selector === '.diagram-source') {
+    if (selector === ".diagram-source") {
       return this.sourceNode;
     }
 
@@ -99,15 +98,21 @@ class FakePreviewElement {
 
   querySelectorAll(selector) {
     return this.shells.filter((shell) => {
-      if (!shell.classList.contains('diagram-shell')) {
+      if (!shell.classList.contains("diagram-shell")) {
         return false;
       }
 
-      if (selector.includes('[data-diagram-hydrated="true"]') && shell.dataset.diagramHydrated !== 'true') {
+      if (
+        selector.includes('[data-diagram-hydrated="true"]') &&
+        shell.dataset.diagramHydrated !== "true"
+      ) {
         return false;
       }
 
-      if (selector.includes('[data-diagram-key]') && !shell.dataset.diagramKey) {
+      if (
+        selector.includes("[data-diagram-key]") &&
+        !shell.dataset.diagramKey
+      ) {
         return false;
       }
 
@@ -122,24 +127,24 @@ class TestDiagramPreviewHydrator extends DiagramPreviewHydrator {
       batchSize: options.batchSize ?? 2,
       cancelIdleRenderFn: options.cancelIdleRenderFn ?? (() => {}),
       datasetKeys: {
-        hydrated: 'diagramHydrated',
-        instanceId: 'diagramInstanceId',
-        key: 'diagramKey',
-        label: 'diagramLabel',
-        queued: 'diagramQueued',
-        sourceHash: 'diagramSourceHash',
-        sourceLine: 'sourceLine',
-        sourceLineEnd: 'sourceLineEnd',
-        target: 'diagramTarget',
+        hydrated: "diagramHydrated",
+        instanceId: "diagramInstanceId",
+        key: "diagramKey",
+        label: "diagramLabel",
+        queued: "diagramQueued",
+        sourceHash: "diagramSourceHash",
+        sourceLine: "sourceLine",
+        sourceLineEnd: "sourceLineEnd",
+        target: "diagramTarget",
       },
       fetchFn: options.fetchFn,
-      filePathLabel: 'Diagram',
+      filePathLabel: "Diagram",
       intersectionObserverFactory: options.intersectionObserverFactory,
       isNearViewportFn: options.isNearViewportFn,
       requestAnimationFrameFn: options.requestAnimationFrameFn,
       requestIdleRenderFn: options.requestIdleRenderFn ?? (() => 1),
-      shellClassName: 'diagram-shell',
-      sourceClassName: 'diagram-source',
+      shellClassName: "diagram-shell",
+      sourceClassName: "diagram-source",
     });
     this.batchContext = options.batchContext ?? null;
     this.hydratedShells = [];
@@ -185,14 +190,14 @@ function createRenderer(previewElement) {
 
 function createWindowStub() {
   return {
-    __COLLABMD_CONFIG__: { basePath: '/app' },
+    __COLLABMD_CONFIG__: { basePath: "/app" },
     location: {
-      origin: 'http://localhost:3000',
+      origin: "http://localhost:3000",
     },
   };
 }
 
-test('DiagramPreviewHydrator deduplicates in-flight source fetches by target path', async (t) => {
+test("DiagramPreviewHydrator deduplicates in-flight source fetches by target path", async (t) => {
   const originalWindow = globalThis.window;
   globalThis.window = createWindowStub();
   t.after(() => {
@@ -200,62 +205,72 @@ test('DiagramPreviewHydrator deduplicates in-flight source fetches by target pat
   });
 
   const requests = [];
-  const hydrator = new TestDiagramPreviewHydrator(createRenderer(new FakePreviewElement()), {
-    fetchFn: async (url) => {
-      requests.push(url);
-      return new Response(JSON.stringify({ content: 'sequenceDiagram\nA->>B: hi' }), {
-        headers: { 'Content-Type': 'application/json' },
-        status: 200,
-      });
+  const hydrator = new TestDiagramPreviewHydrator(
+    createRenderer(new FakePreviewElement()),
+    {
+      fetchFn: async (url) => {
+        requests.push(url);
+        return new Response(
+          JSON.stringify({ content: "sequenceDiagram\nA->>B: hi" }),
+          {
+            headers: { "Content-Type": "application/json" },
+            status: 200,
+          },
+        );
+      },
     },
-  });
+  );
 
   const [first, second] = await Promise.all([
-    hydrator.fetchSource('docs/flow.mmd'),
-    hydrator.fetchSource('docs/flow.mmd'),
+    hydrator.fetchSource("docs/flow.mmd"),
+    hydrator.fetchSource("docs/flow.mmd"),
   ]);
 
-  assert.equal(first, 'sequenceDiagram\nA->>B: hi');
+  assert.equal(first, "sequenceDiagram\nA->>B: hi");
   assert.equal(second, first);
-  assert.deepEqual(requests, ['/app/api/file?path=docs%2Fflow.mmd']);
+  assert.deepEqual(requests, ["/app/api/file?path=docs%2Fflow.mmd"]);
 });
 
-test('DiagramPreviewHydrator preserves matching hydrated shells across render commits', () => {
+test("DiagramPreviewHydrator preserves matching hydrated shells across render commits", () => {
   const preservedShell = new FakeShell({
     dataset: {
-      diagramHydrated: 'true',
-      diagramKey: 'diagram-1',
-      diagramTarget: 'docs/flow.mmd',
+      diagramHydrated: "true",
+      diagramKey: "diagram-1",
+      diagramTarget: "docs/flow.mmd",
     },
     maximized: true,
-    source: 'graph TD;',
+    source: "graph TD;",
   });
   const previewElement = new FakePreviewElement([preservedShell]);
-  const hydrator = new TestDiagramPreviewHydrator(createRenderer(previewElement));
+  const hydrator = new TestDiagramPreviewHydrator(
+    createRenderer(previewElement),
+  );
 
   hydrator.preserveHydratedShellsForCommit();
 
   const nextShell = new FakeShell({
     dataset: {
-      diagramKey: 'diagram-1',
-      diagramTarget: 'docs/flow.mmd',
+      diagramKey: "diagram-1",
+      diagramTarget: "docs/flow.mmd",
     },
-    source: 'graph TD;',
+    source: "graph TD;",
   });
   previewElement.setShells([nextShell]);
 
   hydrator.reconcileHydratedShells();
 
   assert.equal(nextShell.replacedWith, preservedShell);
-  assert.deepEqual(hydrator.reconcileEvents, [{ restoredMaximizedShell: true }]);
+  assert.deepEqual(hydrator.reconcileEvents, [
+    { restoredMaximizedShell: true },
+  ]);
 });
 
-test('DiagramPreviewHydrator batches queued shells and preserves priority order', async () => {
+test("DiagramPreviewHydrator batches queued shells and preserves priority order", async () => {
   const previewElement = new FakePreviewElement();
   const idleCallbacks = [];
   const renderer = createRenderer(previewElement);
   const hydrator = new TestDiagramPreviewHydrator(renderer, {
-    batchContext: 'shared-runtime',
+    batchContext: "shared-runtime",
     batchSize: 2,
     requestIdleRenderFn: (callback) => {
       idleCallbacks.push(callback);
@@ -263,9 +278,9 @@ test('DiagramPreviewHydrator batches queued shells and preserves priority order'
     },
   });
 
-  const shellA = new FakeShell({ dataset: { diagramKey: 'A' } });
-  const shellB = new FakeShell({ dataset: { diagramKey: 'B' } });
-  const shellC = new FakeShell({ dataset: { diagramKey: 'C' } });
+  const shellA = new FakeShell({ dataset: { diagramKey: "A" } });
+  const shellB = new FakeShell({ dataset: { diagramKey: "B" } });
+  const shellC = new FakeShell({ dataset: { diagramKey: "C" } });
 
   hydrator.enqueueShell(shellA);
   hydrator.enqueueShell(shellB);
@@ -277,11 +292,11 @@ test('DiagramPreviewHydrator batches queued shells and preserves priority order'
   await hydrator.flushHydrationQueue();
 
   assert.deepEqual(hydrator.hydratedShells, [
-    { batchContext: 'shared-runtime', key: 'C' },
-    { batchContext: 'shared-runtime', key: 'A' },
+    { batchContext: "shared-runtime", key: "C" },
+    { batchContext: "shared-runtime", key: "A" },
   ]);
   assert.equal(hydrator.pendingShells.length, 1);
   assert.equal(hydrator.pendingShells[0], shellB);
   assert.equal(idleCallbacks.length, 2);
-  assert.deepEqual(renderer.phaseChanges, ['hydrating']);
+  assert.deepEqual(renderer.phaseChanges, ["hydrating"]);
 });

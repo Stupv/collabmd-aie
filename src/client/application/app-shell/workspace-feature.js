@@ -4,7 +4,7 @@ import {
   isMermaidFilePath,
   isPlantUmlFilePath,
   stripVaultFileExtension,
-} from '../../../domain/file-kind.js';
+} from "../../../domain/file-kind.js";
 
 export const workspaceFeature = {
   isExcalidrawFile(filePath) {
@@ -23,18 +23,25 @@ export const workspaceFeature = {
     return isPlantUmlFilePath(filePath);
   },
 
-  createDiagramPreviewDocument(language, source = '') {
-    return this.workspacePreviewController.createDiagramPreviewDocument(language, source);
+  createDiagramPreviewDocument(language, source = "") {
+    return this.workspacePreviewController.createDiagramPreviewDocument(
+      language,
+      source,
+    );
   },
 
   getPreviewSource() {
-    return this.workspacePreviewController.getPreviewSource(this.currentFilePath);
+    return this.workspacePreviewController.getPreviewSource(
+      this.currentFilePath,
+    );
   },
 
   getDisplayName(filePath) {
-    return stripVaultFileExtension(String(filePath ?? '')
-      .split('/')
-      .pop());
+    return stripVaultFileExtension(
+      String(filePath ?? "")
+        .split("/")
+        .pop(),
+    );
   },
 
   resetPreviewMode() {
@@ -54,14 +61,17 @@ export const workspaceFeature = {
   },
 
   createResizeHandler() {
-    return this.workspacePreviewController.createResizeHandler(() => this.restoreSidebarState());
+    return this.workspacePreviewController.createResizeHandler(() =>
+      this.restoreSidebarState(),
+    );
   },
 
   initializePreviewLayoutObserver() {
     this._previewLayoutResizeObserver?.disconnect();
-    this._previewLayoutResizeObserver = this.workspacePreviewController.initializePreviewLayoutObserver(
-      () => this.schedulePreviewLayoutSync(),
-    );
+    this._previewLayoutResizeObserver =
+      this.workspacePreviewController.initializePreviewLayoutObserver(() =>
+        this.schedulePreviewLayoutSync(),
+      );
   },
 
   schedulePreviewLayoutSync({ delayMs = 120 } = {}) {
@@ -136,6 +146,8 @@ export const workspaceFeature = {
   },
 
   handleFileSelection(filePath, { closeSidebarOnMobile = false } = {}) {
-    this.workspaceRouteController.handleFileSelection(filePath, { closeSidebarOnMobile });
+    this.workspaceRouteController.handleFileSelection(filePath, {
+      closeSidebarOnMobile,
+    });
   },
 };

@@ -1,17 +1,20 @@
-import test from 'node:test';
-import assert from 'node:assert/strict';
-import { readFile, stat } from 'node:fs/promises';
-import { join } from 'node:path';
+import test from "node:test";
+import assert from "node:assert/strict";
+import { readFile, stat } from "node:fs/promises";
+import { join } from "node:path";
 
-import WebSocket from 'ws';
-import * as Y from 'yjs';
-import * as awarenessProtocol from 'y-protocols/awareness';
-import * as decoding from 'lib0/decoding';
-import { WebsocketProvider } from 'y-websocket';
+import WebSocket from "ws";
+import * as Y from "yjs";
+import * as awarenessProtocol from "y-protocols/awareness";
+import * as decoding from "lib0/decoding";
+import { WebsocketProvider } from "y-websocket";
 
-import { replaceExcalidrawRoomScene } from '../../src/domain/excalidraw-room-codec.js';
-import { MSG_AWARENESS, MSG_SYNC } from '../../src/server/domain/collaboration/protocol.js';
-import { startTestServer, waitForCondition } from './helpers/test-server.js';
+import { replaceExcalidrawRoomScene } from "../../src/domain/excalidraw-room-codec.js";
+import {
+  MSG_AWARENESS,
+  MSG_SYNC,
+} from "../../src/server/domain/collaboration/protocol.js";
+import { startTestServer, waitForCondition } from "./helpers/test-server.js";
 import {
   applySyncMessageToDoc,
   collectMessages,
@@ -25,14 +28,14 @@ import {
   waitForOpen,
   waitForProviderSync,
   waitForUnexpectedResponse,
-} from './helpers/collaboration-protocol.js';
+} from "./helpers/collaboration-protocol.js";
 
 async function fileExists(filePath) {
   try {
     await stat(filePath);
     return true;
   } catch (error) {
-    if (error.code === 'ENOENT') {
+    if (error.code === "ENOENT") {
       return false;
     }
     throw error;
@@ -41,28 +44,30 @@ async function fileExists(filePath) {
 
 async function loginForCookie(app, password) {
   const response = await fetch(`${app.baseUrl}/api/auth/session`, {
-    method: 'POST',
+    method: "POST",
     headers: {
-      'Content-Type': 'application/json',
+      "Content-Type": "application/json",
     },
     body: JSON.stringify({ password }),
   });
 
   assert.equal(response.status, 200);
-  const cookieHeader = response.headers.get('set-cookie') || '';
-  return cookieHeader.split(';')[0];
+  const cookieHeader = response.headers.get("set-cookie") || "";
+  return cookieHeader.split(";")[0];
 }
 
 async function waitForRoomRelease(app, filePath) {
-  await waitForCondition(() => app.server.roomRegistry.get(filePath) === undefined);
+  await waitForCondition(
+    () => app.server.roomRegistry.get(filePath) === undefined,
+  );
 }
 
-test('WebSocket collaboration broadcasts awareness and persists vault file', async (t) => {
+test("WebSocket collaboration broadcasts awareness and persists vault file", async (t) => {
   const app = await startTestServer();
   t.after(() => app.close());
 
   // Connect two clients to the seeded test.md file
-  const filePath = 'test.md';
+  const filePath = "test.md";
   const ws1 = new WebSocket(app.wsUrl(filePath));
   const ws2 = new WebSocket(app.wsUrl(filePath));
   t.after(async () => {
@@ -84,17 +89,22 @@ test('WebSocket collaboration broadcasts awareness and persists vault file', asy
     awareness.destroy();
     awarenessDoc.destroy();
   });
-  awareness.setLocalStateField('user', {
-    color: '#0ea5e9',
-    colorLight: '#0ea5e933',
-    name: 'Integration User',
+  awareness.setLocalStateField("user", {
+    color: "#0ea5e9",
+    colorLight: "#0ea5e933",
+    name: "Integration User",
   });
-  ws1.send(encodeAwarenessMessage(
-    awarenessProtocol.encodeAwarenessUpdate(awareness, [awareness.clientID]),
-  ));
+  ws1.send(
+    encodeAwarenessMessage(
+      awarenessProtocol.encodeAwarenessUpdate(awareness, [awareness.clientID]),
+    ),
+  );
 
   // Client 2 should receive the awareness broadcast
-  const awarenessMessage = await waitForMessage(ws2, (data) => getMessageType(data) === MSG_AWARENESS);
+  const awarenessMessage = await waitForMessage(
+    ws2,
+    (data) => getMessageType(data) === MSG_AWARENESS,
+  );
   const awarenessDecoder = decoding.createDecoder(awarenessMessage);
   decoding.readVarUint(awarenessDecoder);
   const remoteAwarenessDoc = new Y.Doc();
@@ -106,13 +116,16 @@ test('WebSocket collaboration broadcasts awareness and persists vault file', asy
   awarenessProtocol.applyAwarenessUpdate(
     remoteAwareness,
     decoding.readVarUint8Array(awarenessDecoder),
-    'test',
+    "test",
   );
-  assert.equal(remoteAwareness.getStates().get(awareness.clientID)?.user?.name, 'Integration User');
+  assert.equal(
+    remoteAwareness.getStates().get(awareness.clientID)?.user?.name,
+    "Integration User",
+  );
 
   // Client 1 sends a document update
   const clientDoc = new Y.Doc();
-  clientDoc.getText('codemirror').insert(0, '# Persisted from test');
+  clientDoc.getText("codemirror").insert(0, "# Persisted from test");
   ws1.send(encodeSyncUpdateMessage(Y.encodeStateAsUpdate(clientDoc)));
 
   // Client 2 should receive the sync update
@@ -128,29 +141,30 @@ test('WebSocket collaboration broadcasts awareness and persists vault file', asy
 
   // The vault file store persists plain text to disk — verify it
   const diskContent = await waitForCondition(async () => {
-    const content = await readFile(join(app.vaultDir, filePath), 'utf-8');
-    return content.includes('Persisted from test') ? content : null;
+    const content = await readFile(join(app.vaultDir, filePath), "utf-8");
+    return content.includes("Persisted from test") ? content : null;
   });
 
-  assert.ok(diskContent.includes('# Persisted from test'));
+  assert.ok(diskContent.includes("# Persisted from test"));
 });
 
-test('WebSocket collaboration rejects unauthorized clients when password auth is enabled', async (t) => {
+test("WebSocket collaboration rejects unauthorized clients when password auth is enabled", async (t) => {
   const app = await startTestServer({
     auth: {
-      password: 'ws-secret-password',
-      strategy: 'password',
+      password: "ws-secret-password",
+      strategy: "password",
     },
   });
   t.after(() => app.close());
 
-  const unauthorizedSocket = new WebSocket(app.wsUrl('test.md'));
-  const unauthorizedResponse = await waitForUnexpectedResponse(unauthorizedSocket);
+  const unauthorizedSocket = new WebSocket(app.wsUrl("test.md"));
+  const unauthorizedResponse =
+    await waitForUnexpectedResponse(unauthorizedSocket);
   assert.equal(unauthorizedResponse.statusCode, 401);
   unauthorizedSocket.terminate();
 
-  const cookieHeader = await loginForCookie(app, 'ws-secret-password');
-  const authorizedSocket = new WebSocket(app.wsUrl('test.md'), {
+  const cookieHeader = await loginForCookie(app, "ws-secret-password");
+  const authorizedSocket = new WebSocket(app.wsUrl("test.md"), {
     headers: {
       Cookie: cookieHeader,
     },
@@ -165,13 +179,13 @@ test('WebSocket collaboration rejects unauthorized clients when password auth is
   assert.equal(getMessageType(firstMessage), MSG_SYNC);
 });
 
-test('WebSocket server rejects oversized payloads', async (t) => {
+test("WebSocket server rejects oversized payloads", async (t) => {
   const app = await startTestServer({
     wsMaxPayloadBytes: 128,
   });
   t.after(() => app.close());
 
-  const ws = new WebSocket(app.wsUrl('test.md'));
+  const ws = new WebSocket(app.wsUrl("test.md"));
   t.after(async () => {
     ws.close();
     await Promise.allSettled([waitForClose(ws)]);
@@ -186,14 +200,14 @@ test('WebSocket server rejects oversized payloads', async (t) => {
   assert.equal(closeEvent.code, 1009);
 });
 
-test('WebSocket collaboration preserves Yjs history across short reconnect gaps', async (t) => {
+test("WebSocket collaboration preserves Yjs history across short reconnect gaps", async (t) => {
   const app = await startTestServer({
     wsRoomIdleGraceMs: 1_000,
   });
   t.after(() => app.close());
 
   const serverUrl = `ws://127.0.0.1:${app.port}${app.server.config.wsBasePath}`;
-  const filePath = 'test.md';
+  const filePath = "test.md";
   const sharedDoc = new Y.Doc();
 
   const providerA = new WebsocketProvider(serverUrl, filePath, sharedDoc, {
@@ -203,10 +217,15 @@ test('WebSocket collaboration preserves Yjs history across short reconnect gaps'
   t.after(() => providerA.destroy());
 
   await waitForProviderSync(providerA);
-  assert.equal(sharedDoc.getText('codemirror').toString(), '# Test\n\nHello from test vault.\n');
+  assert.equal(
+    sharedDoc.getText("codemirror").toString(),
+    "# Test\n\nHello from test vault.\n",
+  );
 
   providerA.destroy();
-  await waitForCondition(() => app.server.roomRegistry.get(filePath), { timeoutMs: 2_000 });
+  await waitForCondition(() => app.server.roomRegistry.get(filePath), {
+    timeoutMs: 2_000,
+  });
   const warmRoom = app.server.roomRegistry.get(filePath);
   assert.equal(warmRoom?.debugMetrics?.hydrateCount, 1);
 
@@ -218,27 +237,36 @@ test('WebSocket collaboration preserves Yjs history across short reconnect gaps'
 
   await waitForProviderSync(providerB);
   sharedDoc.transact(() => {
-    const ytext = sharedDoc.getText('codemirror');
-    ytext.insert(ytext.length, '\nReconnect-safe edit.\n');
-  }, 'test-reconnect-edit');
+    const ytext = sharedDoc.getText("codemirror");
+    ytext.insert(ytext.length, "\nReconnect-safe edit.\n");
+  }, "test-reconnect-edit");
 
-  const diskContent = await waitForCondition(async () => {
-    const content = await readFile(join(app.vaultDir, filePath), 'utf-8');
-    return content.includes('Reconnect-safe edit.') ? content : null;
-  }, { timeoutMs: 5_000 });
+  const diskContent = await waitForCondition(
+    async () => {
+      const content = await readFile(join(app.vaultDir, filePath), "utf-8");
+      return content.includes("Reconnect-safe edit.") ? content : null;
+    },
+    { timeoutMs: 5_000 },
+  );
 
   providerB.destroy();
   sharedDoc.destroy();
 
-  assert.equal(app.server.roomRegistry.get(filePath)?.debugMetrics?.hydrateCount, 1);
-  assert.equal(diskContent, '# Test\n\nHello from test vault.\n\nReconnect-safe edit.\n');
+  assert.equal(
+    app.server.roomRegistry.get(filePath)?.debugMetrics?.hydrateCount,
+    1,
+  );
+  assert.equal(
+    diskContent,
+    "# Test\n\nHello from test vault.\n\nReconnect-safe edit.\n",
+  );
 });
 
-test('WebSocket collaboration does not duplicate initial sync when client immediately sends SyncStep1', async (t) => {
+test("WebSocket collaboration does not duplicate initial sync when client immediately sends SyncStep1", async (t) => {
   const app = await startTestServer();
   t.after(() => app.close());
 
-  const ws = new WebSocket(app.wsUrl('test.md'));
+  const ws = new WebSocket(app.wsUrl("test.md"));
   t.after(async () => {
     ws.close();
     await Promise.allSettled([waitForClose(ws)]);
@@ -247,19 +275,23 @@ test('WebSocket collaboration does not duplicate initial sync when client immedi
   await waitForOpen(ws);
   ws.send(encodeSyncStep1Message(new Y.Doc()));
 
-  const syncMessages = await collectMessages(ws, (data) => getMessageType(data) === MSG_SYNC, {
-    idleMs: 100,
-    timeoutMs: 2000,
-  });
+  const syncMessages = await collectMessages(
+    ws,
+    (data) => getMessageType(data) === MSG_SYNC,
+    {
+      idleMs: 100,
+      timeoutMs: 2000,
+    },
+  );
 
   assert.equal(syncMessages.length, 1);
 });
 
-test('Renaming an active room keeps persistence on the new path', async (t) => {
+test("Renaming an active room keeps persistence on the new path", async (t) => {
   const app = await startTestServer();
   t.after(() => app.close());
 
-  const ws = new WebSocket(app.wsUrl('test.md'));
+  const ws = new WebSocket(app.wsUrl("test.md"));
   t.after(async () => {
     ws.close();
     await Promise.allSettled([waitForClose(ws)]);
@@ -269,9 +301,9 @@ test('Renaming an active room keeps persistence on the new path', async (t) => {
   await waitForMessage(ws, (data) => getMessageType(data) === MSG_SYNC);
 
   const renameResponse = await fetch(`${app.baseUrl}/api/file`, {
-    method: 'PATCH',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ oldPath: 'test.md', newPath: 'renamed.md' }),
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ oldPath: "test.md", newPath: "renamed.md" }),
   });
   const renameData = await renameResponse.json();
   assert.equal(renameResponse.status, 200);
@@ -279,22 +311,22 @@ test('Renaming an active room keeps persistence on the new path', async (t) => {
 
   ws.close();
   await waitForClose(ws);
-  await waitForRoomRelease(app, 'renamed.md');
+  await waitForRoomRelease(app, "renamed.md");
 
   await waitForCondition(async () => {
-    const exists = await fileExists(join(app.vaultDir, 'renamed.md'));
+    const exists = await fileExists(join(app.vaultDir, "renamed.md"));
     return exists ? true : null;
   });
 
-  assert.equal(await fileExists(join(app.vaultDir, 'test.md')), false);
-  assert.equal(await fileExists(join(app.vaultDir, 'renamed.md')), true);
+  assert.equal(await fileExists(join(app.vaultDir, "test.md")), false);
+  assert.equal(await fileExists(join(app.vaultDir, "renamed.md")), true);
 });
 
-test('Deleting an active room does not recreate file on disconnect', async (t) => {
+test("Deleting an active room does not recreate file on disconnect", async (t) => {
   const app = await startTestServer();
   t.after(() => app.close());
 
-  const ws = new WebSocket(app.wsUrl('test.md'));
+  const ws = new WebSocket(app.wsUrl("test.md"));
   t.after(async () => {
     ws.close();
     await Promise.allSettled([waitForClose(ws)]);
@@ -303,49 +335,61 @@ test('Deleting an active room does not recreate file on disconnect', async (t) =
   await waitForOpen(ws);
   await waitForMessage(ws, (data) => getMessageType(data) === MSG_SYNC);
 
-  const deleteResponse = await fetch(`${app.baseUrl}/api/file?path=${encodeURIComponent('test.md')}`, {
-    method: 'DELETE',
-  });
+  const deleteResponse = await fetch(
+    `${app.baseUrl}/api/file?path=${encodeURIComponent("test.md")}`,
+    {
+      method: "DELETE",
+    },
+  );
   const deleteData = await deleteResponse.json();
   assert.equal(deleteResponse.status, 200);
   assert.equal(deleteData.ok, true);
 
   ws.close();
   await waitForClose(ws);
-  await waitForRoomRelease(app, 'test.md');
+  await waitForRoomRelease(app, "test.md");
 
   await new Promise((resolve) => setTimeout(resolve, 700));
-  assert.equal(await fileExists(join(app.vaultDir, 'test.md')), false);
+  assert.equal(await fileExists(join(app.vaultDir, "test.md")), false);
 });
 
-test('Recreating a deleted file does not reuse the stale deleted room state', async (t) => {
+test("Recreating a deleted file does not reuse the stale deleted room state", async (t) => {
   const app = await startTestServer();
   t.after(() => app.close());
 
-  const filePath = 'test.md';
+  const filePath = "test.md";
   const ws1 = new WebSocket(app.wsUrl(filePath));
   let ws2 = null;
   t.after(async () => {
     ws1.close();
     ws2?.close();
-    await Promise.allSettled([waitForClose(ws1), ws2 ? waitForClose(ws2) : Promise.resolve()]);
+    await Promise.allSettled([
+      waitForClose(ws1),
+      ws2 ? waitForClose(ws2) : Promise.resolve(),
+    ]);
   });
 
   await waitForOpen(ws1);
   const originalDoc = new Y.Doc();
   await syncClientDocWithRoom(ws1, originalDoc);
-  assert.match(originalDoc.getText('codemirror').toString(), /Hello from test vault/);
+  assert.match(
+    originalDoc.getText("codemirror").toString(),
+    /Hello from test vault/,
+  );
 
-  const deleteResponse = await fetch(`${app.baseUrl}/api/file?path=${encodeURIComponent(filePath)}`, {
-    method: 'DELETE',
-  });
+  const deleteResponse = await fetch(
+    `${app.baseUrl}/api/file?path=${encodeURIComponent(filePath)}`,
+    {
+      method: "DELETE",
+    },
+  );
   assert.equal(deleteResponse.status, 200);
 
   const recreateResponse = await fetch(`${app.baseUrl}/api/file`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      content: '# Recreated\n\nFresh file.\n',
+      content: "# Recreated\n\nFresh file.\n",
       path: filePath,
     }),
   });
@@ -356,24 +400,27 @@ test('Recreating a deleted file does not reuse the stale deleted room state', as
   const recreatedDoc = new Y.Doc();
   await syncClientDocWithRoom(ws2, recreatedDoc);
 
-  assert.equal(recreatedDoc.getText('codemirror').toString(), '# Recreated\n\nFresh file.\n');
+  assert.equal(
+    recreatedDoc.getText("codemirror").toString(),
+    "# Recreated\n\nFresh file.\n",
+  );
 });
 
-test('WebSocket collaboration persists excalidraw room content to .excalidraw files', async (t) => {
+test("WebSocket collaboration persists excalidraw room content to .excalidraw files", async (t) => {
   const app = await startTestServer();
   t.after(() => app.close());
 
-  const scenePath = 'diagram.excalidraw';
+  const scenePath = "diagram.excalidraw";
   const createResponse = await fetch(`${app.baseUrl}/api/file`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       content: JSON.stringify({
-        appState: { gridSize: null, viewBackgroundColor: '#ffffff' },
+        appState: { gridSize: null, viewBackgroundColor: "#ffffff" },
         elements: [],
         files: {},
-        source: 'collabmd',
-        type: 'excalidraw',
+        source: "collabmd",
+        type: "excalidraw",
         version: 2,
       }),
       path: scenePath,
@@ -388,14 +435,17 @@ test('WebSocket collaboration persists excalidraw room content to .excalidraw fi
   });
 
   await waitForOpen(ws);
-  const initialSync = await waitForMessage(ws, (data) => getMessageType(data) === MSG_SYNC);
+  const initialSync = await waitForMessage(
+    ws,
+    (data) => getMessageType(data) === MSG_SYNC,
+  );
 
   const syncedSceneJson = JSON.stringify({
-    appState: { gridSize: null, viewBackgroundColor: '#ffffff' },
-    elements: [{ id: 'shape-1', type: 'rectangle' }],
+    appState: { gridSize: null, viewBackgroundColor: "#ffffff" },
+    elements: [{ id: "shape-1", type: "rectangle" }],
     files: {},
-    source: 'collabmd',
-    type: 'excalidraw',
+    source: "collabmd",
+    type: "excalidraw",
     version: 2,
   });
 
@@ -407,7 +457,7 @@ test('WebSocket collaboration persists excalidraw room content to .excalidraw fi
 
   clientDoc.transact(() => {
     replaceExcalidrawRoomScene(clientDoc, JSON.parse(syncedSceneJson));
-  }, 'test-replace-scene');
+  }, "test-replace-scene");
   ws.send(encodeSyncUpdateMessage(Y.encodeStateAsUpdate(clientDoc)));
 
   ws.close();
@@ -415,20 +465,20 @@ test('WebSocket collaboration persists excalidraw room content to .excalidraw fi
   await waitForRoomRelease(app, scenePath);
 
   const diskContent = await waitForCondition(async () => {
-    const content = await readFile(join(app.vaultDir, scenePath), 'utf-8');
+    const content = await readFile(join(app.vaultDir, scenePath), "utf-8");
     return content.includes('"shape-1"') ? content : null;
   });
 
   assert.ok(diskContent.includes('"shape-1"'));
 });
 
-test('WebSocket room rehydration does not duplicate markdown content on reconnect with the same Yjs doc', async (t) => {
+test("WebSocket room rehydration does not duplicate markdown content on reconnect with the same Yjs doc", async (t) => {
   const app = await startTestServer();
   t.after(() => app.close());
 
-  const filePath = 'test.md';
+  const filePath = "test.md";
   const diskPath = join(app.vaultDir, filePath);
-  const originalContent = await readFile(diskPath, 'utf-8');
+  const originalContent = await readFile(diskPath, "utf-8");
   const clientDoc = new Y.Doc();
 
   const ws1 = new WebSocket(app.wsUrl(filePath));
@@ -446,7 +496,7 @@ test('WebSocket room rehydration does not duplicate markdown content on reconnec
   await waitForRoomRelease(app, filePath);
 
   const diskContent = await waitForCondition(async () => {
-    const content = await readFile(diskPath, 'utf-8');
+    const content = await readFile(diskPath, "utf-8");
     return content.length === originalContent.length ? content : null;
   });
 

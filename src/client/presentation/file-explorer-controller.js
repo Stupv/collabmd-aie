@@ -1,11 +1,16 @@
-import { isImageAttachmentFilePath } from '../../domain/file-kind.js';
-import { vaultApiClient } from '../domain/vault-api-client.js';
-import { FileActionController } from './file-action-controller.js';
-import { FileTreeState } from './file-tree-state.js';
-import { FileExplorerView } from './file-explorer-view.js';
+import { isImageAttachmentFilePath } from "../../domain/file-kind.js";
+import { vaultApiClient } from "../domain/vault-api-client.js";
+import { FileActionController } from "./file-action-controller.js";
+import { FileTreeState } from "./file-tree-state.js";
+import { FileExplorerView } from "./file-explorer-view.js";
 
 export class FileExplorerController {
-  constructor({ onFileSelect, onFileDelete, toastController, vaultClient = vaultApiClient }) {
+  constructor({
+    onFileSelect,
+    onFileDelete,
+    toastController,
+    vaultClient = vaultApiClient,
+  }) {
     this.onFileSelect = onFileSelect;
     this.onFileDelete = onFileDelete;
     this.toastController = toastController;
@@ -17,12 +22,18 @@ export class FileExplorerController {
         this.renderTree();
       },
       onFileContextMenu: (event, payload) => {
-        if (payload.type === 'directory') {
-          this.view.showContextMenu(event, this.actionController.createContextMenuItems(payload.directoryPath));
+        if (payload.type === "directory") {
+          this.view.showContextMenu(
+            event,
+            this.actionController.createContextMenuItems(payload.directoryPath),
+          );
           return;
         }
 
-        this.view.showContextMenu(event, this.actionController.getFileContextMenuItems(payload.filePath));
+        this.view.showContextMenu(
+          event,
+          this.actionController.getFileContextMenuItems(payload.filePath),
+        );
       },
       onFileSelect: (filePath) => {
         this.onFileSelect?.(filePath);
@@ -32,7 +43,10 @@ export class FileExplorerController {
         this.renderTree();
       },
       onTreeContextMenu: (event) => {
-        this.view.showContextMenu(event, this.actionController.createContextMenuItems());
+        this.view.showContextMenu(
+          event,
+          this.actionController.createContextMenuItems(),
+        );
       },
     });
     this.actionController = new FileActionController({
@@ -56,14 +70,11 @@ export class FileExplorerController {
       const data = await this.vaultClient.readTree();
       this.setTree(data.tree || []);
     } catch (error) {
-      console.error('[explorer] Failed to load file tree:', error.message);
+      console.error("[explorer] Failed to load file tree:", error.message);
     }
   }
 
-  setTree(tree, {
-    changedPaths = null,
-    reset = false,
-  } = {}) {
+  setTree(tree, { changedPaths = null, reset = false } = {}) {
     this.state.setTree(tree);
     this.renderTree({ changedPaths, reset });
   }
@@ -78,13 +89,12 @@ export class FileExplorerController {
   }
 
   get flatDocumentFiles() {
-    return this.state.flatFiles.filter((path) => !isImageAttachmentFilePath(path));
+    return this.state.flatFiles.filter(
+      (path) => !isImageAttachmentFilePath(path),
+    );
   }
 
-  renderTree({
-    changedPaths = null,
-    reset = false,
-  } = {}) {
+  renderTree({ changedPaths = null, reset = false } = {}) {
     this.view.render({
       activeFilePath: this.state.activeFilePath,
       changedPaths,

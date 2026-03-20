@@ -69,7 +69,9 @@ export class RoomRegistry {
 
   async reconcileWorkspaceChange(workspaceChange = {}) {
     const deletedPaths = new Set(workspaceChange.deletedPaths ?? []);
-    const renamedPaths = Array.isArray(workspaceChange.renamedPaths) ? workspaceChange.renamedPaths : [];
+    const renamedPaths = Array.isArray(workspaceChange.renamedPaths)
+      ? workspaceChange.renamedPaths
+      : [];
     const pendingDeletes = [];
     const highlightRanges = [];
     const reloadRequiredPaths = [];
@@ -103,7 +105,7 @@ export class RoomRegistry {
     await Promise.allSettled(
       pendingDeletes.map(async ([pathValue, room]) => {
         room.markDeleted?.();
-        if (typeof room.applyExternalDeletion === 'function') {
+        if (typeof room.applyExternalDeletion === "function") {
           await room.applyExternalDeletion();
         } else {
           await room.destroy?.();
@@ -128,7 +130,11 @@ export class RoomRegistry {
           }
 
           const result = await room.reloadFromDisk?.();
-          if (result && result.ok === false && result.reason === 'invalid-excalidraw') {
+          if (
+            result &&
+            result.ok === false &&
+            result.reason === "invalid-excalidraw"
+          ) {
             reloadRequiredPaths.push(pathValue);
           } else if (result?.highlightRange) {
             highlightRanges.push({

@@ -2,8 +2,8 @@ import {
   cancelIdleRender,
   IDLE_RENDER_TIMEOUT_MS,
   requestIdleRender,
-} from './preview-diagram-utils.js';
-import { getRenderProfile } from './preview-render-profile.js';
+} from "./preview-diagram-utils.js";
+import { getRenderProfile } from "./preview-render-profile.js";
 
 export class PreviewRenderScheduler {
   constructor({
@@ -53,7 +53,10 @@ export class PreviewRenderScheduler {
       scheduleFrame();
     };
 
-    this.timeoutId = this.setTimeoutFn(scheduleRender, renderProfile.debounceMs);
+    this.timeoutId = this.setTimeoutFn(
+      scheduleRender,
+      renderProfile.debounceMs,
+    );
   }
 
   cancel() {

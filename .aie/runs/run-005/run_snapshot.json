@@ -1,0 +1,418 @@
+{
+  "metadata": {
+    "run_id": "run-005",
+    "project_name": "collabmd",
+    "project_path": "/projects/external/collabmd",
+    "started_at": "2026-03-20T11:08:15.621097Z",
+    "completed_at": "2026-03-20T11:20:54.496775Z",
+    "status": "completed",
+    "stages_completed": [],
+    "llm_calls": [
+      {
+        "model": "claude-sonnet-4-6",
+        "stage": "review_robustness",
+        "input_tokens": 4,
+        "output_tokens": 6205,
+        "duration_seconds": 118.01
+      },
+      {
+        "model": "claude-sonnet-4-6",
+        "stage": "review_simplicity",
+        "input_tokens": 6,
+        "output_tokens": 12160,
+        "duration_seconds": 185.85
+      },
+      {
+        "model": "claude-sonnet-4-6",
+        "stage": "review_security",
+        "input_tokens": 6,
+        "output_tokens": 14656,
+        "duration_seconds": 255.39
+      }
+    ],
+    "total_duration_seconds": 758.875678,
+    "aie_version": "2.0.0",
+    "run_type": "review",
+    "reconciliation_method": "llm"
+  },
+  "metrics_before": null,
+  "understanding": null,
+  "discovery": null,
+  "formulation": null,
+  "execution": null,
+  "metrics_after": null,
+  "validation": null,
+  "review": {
+    "findings": [
+      {
+        "id": "F-001",
+        "severity": "critical",
+        "title": "Password distributed via URL hash fragment",
+        "description": "The functions getPasswordFromHash, removePasswordFromHash, and consumeHashParam in auth-client.js confirm that the application shared access password is distributed to users embedded in URL fragments (e.g. https://app.example.com/#password=secret). Although URL fragments are not sent in HTTP requests, they are stored in full in browser history and bookmarks, readable by any JavaScript executing on the page including third-party or CDN-loaded scripts via location.hash, commonly leaked when users copy or share URLs, and present in the address bar during the initial render before removePasswordFromHash fires. The removePasswordFromHash function only mitigates the fragment after it has already been consumed, but the original URL is already in browser history at that point.",
+        "affected_files": ["src/client/infrastructure/auth-client.js"],
+        "affected_symbols": [
+          "getPasswordFromHash",
+          "removePasswordFromHash",
+          "consumeHashParam",
+          "ensureClientAuthenticated"
+        ],
+        "recommendation": "Replace URL-fragment-based password distribution with a server-side flow: have users submit the password via a POST form, or issue short-lived invite tokens server-side that are redeemed once and immediately exchanged for an HTTP-only session cookie then invalidated. Do not embed long-lived credentials in shareable URLs.",
+        "effort_to_fix": "medium",
+        "source_perspectives": ["security"]
+      },
+      {
+        "id": "F-002",
+        "severity": "critical",
+        "title": "postMessage handler in ExcalidrawEmbedController likely lacks origin validation",
+        "description": "The _onMessage method in ExcalidrawEmbedController receives message events from embedded Excalidraw iframes and dispatches application state changes based on the message payload. The same window.addEventListener('message') listener receives events from any origin. If the handler does not strictly validate event.origin against the expected iframe origin before acting, any page that can coexist with the app in a browser session can forge messages to drive arbitrary application behaviour including triggering file opens, manipulating shared scene state, or leaking followed-user state. The companion _postMessageToEntry function confirms two-way iframe communication, making this a high-value attack surface.",
+        "affected_files": [
+          "src/client/presentation/excalidraw-embed-controller.js"
+        ],
+        "affected_symbols": [
+          "ExcalidrawEmbedController._onMessage",
+          "ExcalidrawEmbedController._postMessageToEntry",
+          "ExcalidrawEmbedController._buildIframeUrl"
+        ],
+        "recommendation": "In _onMessage, immediately check if (event.origin !== expectedOrigin) return; before processing any payload. Derive expectedOrigin from the same base URL used in _buildIframeUrl. Enforce a strict allowlist of accepted message type values, discarding anything unexpected. Consider adding a per-instance nonce to further bind messages to specific iframes.",
+        "effort_to_fix": "small",
+        "source_perspectives": ["security"]
+      },
+      {
+        "id": "F-003",
+        "severity": "critical",
+        "title": "Potential shell injection in git remote bootstrap via config-supplied values",
+        "description": "The src/server/startup/git-remote-bootstrap.js module constructs and executes shell commands for git operations via execGit, buildGitSshCommand, prepareGitCommandEnv, and cloneIntoVault. A quoteShellArg helper is defined indicating awareness of the injection risk, but the many call-sites that accept values from environment variables or user-supplied configuration (clone URL, remote name, branch names, SSH key paths, identity config) mean any argument that bypasses quoteShellArg or is interpolated into a shell string before quoting could result in arbitrary command execution on the server. This is especially dangerous because git operations run as the server process user with full access to the vault filesystem.",
+        "affected_files": ["src/server/startup/git-remote-bootstrap.js"],
+        "affected_symbols": [
+          "quoteShellArg",
+          "execGit",
+          "buildGitSshCommand",
+          "prepareGitCommandEnv",
+          "createPrivateKeyFile",
+          "cloneIntoVault",
+          "buildGitIdentityEnv"
+        ],
+        "recommendation": "Audit every execGit callsite to confirm all variable arguments pass through quoteShellArg. Prefer child_process.execFile or spawn with argument arrays rather than shell strings to eliminate the injection surface entirely. Validate git remote URLs against a strict allowlist of accepted protocols (ssh://, https://) before use, and reject URLs containing shell metacharacters regardless of quoting.",
+        "effort_to_fix": "medium",
+        "source_perspectives": ["security"]
+      },
+      {
+        "id": "F-004",
+        "severity": "warning",
+        "title": "Toast elements leak permanently if CSS animation never fires",
+        "description": "In ToastController.show(), after duration ms a leaving CSS class is added and an animationend listener is registered to call toast.remove(). If the CSS animation never fires — which happens under prefers-reduced-motion, when animations are overridden by a host page stylesheet, when the element is detached from the DOM before the animation starts, or when the browser throttles animations in background tabs — animationend is never dispatched. The toast element then stays permanently in this.container, and each call to show() accumulates one more orphaned element. On long-running sessions with frequent notifications this is an unbounded DOM/memory leak.",
+        "affected_files": ["src/client/presentation/toast-controller.js"],
+        "affected_symbols": ["ToastController.show"],
+        "recommendation": "Add a fallback setTimeout that calls toast.remove() if the animation has not yet fired. For example, after adding the leaving class, also schedule setTimeout(() => toast.remove(), animationDurationMs + 200) and cancel it inside the animationend handler. Alternatively, use the Web Animations API (toast.animate(...)) which returns a finished promise that always resolves.",
+        "effort_to_fix": "trivial",
+        "source_perspectives": ["robustness"]
+      },
+      {
+        "id": "F-005",
+        "severity": "warning",
+        "title": "`deflateRawSync` blocks the Node.js event loop on every PlantUML encode",
+        "description": "encodePlantUmlText in plantuml-encoder.js calls deflateRawSync, which is a synchronous zlib operation that runs entirely on the main Node.js thread. Every incoming PlantUML render request (preview hydration in the client triggers server-side SVG generation) will block the event loop for the full duration of the compression. For large or complex PlantUML diagrams — which can easily reach tens of kilobytes of source text — this introduces multi-millisecond stalls that degrade all concurrent request latency. Under moderate load from multiple editors this becomes a latency cliff.",
+        "affected_files": ["src/server/domain/plantuml-encoder.js"],
+        "affected_symbols": ["encodePlantUmlText"],
+        "recommendation": "Replace deflateRawSync with the async deflateRaw (callback) or zlib.deflateRaw wrapped with util.promisify, and make encodePlantUmlText async. This offloads the compression to libuv's thread pool, keeping the event loop free during compression.",
+        "effort_to_fix": "small",
+        "source_perspectives": ["robustness"]
+      },
+      {
+        "id": "F-006",
+        "severity": "warning",
+        "title": "`stopReconnectOnControlledClose` accumulates duplicate `connection-close` listeners",
+        "description": "stopReconnectOnControlledClose in yjs-provider-reset-guard.js unconditionally calls provider.on('connection-close', handler) with no guard against being called multiple times on the same provider instance. If the surrounding code re-initialises a collaboration session (e.g., on reconnect or room reset) and calls this helper again with the same provider, each call registers an additional handler. On a controlled close, all registered handlers fire and each one calls provider.disconnect() redundantly. In the worst case this can trigger state corruption in the provider, repeated disconnect events, or mask subsequent reconnect attempts.",
+        "affected_files": [
+          "src/client/infrastructure/yjs-provider-reset-guard.js"
+        ],
+        "affected_symbols": ["stopReconnectOnControlledClose"],
+        "recommendation": "Track whether the guard has already been installed using a WeakSet or a property on the provider itself (e.g., if (provider.__resetGuardInstalled) return; provider.__resetGuardInstalled = true;). Alternatively, use provider.once if the provider exposes it, so the listener self-removes after the first event.",
+        "effort_to_fix": "trivial",
+        "source_perspectives": ["robustness"]
+      },
+      {
+        "id": "F-007",
+        "severity": "warning",
+        "title": "`reconcileEmbedEntries` mutates live entry objects while caller still holds references",
+        "description": "In excalidraw-embed-reconciler.js, reconcileEmbedEntries iterates over currentEntries and, for any entry that is being kept, directly mutates its properties in-place (entry.filePath = ..., entry.key = ..., entry.label = ..., entry.placeholder = ...) before the new nextEntries Map is returned to the caller. The caller (ExcalidrawEmbedController) continues to hold references to the same objects throughout this process. Any code that reads from an entry object while reconciliation is in progress (e.g., an async hydration callback that started before reconcileEmbedEntries was called) will silently observe the mutated state rather than the state it started with. This creates a time-of-check-to-time-of-use hazard for fields like filePath and placeholder that drive iframe URLs and DOM mounting decisions.",
+        "affected_files": [
+          "src/client/presentation/excalidraw-embed-reconciler.js"
+        ],
+        "affected_symbols": ["reconcileEmbedEntries"],
+        "recommendation": "Avoid mutating entries that come from currentEntries. Instead, create a shallow clone of each kept entry and apply the descriptor fields to the clone: const entry = { ...(existing ?? defaultEntry), filePath: descriptor.filePath, key: descriptor.key, label: descriptor.label, placeholder: descriptor.placeholder };. This ensures in-flight async operations that captured the old object reference observe stable data.",
+        "effort_to_fix": "small",
+        "source_perspectives": ["robustness"]
+      },
+      {
+        "id": "F-008",
+        "severity": "warning",
+        "title": "Preview render worker has no guard against unbounded input size or worker crash recovery",
+        "description": "In preview-render-worker.js, the onmessage handler passes markdownText directly into compilePreviewDocument with no size check. A malicious or accidental extremely large document (e.g., a multi-megabyte markdown file or one with deeply nested structures) can cause the worker to consume excessive CPU and memory, potentially hanging or crashing it entirely. When the worker crashes the browser typically fires a silent error event; the PreviewRenderExecutor has a reset and cancelWorkerJob mechanism but these are driven by explicit calls rather than worker health monitoring. A hung worker that never posts a reply will leave hasPendingJob() returning true indefinitely, blocking all further preview renders for the session.",
+        "affected_files": ["src/client/application/preview-render-worker.js"],
+        "affected_symbols": [],
+        "recommendation": "Add a size guard at the top of the onmessage handler: if markdownText.length exceeds a reasonable threshold (e.g., 1 MB), immediately post back an error response without attempting compilation. In PreviewRenderExecutor, also handle the worker's error and messageerror events by calling reset() so the executor recovers automatically from a crashed worker.",
+        "effort_to_fix": "small",
+        "source_perspectives": ["robustness"]
+      },
+      {
+        "id": "F-009",
+        "severity": "warning",
+        "title": "~13 zoom/pan helper functions duplicated verbatim between MermaidPreviewHydrator and PlantUmlPreviewHydrator",
+        "description": "Both mermaid-preview-hydrator.js (570 lines) and plantuml-preview-hydrator.js (563 lines) independently define an identical set of module-level helper functions: calculateDefaultZoom, applyZoom, isPannable, getViewportCenter, restoreViewportCenter, animateZoomTo, tick, zoomBy, resetZoomToFit, scheduleResetZoomToFit, syncMaximizeButtonState, setMaximizedState, and stopPanning. These 13 functions represent a large shared behaviour block (likely 150–200 lines) copy-pasted in full. Any bug fix or enhancement to the zoom/pan logic must be applied twice, and the two copies will inevitably diverge over time.",
+        "affected_files": [
+          "src/client/application/mermaid-preview-hydrator.js",
+          "src/client/application/plantuml-preview-hydrator.js"
+        ],
+        "affected_symbols": [
+          "calculateDefaultZoom",
+          "applyZoom",
+          "isPannable",
+          "getViewportCenter",
+          "restoreViewportCenter",
+          "animateZoomTo",
+          "tick",
+          "zoomBy",
+          "resetZoomToFit",
+          "scheduleResetZoomToFit",
+          "syncMaximizeButtonState",
+          "setMaximizedState",
+          "stopPanning"
+        ],
+        "recommendation": "Extract the shared zoom/pan helpers into a new module, e.g. src/client/application/preview-diagram-zoom.js, and import them in both hydrators. The DiagramPreviewHydrator base class in diagram-preview-hydrator.js is the natural place to host or re-export these utilities.",
+        "effort_to_fix": "medium",
+        "source_perspectives": ["simplicity"]
+      },
+      {
+        "id": "F-010",
+        "severity": "warning",
+        "title": "PreviewRenderer duplicates all hydration logic that DiagramPreviewHydrator already abstracts",
+        "description": "preview-renderer.js (457 lines, 60+ methods) contains two complete, parallel sets of hydration methods — one for Mermaid (setupMermaidHydration, hydrateVisibleMermaids, enqueueMermaidShell, scheduleMermaidHydration, flushMermaidHydrationQueue, hydrateMermaidShell, preserveHydratedMermaidsForCommit, reconcileHydratedMermaids, syncPreservedMermaidShell) and one for PlantUML (an identical set with PlantUml in the names). DiagramPreviewHydrator was apparently introduced to unify exactly this pattern, yet PreviewRenderer was never refactored to use it. The result is roughly 200 lines of near-identical logic maintained in three places simultaneously.",
+        "affected_files": [
+          "src/client/application/preview-renderer.js",
+          "src/client/application/diagram-preview-hydrator.js"
+        ],
+        "affected_symbols": ["PreviewRenderer", "DiagramPreviewHydrator"],
+        "recommendation": "Finish the refactor: replace the duplicated mermaid/plantuml method pairs in PreviewRenderer with two DiagramPreviewHydrator instances (one per diagram type), delegating hydration work to them. This would shrink PreviewRenderer substantially and make the hydration pipeline a single code path.",
+        "effort_to_fix": "large",
+        "source_perspectives": ["simplicity"]
+      },
+      {
+        "id": "F-011",
+        "severity": "warning",
+        "title": "Secure-flag determination relies on potentially spoofable proxy headers",
+        "description": "The hasSecureRequestHeaders function in src/server/auth/session-cookie.js appears to determine whether a request arrived over HTTPS by inspecting HTTP headers such as X-Forwarded-Proto. This is used to decide whether to set the Secure attribute on session cookies. If the server is directly reachable by clients rather than exclusively behind a trusted reverse proxy, clients can forge these headers and trick the server into issuing Secure-flagged cookies over plain HTTP or suppressing the flag so session cookies are transmitted unencrypted.",
+        "affected_files": ["src/server/auth/session-cookie.js"],
+        "affected_symbols": [
+          "hasSecureRequestHeaders",
+          "createSessionCookieManager",
+          "createCookieAttributes"
+        ],
+        "recommendation": "Do not rely solely on forwarded headers for security decisions unless the application is provably behind a trusted reverse proxy. Prefer an explicit SECURE_COOKIES environment variable set at deployment time. When the deployment is known to be HTTPS, force secure: true unconditionally rather than inferring it from headers clients can manipulate.",
+        "effort_to_fix": "small",
+        "source_perspectives": ["security"]
+      },
+      {
+        "id": "F-012",
+        "severity": "warning",
+        "title": "Open redirect risk in post-authentication return-to URL handling",
+        "description": "The getCurrentReturnTo function in src/client/infrastructure/auth-client.js reads a redirect target from the current URL, and sanitizeReturnTo in src/server/auth/create-auth-service.js validates it before the server issues a post-login redirect. If sanitizeReturnTo validates only that the value is non-empty or starts with a slash, an attacker can craft a login link containing returnTo=//evil.example.com (protocol-relative URL) or returnTo=/\\evil.example.com (backslash normalization bypass in some browsers) and redirect authenticated users to a malicious site immediately after login, enabling session token or credential harvesting.",
+        "affected_files": [
+          "src/client/infrastructure/auth-client.js",
+          "src/server/auth/create-auth-service.js"
+        ],
+        "affected_symbols": [
+          "getCurrentReturnTo",
+          "sanitizeReturnTo",
+          "getDefaultReturnTo",
+          "prependBasePath"
+        ],
+        "recommendation": "In sanitizeReturnTo, validate that the return URL contains no scheme component, does not start with //, and does not contain a hostname. Parse via new URL(value, 'http://localhost') and assert parsedUrl.hostname === 'localhost' before accepting. Fall back to the default path on any failure. Add test cases for //evil.com, /\\evil.com, and https://evil.com.",
+        "effort_to_fix": "trivial",
+        "source_perspectives": ["security"]
+      },
+      {
+        "id": "F-013",
+        "severity": "warning",
+        "title": "SVG from PlantUML render server injected into DOM without proven DOM-level sanitization",
+        "description": "The sanitizeSvgMarkup function in preview-diagram-utils.js and the enhanceDiagram flow inject SVG received from the PlantUML render server directly into the DOM. PlantUML diagram source is editor-controlled collaborative content. SVG contains many XSS vectors that regex or string-based sanitizers frequently miss: script tags, on* event attributes, use xlink:href references to external resources, image href with javascript: URIs, CSS url() with javascript:, and foreignObject embedding arbitrary HTML. If sanitizeSvgMarkup does not use a DOM-parser-backed library with a strict allowlist such as DOMPurify, stored XSS is achievable via crafted diagram content shared between collaborators.",
+        "affected_files": [
+          "src/client/application/preview-diagram-utils.js",
+          "src/client/application/plantuml-preview-hydrator.js",
+          "src/client/application/preview-renderer.js"
+        ],
+        "affected_symbols": [
+          "sanitizeSvgMarkup",
+          "PlantUmlPreviewHydrator.enhanceDiagram",
+          "PreviewRenderer.enhancePlantUmlDiagram",
+          "PlantUmlPreviewHydrator.fetchSvg"
+        ],
+        "recommendation": "Replace or wrap sanitizeSvgMarkup with DOMPurify configured for SVG: DOMPurify.sanitize(markup, { USE_PROFILES: { svg: true }, FORBID_TAGS: ['script','foreignObject'], FORBID_ATTR: ['style','xlink:href'] }). Review whether use and external href references are needed; if not, block them explicitly. Apply identical treatment to Mermaid SVG output in normalizeMermaidSvg.",
+        "effort_to_fix": "small",
+        "source_perspectives": ["security"]
+      },
+      {
+        "id": "F-014",
+        "severity": "warning",
+        "title": "OIDC domain allowlist may be bypassable via suffix match",
+        "description": "The isOidcUserAllowed function in create-auth-service.js gates access based on an email or domain allowlist built by normalizeEmailAllowlist and normalizeDomainAllowlist. If the domain comparison uses a suffix check such as email.endsWith('@example.com') or domain.endsWith('example.com'), it can be bypassed with addresses like attacker@notexample.com or attacker@evil-example.com. The getEmailDomain helper extracts the domain, but unless it is compared with strict equality to each allowlist entry, subdomain and suffix attacks remain possible.",
+        "affected_files": [
+          "src/server/auth/create-auth-service.js",
+          "src/server/config/env.js"
+        ],
+        "affected_symbols": [
+          "isOidcUserAllowed",
+          "getEmailDomain",
+          "normalizeEmailAddress",
+          "normalizeDomainAllowlist",
+          "normalizeEmailAllowlist"
+        ],
+        "recommendation": "Use strict equality for domain comparison after extracting the domain from the email address: extractedDomain === allowedDomain, never endsWith. Normalize both sides to lowercase before comparing. Make subdomain allowances explicit in configuration. Add unit tests covering evil-example.com, notexample.com, and sub.example.com against an example.com-only allowlist.",
+        "effort_to_fix": "small",
+        "source_perspectives": ["security"]
+      },
+      {
+        "id": "F-015",
+        "severity": "warning",
+        "title": "`WorkspaceCoordinator` and `WorkspaceRouteController` constructors accept 40+ parameters",
+        "description": "WorkspaceCoordinator accepts over 40 named parameters in its constructor, while WorkspaceRouteController accepts over 27. The sheer number of injection points makes it extremely difficult to understand which dependencies are used for any given code path, to mock in tests, or to add a new collaborator without touching the bootstrap wiring in collabmd-app-shell.js. This is a symptom of classes that have accumulated responsibilities over time.",
+        "affected_files": [
+          "src/client/application/workspace-coordinator.js",
+          "src/client/application/workspace-route-controller.js",
+          "src/client/bootstrap/collabmd-app-shell.js"
+        ],
+        "affected_symbols": [
+          "WorkspaceCoordinator",
+          "WorkspaceRouteController"
+        ],
+        "recommendation": "Group related dependencies into cohesive sub-objects (e.g., a SessionCallbacks bag for onConnectionChange, onContentChange, etc., and a ChromeServices bag for UI controllers). Replacing 40 flat parameters with 5–6 structured groups reduces cognitive load substantially without requiring the classes to be split.",
+        "effort_to_fix": "medium",
+        "source_perspectives": ["simplicity"]
+      },
+      {
+        "id": "F-016",
+        "severity": "info",
+        "title": "Several files exist only to re-export from another module, adding pointless indirection",
+        "description": "Three files contain nothing but a single re-export statement: src/client/domain/vault-api-client.js re-exports from ../infrastructure/vault-api-client.js; src/server/domain/git-service.js re-exports from ../infrastructure/git/git-service.js; src/server/domain/plantuml-renderer.js re-exports from ../infrastructure/plantuml/plantuml-renderer.js. These files add a navigation hop and a module boundary with no logic, no interface transformation, and no encapsulation benefit. They will silently become stale if the source module is renamed.",
+        "affected_files": [
+          "src/client/domain/vault-api-client.js",
+          "src/server/domain/git-service.js",
+          "src/server/domain/plantuml-renderer.js"
+        ],
+        "affected_symbols": [],
+        "recommendation": "Delete the passthrough re-export files and update all consumers to import directly from the infrastructure module, OR keep them only if there is an intentional architectural boundary being enforced and document that intent with a comment.",
+        "effort_to_fix": "small",
+        "source_perspectives": ["simplicity"]
+      },
+      {
+        "id": "F-017",
+        "severity": "info",
+        "title": "`getPathLeaf` utility duplicated in four separate presentation files",
+        "description": "The local helper getPathLeaf (extracting the filename from a path) is independently defined in at least four files: file-action-controller.js, file-explorer-view.js, git-diff-view-controller.js, and git-panel-controller.js. The same pattern appears with getPathDir and badgeClass in git-panel-controller.js and git-diff-view-controller.js. These are trivial pure functions that belong in a shared utility module.",
+        "affected_files": [
+          "src/client/presentation/file-action-controller.js",
+          "src/client/presentation/file-explorer-view.js",
+          "src/client/presentation/git-diff-view-controller.js",
+          "src/client/presentation/git-panel-controller.js"
+        ],
+        "affected_symbols": ["getPathLeaf", "getPathDir", "badgeClass"],
+        "recommendation": "Move getPathLeaf and co-located path helpers into src/client/domain/vault-paths.js or a new src/client/domain/path-utils.js module and import from there in all four files.",
+        "effort_to_fix": "small",
+        "source_perspectives": ["simplicity"]
+      },
+      {
+        "id": "F-018",
+        "severity": "info",
+        "title": "Comment-related utilities duplicated between CommentsPanel and CommentUiController",
+        "description": "comments-panel.js and comment-ui-controller.js both independently define isLeafSourceBlock, parseLineNumber, sortThreads, and formatTimestamp. These are pure helper functions with no DOM coupling. Having them in two places means any change to comment sorting or timestamp formatting requires editing both files.",
+        "affected_files": [
+          "src/client/presentation/comments-panel.js",
+          "src/client/presentation/comment-ui-controller.js"
+        ],
+        "affected_symbols": [
+          "isLeafSourceBlock",
+          "parseLineNumber",
+          "sortThreads",
+          "formatTimestamp"
+        ],
+        "recommendation": "Extract these shared helpers into a new module, e.g. src/client/presentation/comment-utils.js, and import them in both CommentsPanel and CommentUiController.",
+        "effort_to_fix": "small",
+        "source_perspectives": ["simplicity"]
+      },
+      {
+        "id": "F-019",
+        "severity": "info",
+        "title": "`generatePeerId`, `normalizeUserName`, and `hashString` each defined in two separate modules",
+        "description": "src/client/domain/excalidraw-collaboration.js and src/client/domain/room.js both define generatePeerId and normalizeUserName. hashString is defined in both excalidraw-collaboration.js and preview-render-compiler.js. These are pure, stateless utilities whose identical names strongly suggest identical or near-identical implementations being silently maintained in parallel.",
+        "affected_files": [
+          "src/client/domain/excalidraw-collaboration.js",
+          "src/client/domain/room.js",
+          "src/client/application/preview-render-compiler.js"
+        ],
+        "affected_symbols": [
+          "generatePeerId",
+          "normalizeUserName",
+          "hashString"
+        ],
+        "recommendation": "Consolidate: generatePeerId and normalizeUserName should live in room.js (or a shared user-identity.js) with excalidraw-collaboration.js importing them. hashString should be in one shared utility module imported by both consumers.",
+        "effort_to_fix": "small",
+        "source_perspectives": ["simplicity"]
+      },
+      {
+        "id": "F-020",
+        "severity": "info",
+        "title": "`requestIdleRender`/`cancelIdleRender` re-implemented locally despite existing in `preview-diagram-utils.js`",
+        "description": "src/client/application/preview-diagram-utils.js exports requestIdleRender and cancelIdleRender. Despite this, excalidraw-embed-controller.js defines its own private versions with the same names, and scroll-sync-controller.js defines structurally identical requestIdleWork/cancelIdleWork. This idle-callback wrapper is being reinvented in every file that needs it.",
+        "affected_files": [
+          "src/client/presentation/excalidraw-embed-controller.js",
+          "src/client/presentation/scroll-sync-controller.js",
+          "src/client/application/preview-diagram-utils.js"
+        ],
+        "affected_symbols": [
+          "requestIdleRender",
+          "cancelIdleRender",
+          "requestIdleWork",
+          "cancelIdleWork"
+        ],
+        "recommendation": "Remove the local copies in excalidraw-embed-controller.js and scroll-sync-controller.js and import the shared versions from preview-diagram-utils.js, adding any missing variants as additional exports there.",
+        "effort_to_fix": "trivial",
+        "source_perspectives": ["simplicity"]
+      },
+      {
+        "id": "F-021",
+        "severity": "info",
+        "title": "`BrowserNavigationPort` is a zero-value wrapper that only delegates to module-level functions",
+        "description": "BrowserNavigationPort is a class with three methods (getHashRoute, navigateToFile, navigateToGitDiff), each of which does nothing but call the equivalently-named free function from runtime-config.js. There is no state, no transformation, no interface adaptation, and no testability benefit over importing the functions directly. The class adds a pointless indirection layer.",
+        "affected_files": [
+          "src/client/infrastructure/browser-navigation-port.js"
+        ],
+        "affected_symbols": ["BrowserNavigationPort"],
+        "recommendation": "Either delete BrowserNavigationPort and have consumers import directly from runtime-config.js, or justify keeping it as a port by injecting the three functions as constructor dependencies so it becomes genuinely mockable.",
+        "effort_to_fix": "small",
+        "source_perspectives": ["simplicity"]
+      },
+      {
+        "id": "F-022",
+        "severity": "info",
+        "title": "SSH private key temporary file may be created with world-readable permissions",
+        "description": "The createPrivateKeyFile function in git-remote-bootstrap.js writes an SSH private key sourced from environment configuration to a temporary file used by GIT_SSH_COMMAND. If this file is created with default Node.js fs.writeFile permissions of 0o666 before umask, other local users on a shared host could read the private key material. SSH itself warns about overly permissive key files but the application may not surface that warning or halt operation.",
+        "affected_files": ["src/server/startup/git-remote-bootstrap.js"],
+        "affected_symbols": [
+          "createPrivateKeyFile",
+          "buildGitSshCommand",
+          "prepareGitCommandEnv"
+        ],
+        "recommendation": "Write the private key file with mode 0o600 explicitly: fs.writeFile(path, content, { mode: 0o600 }). Place the file inside a directory created with mode 0o700. Alternatively inject the key via ssh-agent or an SSH_AUTH_SOCK to avoid writing key material to disk at all.",
+        "effort_to_fix": "trivial",
+        "source_perspectives": ["security"]
+      }
+    ],
+    "summary": "The unified review of collabmd surfaces 22 distinct findings across three severity tiers. The highest-priority concerns are three critical security issues: passwords distributed in URL hash fragments (exposing credentials to browser history and co-resident JavaScript), an Excalidraw iframe postMessage handler that likely lacks origin validation (enabling cross-origin message forgery), and shell command construction from config-supplied values in the git bootstrap module where incomplete quoteShellArg coverage could yield arbitrary server-side command execution. The warning tier is dominated by a mix of security hardening items (session cookie Secure-flag relying on spoofable proxy headers, open redirect in the return-to URL, insufficient DOM-level sanitization of PlantUML SVG enabling stored XSS, and OIDC domain allowlist suffix-match bypass) and robustness issues (permanent DOM leak in the toast system when animations do not fire, synchronous deflateRawSync blocking the Node.js event loop, duplicate Yjs connection-close listeners, TOCTOU mutation in the embed reconciler, and an unguarded preview render worker). The info tier reflects a significant simplicity debt concentrated in the preview/hydration pipeline: 13 zoom/pan helpers duplicated verbatim between the two diagram hydrators, an unfinished DiagramPreviewHydrator refactor leaving ~200 lines of parallel logic in PreviewRenderer, and scattered duplication of path utilities, comment helpers, identity functions, and idle-callback wrappers across four or more files each.",
+    "perspective_summaries": {
+      "robustness": "Robustness review surfaced five concrete runtime hazards: a permanent DOM/memory leak in the toast system when CSS animations do not fire; a synchronous deflateRawSync call blocking the Node.js event loop on every PlantUML encode; a Yjs provider guard that stacks duplicate event listeners on repeated initialisation; in-place mutation of live embed-entry objects during reconciliation creating a TOCTOU hazard; and no input-size ceiling or worker crash-recovery path in the preview render worker. All five are small, focused fixes requiring no architectural changes.",
+      "simplicity": "Simplicity review identified significant duplication debt concentrated in the preview/hydration pipeline: 13 zoom/pan helper functions copied verbatim between two ~570-line hydrator files, and PreviewRenderer containing two full sets of parallel hydration methods that DiagramPreviewHydrator was introduced to replace but never did. Secondary issues include trivial passthrough re-export files, path and comment helper functions duplicated across 2–4 files each, domain-level utilities independently defined in multiple modules, two coordinator classes with 27–40+ flat constructor parameters, and idle-callback wrappers reinvented in every consumer file rather than imported from the existing shared module.",
+      "security": "Security analysis identified three critical issues and five warnings. Critical: shared passwords embedded in URL fragments; Excalidraw postMessage handler lacking apparent origin validation; git bootstrap shell construction with incomplete argument quoting. Warnings: session cookie Secure-flag derived from spoofable proxy headers; open-redirect vector in post-login return-to URL; SVG from PlantUML server injected without proven DOMPurify-backed sanitization enabling stored XSS; OIDC domain allowlist potentially bypassable via suffix match. Info: SSH private key temp file likely written without restricting file mode to 0o600."
+    }
+  },
+  "scope": null
+}

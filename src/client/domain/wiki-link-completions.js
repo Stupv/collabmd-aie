@@ -18,14 +18,14 @@ export function wikiLinkCompletions(getFileList) {
     const textBefore = line.text.slice(0, context.pos - line.from);
 
     // Find the last `[[` that isn't already closed with `]]`
-    const openIndex = textBefore.lastIndexOf('[[');
+    const openIndex = textBefore.lastIndexOf("[[");
     if (openIndex === -1) {
       return null;
     }
 
     // Check there's no `]]` between the `[[` and the cursor
     const afterOpen = textBefore.slice(openIndex + 2);
-    if (afterOpen.includes(']]')) {
+    if (afterOpen.includes("]]")) {
       return null;
     }
 
@@ -36,24 +36,26 @@ export function wikiLinkCompletions(getFileList) {
     // Build completion options: show file paths without .md extension
     const options = files
       .map((filePath) => {
-        const label = filePath.replace(/\.md$/i, '');
+        const label = filePath.replace(/\.md$/i, "");
         // Match against full path and just the filename
-        const fileName = label.split('/').pop();
+        const fileName = label.split("/").pop();
         return { filePath, label, fileName };
       })
-      .filter(({ label, fileName }) =>
-        label.toLowerCase().includes(query) || fileName.toLowerCase().includes(query),
+      .filter(
+        ({ label, fileName }) =>
+          label.toLowerCase().includes(query) ||
+          fileName.toLowerCase().includes(query),
       )
       .map(({ label, fileName }) => ({
         label,
         // Show just the filename as detail when in a subdirectory
-        detail: label.includes('/') ? `  ${fileName}` : undefined,
+        detail: label.includes("/") ? `  ${fileName}` : undefined,
         apply: (view, completion, from, to) => {
           // Replace from the query start to cursor, and also consume any trailing `]]`
           const docText = view.state.doc.toString();
           let end = to;
           // If there's already a `]]` right after cursor, consume it
-          if (docText.slice(to, to + 2) === ']]') {
+          if (docText.slice(to, to + 2) === "]]") {
             end = to + 2;
           }
           view.dispatch({
@@ -61,7 +63,7 @@ export function wikiLinkCompletions(getFileList) {
             selection: { anchor: from + completion.label.length + 2 },
           });
         },
-        type: 'text',
+        type: "text",
         boost: label.toLowerCase().startsWith(query) ? 1 : 0,
       }));
 

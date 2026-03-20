@@ -8,14 +8,16 @@ export class ToastController {
       return;
     }
 
-    const toast = document.createElement('div');
-    toast.className = 'toast';
+    const toast = document.createElement("div");
+    toast.className = "toast";
     toast.textContent = message;
     this.container.appendChild(toast);
 
     setTimeout(() => {
-      toast.classList.add('leaving');
-      toast.addEventListener('animationend', () => toast.remove(), { once: true });
+      toast.classList.add("leaving");
+      toast.addEventListener("animationend", () => toast.remove(), {
+        once: true,
+      });
     }, duration);
   }
 }

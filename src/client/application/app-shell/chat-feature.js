@@ -15,11 +15,12 @@ export const chatFeature = {
       return;
     }
 
-    const newRemoteMessages = messages.filter((message) => (
-      !previousIds.has(message.id)
-      && message.peerId
-      && message.peerId !== localPeerId
-    ));
+    const newRemoteMessages = messages.filter(
+      (message) =>
+        !previousIds.has(message.id) &&
+        message.peerId &&
+        message.peerId !== localPeerId,
+    );
 
     if (this.chatIsOpen) {
       this.chatUnreadCount = 0;
@@ -78,7 +79,7 @@ export const chatFeature = {
       return;
     }
 
-    input.value = '';
+    input.value = "";
     if (!this.chatIsOpen) {
       this.openChatPanel();
       return;
@@ -88,8 +89,8 @@ export const chatFeature = {
   },
 
   renderChat() {
-    this.elements.chatContainer?.classList.toggle('is-open', this.chatIsOpen);
-    this.elements.chatPanel?.classList.toggle('hidden', !this.chatIsOpen);
+    this.elements.chatContainer?.classList.toggle("is-open", this.chatIsOpen);
+    this.elements.chatPanel?.classList.toggle("hidden", !this.chatIsOpen);
 
     this.syncChatToggleButton();
     this.syncChatNotificationButton();
@@ -100,7 +101,7 @@ export const chatFeature = {
     if (this.elements.chatStatus) {
       this.elements.chatStatus.textContent = this.chatInitialSyncComplete
         ? `${this.globalUsers.length} online`
-        : 'Syncing...';
+        : "Syncing...";
     }
 
     if (!list) {
@@ -110,13 +111,13 @@ export const chatFeature = {
     list.replaceChildren();
 
     if (this.chatMessages.length === 0) {
-      emptyState?.classList.remove('hidden');
-      list.classList.add('hidden');
+      emptyState?.classList.remove("hidden");
+      list.classList.add("hidden");
       return;
     }
 
-    emptyState?.classList.add('hidden');
-    list.classList.remove('hidden');
+    emptyState?.classList.add("hidden");
+    list.classList.remove("hidden");
 
     const fragment = document.createDocumentFragment();
     this.chatMessages.forEach((message) => {
@@ -130,43 +131,45 @@ export const chatFeature = {
   },
 
   createChatMessageElement(message) {
-    const item = document.createElement('article');
+    const item = document.createElement("article");
     const isLocal = message.peerId === this.lobby.getLocalUser()?.peerId;
-    item.className = 'chat-message';
-    item.classList.toggle('is-local', isLocal);
+    item.className = "chat-message";
+    item.classList.toggle("is-local", isLocal);
 
-    const avatar = document.createElement('div');
-    avatar.className = 'chat-message-avatar';
-    avatar.style.backgroundColor = message.userColor || 'var(--color-primary)';
-    avatar.textContent = (message.userName || '?').charAt(0).toUpperCase();
-    avatar.setAttribute('aria-hidden', 'true');
+    const avatar = document.createElement("div");
+    avatar.className = "chat-message-avatar";
+    avatar.style.backgroundColor = message.userColor || "var(--color-primary)";
+    avatar.textContent = (message.userName || "?").charAt(0).toUpperCase();
+    avatar.setAttribute("aria-hidden", "true");
 
-    const body = document.createElement('div');
-    body.className = 'chat-message-body';
+    const body = document.createElement("div");
+    body.className = "chat-message-body";
 
-    const meta = document.createElement('div');
-    meta.className = 'chat-message-meta';
+    const meta = document.createElement("div");
+    meta.className = "chat-message-meta";
 
-    const author = document.createElement('span');
-    author.className = 'chat-message-author';
-    author.textContent = isLocal ? `${message.userName} (you)` : message.userName;
+    const author = document.createElement("span");
+    author.className = "chat-message-author";
+    author.textContent = isLocal
+      ? `${message.userName} (you)`
+      : message.userName;
 
-    const time = document.createElement('span');
-    time.className = 'chat-message-time';
+    const time = document.createElement("span");
+    time.className = "chat-message-time";
     time.textContent = this.formatChatTimestamp(message.createdAt);
 
     meta.append(author, time);
 
     const fileLabel = this.getChatMessageFileLabel(message.filePath);
     if (fileLabel) {
-      const file = document.createElement('span');
-      file.className = 'chat-message-file';
+      const file = document.createElement("span");
+      file.className = "chat-message-file";
       file.textContent = fileLabel;
       meta.append(file);
     }
 
-    const text = document.createElement('p');
-    text.className = 'chat-message-text';
+    const text = document.createElement("p");
+    text.className = "chat-message-text";
     text.textContent = message.text;
 
     body.append(meta, text);
@@ -187,28 +190,31 @@ export const chatFeature = {
 
   formatChatTimestamp(value) {
     if (!Number.isFinite(value)) {
-      return '';
+      return "";
     }
 
     try {
       return this.chatTimeFormatter.format(new Date(value));
     } catch {
-      return '';
+      return "";
     }
   },
 
   getChatMessageFileLabel(filePath) {
     if (!filePath) {
-      return '';
+      return "";
     }
 
     return this.getDisplayName(filePath);
   },
 
   formatChatToastMessage(message) {
-    const sender = message?.userName || 'Someone';
-    const text = String(message?.text ?? '').replace(/\s+/g, ' ').trim();
-    const compactText = text.length > 88 ? `${text.slice(0, 85).trimEnd()}...` : text;
+    const sender = message?.userName || "Someone";
+    const text = String(message?.text ?? "")
+      .replace(/\s+/g, " ")
+      .trim();
+    const compactText =
+      text.length > 88 ? `${text.slice(0, 85).trimEnd()}...` : text;
     return `${sender}: ${compactText}`;
   },
 
@@ -222,23 +228,27 @@ export const chatFeature = {
     const hasUnread = this.chatUnreadCount > 0;
     const shouldEmphasizeUnread = hasUnread && !this.chatIsOpen;
 
-    button.classList.toggle('is-active', this.chatIsOpen);
-    button.classList.toggle('is-unread', shouldEmphasizeUnread);
-    button.setAttribute('aria-expanded', String(this.chatIsOpen));
+    button.classList.toggle("is-active", this.chatIsOpen);
+    button.classList.toggle("is-unread", shouldEmphasizeUnread);
+    button.setAttribute("aria-expanded", String(this.chatIsOpen));
     button.setAttribute(
-      'aria-label',
-      hasUnread ? `Open team chat, ${this.chatUnreadCount} unread` : 'Open team chat',
+      "aria-label",
+      hasUnread
+        ? `Open team chat, ${this.chatUnreadCount} unread`
+        : "Open team chat",
     );
-    button.title = this.chatUnreadCount > 0
-      ? `Team chat (${this.chatUnreadCount} unread)`
-      : 'Team chat';
+    button.title =
+      this.chatUnreadCount > 0
+        ? `Team chat (${this.chatUnreadCount} unread)`
+        : "Team chat";
 
     if (!badge) {
       return;
     }
 
-    badge.classList.toggle('hidden', !hasUnread);
-    badge.textContent = this.chatUnreadCount > 9 ? '9+' : String(this.chatUnreadCount);
+    badge.classList.toggle("hidden", !hasUnread);
+    badge.textContent =
+      this.chatUnreadCount > 9 ? "9+" : String(this.chatUnreadCount);
   },
 
   syncChatNotificationButton() {
@@ -250,58 +260,60 @@ export const chatFeature = {
     const permission = this.notifications.getPermission();
     this.chatNotificationPermission = permission;
 
-    let label = 'Enable alerts';
-    let title = 'Enable browser notifications for new chat messages';
+    let label = "Enable alerts";
+    let title = "Enable browser notifications for new chat messages";
     let pressed = false;
 
-    if (permission === 'unsupported') {
-      label = 'No alerts';
-      title = 'Browser notifications are unavailable here';
-    } else if (permission === 'denied') {
-      label = 'Alerts blocked';
-      title = 'Browser notifications are blocked for this site';
-    } else if (permission === 'granted') {
+    if (permission === "unsupported") {
+      label = "No alerts";
+      title = "Browser notifications are unavailable here";
+    } else if (permission === "denied") {
+      label = "Alerts blocked";
+      title = "Browser notifications are blocked for this site";
+    } else if (permission === "granted") {
       pressed = this.chatNotificationsEnabled;
-      label = pressed ? 'Alerts on' : 'Alerts off';
+      label = pressed ? "Alerts on" : "Alerts off";
       title = pressed
-        ? 'Disable browser notifications for chat'
-        : 'Enable browser notifications for chat';
+        ? "Disable browser notifications for chat"
+        : "Enable browser notifications for chat";
     }
 
     button.textContent = label;
     button.title = title;
-    button.setAttribute('aria-pressed', String(pressed));
-    button.classList.toggle('is-enabled', pressed);
-    button.classList.toggle('is-blocked', permission === 'denied');
+    button.setAttribute("aria-pressed", String(pressed));
+    button.classList.toggle("is-enabled", pressed);
+    button.classList.toggle("is-blocked", permission === "denied");
   },
 
   async handleChatNotificationToggle() {
     const permission = this.notifications.getPermission();
     this.chatNotificationPermission = permission;
 
-    if (permission === 'unsupported') {
-      this.toastController.show('Browser notifications are unavailable here');
+    if (permission === "unsupported") {
+      this.toastController.show("Browser notifications are unavailable here");
       this.syncChatNotificationButton();
       return;
     }
 
-    if (permission === 'denied') {
+    if (permission === "denied") {
       this.chatNotificationsEnabled = false;
       this.preferences.setChatNotificationsEnabled(false);
-      this.toastController.show('Browser notifications are blocked for this site');
+      this.toastController.show(
+        "Browser notifications are blocked for this site",
+      );
       this.syncChatNotificationButton();
       return;
     }
 
-    if (permission === 'default') {
+    if (permission === "default") {
       const nextPermission = await this.notifications.requestPermission();
       this.chatNotificationPermission = nextPermission;
 
-      if (nextPermission !== 'granted') {
+      if (nextPermission !== "granted") {
         this.chatNotificationsEnabled = false;
         this.preferences.setChatNotificationsEnabled(false);
-        if (nextPermission === 'denied') {
-          this.toastController.show('Browser notifications were blocked');
+        if (nextPermission === "denied") {
+          this.toastController.show("Browser notifications were blocked");
         }
         this.syncChatNotificationButton();
         return;
@@ -332,11 +344,17 @@ export const chatFeature = {
       return;
     }
 
-    (this.chatToastController ?? this.toastController).show(this.formatChatToastMessage(message), 4000);
+    (this.chatToastController ?? this.toastController).show(
+      this.formatChatToastMessage(message),
+      4000,
+    );
   },
 
   maybeShowBrowserChatNotification(message) {
-    if (!this.chatNotificationsEnabled || this.notifications.getPermission() !== 'granted') {
+    if (
+      !this.chatNotificationsEnabled ||
+      this.notifications.getPermission() !== "granted"
+    ) {
       return;
     }
 

@@ -1,0 +1,64 @@
+version: "1"
+
+project:
+  name: collabmd
+  language: javascript
+  src_dirs: [src/]
+  test_dirs: [tests/]
+
+# Documentation files for feature ideation (optional)
+docs:
+  [
+    README.md,
+    docs/architecture.md,
+    docs/excalidraw-next-runtime-notes.md,
+    docs/google-oidc-setup.md,
+    docs/homebrew.md,
+    docs/private-git-deployment.md,
+  ]
+
+metrics:
+  eslint_violations:
+    description: "ESLint lint violations"
+    unit: count
+    direction: lower_is_better
+    target: 0
+    source:
+      command: "npx eslint . --format json"
+      parser: eslint_json
+
+  prettier_violations:
+    description: "Files needing formatting"
+    unit: count
+    direction: lower_is_better
+    target: 0
+    source:
+      command: "npx prettier --check src/"
+      parser: prettier_check
+
+  dockerfile_issues:
+    description: "Hadolint Dockerfile lint violations"
+    unit: count
+    direction: lower_is_better
+    target: 0
+    source:
+      command: "hadolint Dockerfile --format json"
+      parser: hadolint_json
+
+  secrets_detected:
+    description: "Hardcoded secrets detected"
+    unit: count
+    direction: lower_is_better
+    target: 0
+    source:
+      command: "detect-secrets scan src/"
+      parser: detect_secrets_json
+
+constraints:
+  max_files_per_improvement: 5
+  max_improvements_per_run: 3
+  allow_new_dependencies: false
+  allow_schema_changes: false
+  require_tests: true
+  min_confidence: 0.7
+  require_approval: true

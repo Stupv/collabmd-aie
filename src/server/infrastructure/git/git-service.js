@@ -1,16 +1,19 @@
-import { createGitRequestError } from './errors.js';
-import { normalizeRelativeGitPath } from './path-utils.js';
-import { GitCommandRunner } from './command-runner.js';
-import { GitDiffService } from './diff-service.js';
-import { parseNameStatusOutput } from './parsers.js';
-import { createEmptyWorkspaceChange, createWorkspaceChange } from './responses.js';
-import { GitStatusService } from './status-service.js';
-import { GitUntrackedFileService } from './untracked-files.js';
-import { PullBackupStore } from '../persistence/pull-backup-store.js';
+import { createGitRequestError } from "./errors.js";
+import { normalizeRelativeGitPath } from "./path-utils.js";
+import { GitCommandRunner } from "./command-runner.js";
+import { GitDiffService } from "./diff-service.js";
+import { parseNameStatusOutput } from "./parsers.js";
+import {
+  createEmptyWorkspaceChange,
+  createWorkspaceChange,
+} from "./responses.js";
+import { GitStatusService } from "./status-service.js";
+import { GitUntrackedFileService } from "./untracked-files.js";
+import { PullBackupStore } from "../persistence/pull-backup-store.js";
 
 function buildAuthorEnv(author = null) {
-  const name = String(author?.name ?? '').trim();
-  const email = String(author?.email ?? '').trim();
+  const name = String(author?.name ?? "").trim();
+  const email = String(author?.email ?? "").trim();
 
   if (!name || !email) {
     return null;
@@ -83,7 +86,7 @@ export class GitService {
 
   async stageFile(path) {
     const normalizedPath = normalizeRelativeGitPath(path);
-    await this.commandRunner.execGit(['add', '-A', '--', normalizedPath]);
+    await this.commandRunner.execGit(["add", "-A", "--", normalizedPath]);
     this.invalidateStatusCache();
     return {
       ok: true,
@@ -94,7 +97,7 @@ export class GitService {
 
   async unstageFile(path) {
     const normalizedPath = normalizeRelativeGitPath(path);
-    await this.commandRunner.execGit(['reset', 'HEAD', '--', normalizedPath]);
+    await this.commandRunner.execGit(["reset", "HEAD", "--", normalizedPath]);
     this.invalidateStatusCache();
     return {
       ok: true,
@@ -104,21 +107,25 @@ export class GitService {
   }
 
   async commitStaged({ author = null, message } = {}) {
-    const normalizedMessage = String(message ?? '').trim();
+    const normalizedMessage = String(message ?? "").trim();
     if (!normalizedMessage) {
-      throw createGitRequestError(400, 'Missing commit message');
+      throw createGitRequestError(400, "Missing commit message");
     }
 
     const status = await this.getStatus({ force: true });
     if (Number(status.summary?.staged || 0) === 0) {
-      throw createGitRequestError(409, 'No staged changes to commit');
+      throw createGitRequestError(409, "No staged changes to commit");
     }
 
-    await this.commandRunner.execGit(['commit', '-m', normalizedMessage], {
+    await this.commandRunner.execGit(["commit", "-m", normalizedMessage], {
       env: buildAuthorEnv(author),
     });
-    const hash = (await this.commandRunner.execGit(['rev-parse', 'HEAD'])).trim();
-    const shortHash = (await this.commandRunner.execGit(['rev-parse', '--short', 'HEAD'])).trim();
+    const hash = (
+      await this.commandRunner.execGit(["rev-parse", "HEAD"])
+    ).trim();
+    const shortHash = (
+      await this.commandRunner.execGit(["rev-parse", "--short", "HEAD"])
+    ).trim();
     this.invalidateStatusCache();
     return {
       commit: {
@@ -134,13 +141,16 @@ export class GitService {
   async pushBranch() {
     const status = await this.getStatus({ force: true });
     if (status.branch?.detached) {
-      throw createGitRequestError(409, 'Cannot push from a detached HEAD');
+      throw createGitRequestError(409, "Cannot push from a detached HEAD");
     }
     if (!status.branch?.upstream) {
-      throw createGitRequestError(409, 'No upstream branch is configured for push');
+      throw createGitRequestError(
+        409,
+        "No upstream branch is configured for push",
+      );
     }
 
-    const output = await this.commandRunner.execGit(['push']);
+    const output = await this.commandRunner.execGit(["push"]);
     this.invalidateStatusCache();
     return {
       ok: true,
@@ -152,10 +162,13 @@ export class GitService {
   async pullBranch() {
     const status = await this.getStatus({ force: true });
     if (status.branch?.detached) {
-      throw createGitRequestError(409, 'Cannot pull from a detached HEAD');
+      throw createGitRequestError(409, "Cannot pull from a detached HEAD");
     }
     if (!status.branch?.upstream) {
-      throw createGitRequestError(409, 'No upstream branch is configured for pull');
+      throw createGitRequestError(
+        409,
+        "No upstream branch is configured for pull",
+      );
     }
 
     const beforeRef = await this.getHeadRef();
@@ -163,19 +176,25 @@ export class GitService {
 
     const targetRef = await this.resolveRef(status.branch.upstream);
     if (!targetRef) {
-      throw createGitRequestError(409, 'Unable to resolve upstream branch for pull');
+      throw createGitRequestError(
+        409,
+        "Unable to resolve upstream branch for pull",
+      );
     }
 
     if (!(await this.canFastForwardTo(targetRef))) {
       throw createGitRequestError(
         409,
-        'Cannot pull because local and remote commits have diverged; fast-forward only pull is not possible.',
-        'pull_diverged_ff_only',
+        "Cannot pull because local and remote commits have diverged; fast-forward only pull is not possible.",
+        "pull_diverged_ff_only",
       );
     }
 
     const dirtyEntries = this.collectDirtyEntries(status);
-    const upstreamWorkspaceChange = await this.createWorkspaceChangeFromRefs(beforeRef, targetRef);
+    const upstreamWorkspaceChange = await this.createWorkspaceChangeFromRefs(
+      beforeRef,
+      targetRef,
+    );
     const overlappingEntries = this.findOverlappingDirtyEntries({
       dirtyEntries,
       workspaceChange: upstreamWorkspaceChange,
@@ -193,7 +212,11 @@ export class GitService {
 
     let output;
     try {
-      output = await this.commandRunner.execGit(['pull', '--ff-only', '--autostash']);
+      output = await this.commandRunner.execGit([
+        "pull",
+        "--ff-only",
+        "--autostash",
+      ]);
     } catch (error) {
       throw await this.classifyPullError(error);
     }
@@ -206,17 +229,31 @@ export class GitService {
       ok: true,
       output: output.trim(),
       pullBackup,
-      workspaceChange: await this.createWorkspaceChangeFromRefs(beforeRef, afterRef),
+      workspaceChange: await this.createWorkspaceChangeFromRefs(
+        beforeRef,
+        afterRef,
+      ),
     };
   }
 
   async resetFileToHead(path) {
     const normalizedPath = normalizeRelativeGitPath(path);
-    const sourceRef = 'HEAD';
-    const existsOnSource = await this.pathExistsAtRef(sourceRef, normalizedPath);
+    const sourceRef = "HEAD";
+    const existsOnSource = await this.pathExistsAtRef(
+      sourceRef,
+      normalizedPath,
+    );
 
     if (existsOnSource) {
-      await this.commandRunner.execGit(['restore', '--source', sourceRef, '--staged', '--worktree', '--', normalizedPath]);
+      await this.commandRunner.execGit([
+        "restore",
+        "--source",
+        sourceRef,
+        "--staged",
+        "--worktree",
+        "--",
+        normalizedPath,
+      ]);
       this.invalidateStatusCache();
       return {
         ok: true,
@@ -228,8 +265,14 @@ export class GitService {
       };
     }
 
-    await this.commandRunner.execGit(['rm', '-f', '--ignore-unmatch', '--', normalizedPath]);
-    await this.commandRunner.execGit(['clean', '-f', '--', normalizedPath]);
+    await this.commandRunner.execGit([
+      "rm",
+      "-f",
+      "--ignore-unmatch",
+      "--",
+      normalizedPath,
+    ]);
+    await this.commandRunner.execGit(["clean", "-f", "--", normalizedPath]);
     this.invalidateStatusCache();
     return {
       ok: true,
@@ -241,7 +284,32 @@ export class GitService {
     };
   }
 
-  async getDiff({ allowLargePatch = false, metaOnly = false, path = null, scope = 'working-tree' } = {}) {
+  async pullFromRemote() {
+    const status = await this.getStatus({ force: true });
+    const changedFiles = Number(status.summary?.changedFiles || 0);
+    if (changedFiles > 0) {
+      return { success: false, reason: "dirty_working_tree" };
+    }
+
+    try {
+      const stdout = await this.commandRunner.execGit(["pull", "--ff-only"]);
+      this.invalidateStatusCache();
+      return { success: true, stdout: stdout.trim() };
+    } catch (error) {
+      return {
+        success: false,
+        reason: "git_error",
+        message: error.message || "git pull --ff-only failed",
+      };
+    }
+  }
+
+  async getDiff({
+    allowLargePatch = false,
+    metaOnly = false,
+    path = null,
+    scope = "working-tree",
+  } = {}) {
     const normalizedPath = path ? normalizeRelativeGitPath(path) : null;
     return this.diffService.getDiff({
       allowLargePatch,
@@ -253,7 +321,7 @@ export class GitService {
 
   async getHeadRef() {
     try {
-      const output = await this.commandRunner.execGit(['rev-parse', 'HEAD']);
+      const output = await this.commandRunner.execGit(["rev-parse", "HEAD"]);
       return output.trim() || null;
     } catch {
       return null;
@@ -262,7 +330,7 @@ export class GitService {
 
   async pathExistsAtRef(ref, path) {
     try {
-      await this.commandRunner.execGit(['cat-file', '-e', `${ref}:${path}`]);
+      await this.commandRunner.execGit(["cat-file", "-e", `${ref}:${path}`]);
       return true;
     } catch {
       return false;
@@ -271,7 +339,7 @@ export class GitService {
 
   async resolveRef(ref) {
     try {
-      const output = await this.commandRunner.execGit(['rev-parse', ref]);
+      const output = await this.commandRunner.execGit(["rev-parse", ref]);
       return output.trim() || null;
     } catch {
       return null;
@@ -279,10 +347,10 @@ export class GitService {
   }
 
   async fetchUpstream(upstreamRef) {
-    const remoteName = String(upstreamRef ?? '').split('/')[0] || null;
-    await this.commandRunner.execGit(remoteName
-      ? ['fetch', '--prune', remoteName]
-      : ['fetch', '--prune']);
+    const remoteName = String(upstreamRef ?? "").split("/")[0] || null;
+    await this.commandRunner.execGit(
+      remoteName ? ["fetch", "--prune", remoteName] : ["fetch", "--prune"],
+    );
   }
 
   async canFastForwardTo(targetRef) {
@@ -292,7 +360,12 @@ export class GitService {
     }
 
     try {
-      await this.commandRunner.execGit(['merge-base', '--is-ancestor', headRef, targetRef]);
+      await this.commandRunner.execGit([
+        "merge-base",
+        "--is-ancestor",
+        headRef,
+        targetRef,
+      ]);
       return true;
     } catch (error) {
       if (error?.code === 1) {
@@ -320,10 +393,16 @@ export class GitService {
           touchPaths: new Set(),
         };
 
-        existing.isUntracked = existing.isUntracked || file.scope === 'untracked';
-        existing.hasStagedChanges = existing.hasStagedChanges || file.scope === 'staged';
-        existing.hasWorkingTreeChanges = existing.hasWorkingTreeChanges || file.scope === 'working-tree';
-        existing.hasTrackedChanges = existing.hasTrackedChanges || file.scope === 'staged' || file.scope === 'working-tree';
+        existing.isUntracked =
+          existing.isUntracked || file.scope === "untracked";
+        existing.hasStagedChanges =
+          existing.hasStagedChanges || file.scope === "staged";
+        existing.hasWorkingTreeChanges =
+          existing.hasWorkingTreeChanges || file.scope === "working-tree";
+        existing.hasTrackedChanges =
+          existing.hasTrackedChanges ||
+          file.scope === "staged" ||
+          file.scope === "working-tree";
         if (!existing.oldPath && file.oldPath) {
           existing.oldPath = file.oldPath;
         }
@@ -338,14 +417,26 @@ export class GitService {
     return Array.from(entries.values());
   }
 
-  findOverlappingDirtyEntries({ dirtyEntries = [], workspaceChange = createEmptyWorkspaceChange() } = {}) {
-    const upstreamTouchedPaths = new Set([
-      ...(workspaceChange.changedPaths ?? []),
-      ...(workspaceChange.deletedPaths ?? []),
-      ...((workspaceChange.renamedPaths ?? []).flatMap((entry) => [entry.oldPath, entry.newPath])),
-    ].filter(Boolean));
+  findOverlappingDirtyEntries({
+    dirtyEntries = [],
+    workspaceChange = createEmptyWorkspaceChange(),
+  } = {}) {
+    const upstreamTouchedPaths = new Set(
+      [
+        ...(workspaceChange.changedPaths ?? []),
+        ...(workspaceChange.deletedPaths ?? []),
+        ...(workspaceChange.renamedPaths ?? []).flatMap((entry) => [
+          entry.oldPath,
+          entry.newPath,
+        ]),
+      ].filter(Boolean),
+    );
 
-    return dirtyEntries.filter((entry) => Array.from(entry.touchPaths).some((path) => upstreamTouchedPaths.has(path)));
+    return dirtyEntries.filter((entry) =>
+      Array.from(entry.touchPaths).some((path) =>
+        upstreamTouchedPaths.has(path),
+      ),
+    );
   }
 
   async createPatchForEntry(entry, { cached = false } = {}) {
@@ -355,11 +446,11 @@ export class GitService {
     }
 
     const output = await this.commandRunner.execGit([
-      'diff',
-      '--binary',
-      '--find-renames',
-      ...(cached ? ['--cached'] : []),
-      '--',
+      "diff",
+      "--binary",
+      "--find-renames",
+      ...(cached ? ["--cached"] : []),
+      "--",
       ...pathspecs,
     ]);
 
@@ -372,15 +463,17 @@ export class GitService {
     entries = [],
     targetRef = null,
   } = {}) {
-    const backupEntries = await Promise.all(entries.map(async (entry) => ({
-      ...entry,
-      stagedPatchContent: entry.hasStagedChanges
-        ? await this.createPatchForEntry(entry, { cached: true })
-        : null,
-      worktreePatchContent: entry.hasWorkingTreeChanges
-        ? await this.createPatchForEntry(entry, { cached: false })
-        : null,
-    })));
+    const backupEntries = await Promise.all(
+      entries.map(async (entry) => ({
+        ...entry,
+        stagedPatchContent: entry.hasStagedChanges
+          ? await this.createPatchForEntry(entry, { cached: true })
+          : null,
+        worktreePatchContent: entry.hasWorkingTreeChanges
+          ? await this.createPatchForEntry(entry, { cached: false })
+          : null,
+      })),
+    );
 
     const pullBackup = await this.pullBackupStore.createBackup({
       branch: branchName,
@@ -391,7 +484,7 @@ export class GitService {
 
     for (const entry of backupEntries) {
       if (entry.isUntracked && !entry.hasTrackedChanges) {
-        await this.commandRunner.execGit(['clean', '-f', '--', entry.path]);
+        await this.commandRunner.execGit(["clean", "-f", "--", entry.path]);
         continue;
       }
 
@@ -403,31 +496,48 @@ export class GitService {
 
   async restorePathToHead(path) {
     const normalizedPath = normalizeRelativeGitPath(path);
-    const sourceRef = 'HEAD';
-    const existsOnSource = await this.pathExistsAtRef(sourceRef, normalizedPath);
+    const sourceRef = "HEAD";
+    const existsOnSource = await this.pathExistsAtRef(
+      sourceRef,
+      normalizedPath,
+    );
 
     if (existsOnSource) {
-      await this.commandRunner.execGit(['restore', '--source', sourceRef, '--staged', '--worktree', '--', normalizedPath]);
+      await this.commandRunner.execGit([
+        "restore",
+        "--source",
+        sourceRef,
+        "--staged",
+        "--worktree",
+        "--",
+        normalizedPath,
+      ]);
       return;
     }
 
-    await this.commandRunner.execGit(['rm', '-f', '--ignore-unmatch', '--', normalizedPath]);
-    await this.commandRunner.execGit(['clean', '-f', '--', normalizedPath]);
+    await this.commandRunner.execGit([
+      "rm",
+      "-f",
+      "--ignore-unmatch",
+      "--",
+      normalizedPath,
+    ]);
+    await this.commandRunner.execGit(["clean", "-f", "--", normalizedPath]);
   }
 
   async hasConflictedStatus() {
     const status = await this.getStatus({ force: true });
     return (status.sections ?? [])
       .flatMap((section) => section.files ?? [])
-      .some((file) => file?.status === 'conflicted');
+      .some((file) => file?.status === "conflicted");
   }
 
   async classifyPullError(error) {
     if (await this.hasConflictedStatus()) {
       return createGitRequestError(
         409,
-        'Pull applied remote updates, but reapplying local changes caused conflicts. Review the conflicted files and the pull backup summary.',
-        'pull_conflicted_after_autostash',
+        "Pull applied remote updates, but reapplying local changes caused conflicts. Review the conflicted files and the pull backup summary.",
+        "pull_conflicted_after_autostash",
       );
     }
 
@@ -440,9 +550,19 @@ export class GitService {
     }
 
     const args = beforeRef
-      ? ['diff', '--name-status', '--find-renames', beforeRef, afterRef]
-      : ['diff-tree', '--root', '--no-commit-id', '--name-status', '--find-renames', '-r', afterRef];
-    const parsed = parseNameStatusOutput(await this.commandRunner.execGit(args));
+      ? ["diff", "--name-status", "--find-renames", beforeRef, afterRef]
+      : [
+          "diff-tree",
+          "--root",
+          "--no-commit-id",
+          "--name-status",
+          "--find-renames",
+          "-r",
+          afterRef,
+        ];
+    const parsed = parseNameStatusOutput(
+      await this.commandRunner.execGit(args),
+    );
     return createWorkspaceChange(parsed);
   }
 }

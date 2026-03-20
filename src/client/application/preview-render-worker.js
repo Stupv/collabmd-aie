@@ -1,4 +1,4 @@
-import { compilePreviewDocument } from './preview-render-compiler.js';
+import { compilePreviewDocument } from "./preview-render-compiler.js";
 
 self.onmessage = (event) => {
   const {

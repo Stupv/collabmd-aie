@@ -1,8 +1,16 @@
-import { execFile as execFileCallback } from 'node:child_process';
-import { mkdir, mkdtemp, readdir, readFile, rm, stat, writeFile } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
-import { dirname, join } from 'node:path';
-import { promisify } from 'node:util';
+import { execFile as execFileCallback } from "node:child_process";
+import {
+  mkdir,
+  mkdtemp,
+  readdir,
+  readFile,
+  rm,
+  stat,
+  writeFile,
+} from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { dirname, join } from "node:path";
+import { promisify } from "node:util";
 
 const execFile = promisify(execFileCallback);
 const GIT_TIMEOUT_MS = 20_000;
@@ -33,20 +41,19 @@ function createGitEnv(commandEnv = {}, extraEnv = {}) {
   };
 }
 
-async function execGit(args, {
-  commandEnv = {},
-  cwd = undefined,
-  execFileImpl = execFile,
-} = {}) {
-  const result = await execFileImpl('git', args, {
+async function execGit(
+  args,
+  { commandEnv = {}, cwd = undefined, execFileImpl = execFile } = {},
+) {
+  const result = await execFileImpl("git", args, {
     cwd,
-    encoding: 'utf8',
+    encoding: "utf8",
     env: createGitEnv(commandEnv),
     maxBuffer: GIT_MAX_BUFFER_BYTES,
     timeout: GIT_TIMEOUT_MS,
   });
 
-  return String(result.stdout ?? '');
+  return String(result.stdout ?? "");
 }
 
 async function pathExists(pathValue) {
@@ -54,7 +61,7 @@ async function pathExists(pathValue) {
     await stat(pathValue);
     return true;
   } catch (error) {
-    if (error?.code === 'ENOENT') {
+    if (error?.code === "ENOENT") {
       return false;
     }
 
@@ -67,7 +74,7 @@ async function isDirectory(pathValue) {
     const stats = await stat(pathValue);
     return stats.isDirectory();
   } catch (error) {
-    if (error?.code === 'ENOENT') {
+    if (error?.code === "ENOENT") {
       return false;
     }
 
@@ -86,18 +93,18 @@ async function isDirectoryEmpty(pathValue) {
 
 async function isGitRepository(vaultDir, options = {}) {
   try {
-    const output = await execGit(['rev-parse', '--is-inside-work-tree'], {
+    const output = await execGit(["rev-parse", "--is-inside-work-tree"], {
       ...options,
       cwd: vaultDir,
     });
-    return output.trim() === 'true';
+    return output.trim() === "true";
   } catch {
     return false;
   }
 }
 
 function parseRemoteDefaultBranch(output) {
-  const lines = String(output ?? '').split(/\r?\n/u);
+  const lines = String(output ?? "").split(/\r?\n/u);
 
   for (const line of lines) {
     const match = line.match(/^ref:\s+refs\/heads\/([^\s]+)\s+HEAD$/u);
@@ -106,36 +113,47 @@ function parseRemoteDefaultBranch(output) {
     }
   }
 
-  throw new Error('Failed to resolve remote default branch.');
+  throw new Error("Failed to resolve remote default branch.");
 }
 
 async function resolveRemoteDefaultBranch(repoUrl, options = {}) {
-  const output = await execGit(['ls-remote', '--symref', repoUrl, 'HEAD'], options);
+  const output = await execGit(
+    ["ls-remote", "--symref", repoUrl, "HEAD"],
+    options,
+  );
   return parseRemoteDefaultBranch(output);
 }
 
 async function getOriginUrl(vaultDir, options = {}) {
-  return (await execGit(['remote', 'get-url', 'origin'], {
-    ...options,
-    cwd: vaultDir,
-  })).trim();
+  return (
+    await execGit(["remote", "get-url", "origin"], {
+      ...options,
+      cwd: vaultDir,
+    })
+  ).trim();
 }
 
 async function hasCleanWorkingTree(vaultDir, options = {}) {
-  const status = await execGit(['status', '--porcelain=v1', '--untracked-files=all'], {
-    ...options,
-    cwd: vaultDir,
-  });
+  const status = await execGit(
+    ["status", "--porcelain=v1", "--untracked-files=all"],
+    {
+      ...options,
+      cwd: vaultDir,
+    },
+  );
 
   return status.trim().length === 0;
 }
 
 async function localBranchExists(vaultDir, branchName, options = {}) {
   try {
-    await execGit(['show-ref', '--verify', '--quiet', `refs/heads/${branchName}`], {
-      ...options,
-      cwd: vaultDir,
-    });
+    await execGit(
+      ["show-ref", "--verify", "--quiet", `refs/heads/${branchName}`],
+      {
+        ...options,
+        cwd: vaultDir,
+      },
+    );
     return true;
   } catch {
     return false;
@@ -144,39 +162,36 @@ async function localBranchExists(vaultDir, branchName, options = {}) {
 
 async function cloneIntoVault(vaultDir, repoUrl, options = {}) {
   await ensureDirectory(vaultDir);
-  await execGit(['clone', repoUrl, '.'], {
+  await execGit(["clone", repoUrl, "."], {
     ...options,
     cwd: vaultDir,
   });
 }
 
 async function ensureLocalGitIgnore(vaultDir) {
-  const excludeFilePath = join(vaultDir, '.git', 'info', 'exclude');
-  let existingContent = '';
+  const excludeFilePath = join(vaultDir, ".git", "info", "exclude");
+  let existingContent = "";
 
   try {
-    existingContent = await readFile(excludeFilePath, 'utf8');
+    existingContent = await readFile(excludeFilePath, "utf8");
   } catch (error) {
-    if (error?.code !== 'ENOENT') {
+    if (error?.code !== "ENOENT") {
       throw error;
     }
   }
 
-  const lines = existingContent
-    .split(/\r?\n/u)
-    .map((line) => line.trim());
+  const lines = existingContent.split(/\r?\n/u).map((line) => line.trim());
 
-  if (lines.includes('.collabmd') || lines.includes('.collabmd/')) {
+  if (lines.includes(".collabmd") || lines.includes(".collabmd/")) {
     return;
   }
 
-  const prefix = existingContent.length > 0 && !existingContent.endsWith('\n')
-    ? '\n'
-    : '';
+  const prefix =
+    existingContent.length > 0 && !existingContent.endsWith("\n") ? "\n" : "";
   await writeFile(
     excludeFilePath,
     `${existingContent}${prefix}.collabmd/\n`,
-    'utf8',
+    "utf8",
   );
 }
 
@@ -189,6 +204,9 @@ async function updateExistingCheckout(vaultDir, repoUrl, options = {}) {
   }
 
   if (!(await hasCleanWorkingTree(vaultDir, options))) {
+    console.warn(
+      `[git] Detected dirty working tree in "${vaultDir}". Skipping automatic sync. Use POST /api/git/pull to update manually after resolving uncommitted changes.`,
+    );
     return {
       syncSkipped: true,
     };
@@ -196,24 +214,27 @@ async function updateExistingCheckout(vaultDir, repoUrl, options = {}) {
 
   const defaultBranch = await resolveRemoteDefaultBranch(repoUrl, options);
 
-  await execGit(['fetch', '--prune', 'origin'], {
+  await execGit(["fetch", "--prune", "origin"], {
     ...options,
     cwd: vaultDir,
   });
 
   if (await localBranchExists(vaultDir, defaultBranch, options)) {
-    await execGit(['checkout', defaultBranch], {
+    await execGit(["checkout", defaultBranch], {
       ...options,
       cwd: vaultDir,
     });
   } else {
-    await execGit(['checkout', '-b', defaultBranch, '--track', `origin/${defaultBranch}`], {
-      ...options,
-      cwd: vaultDir,
-    });
+    await execGit(
+      ["checkout", "-b", defaultBranch, "--track", `origin/${defaultBranch}`],
+      {
+        ...options,
+        cwd: vaultDir,
+      },
+    );
   }
 
-  await execGit(['pull', '--ff-only', 'origin', defaultBranch], {
+  await execGit(["pull", "--ff-only", "origin", defaultBranch], {
     ...options,
     cwd: vaultDir,
   });
@@ -225,9 +246,14 @@ async function updateExistingCheckout(vaultDir, repoUrl, options = {}) {
 
 async function createPrivateKeyFile(config) {
   if (config.remote.sshPrivateKeyFile) {
-    const providedContent = await readFile(config.remote.sshPrivateKeyFile, 'utf8');
+    const providedContent = await readFile(
+      config.remote.sshPrivateKeyFile,
+      "utf8",
+    );
     if (!providedContent.trim()) {
-      throw new Error('COLLABMD_GIT_SSH_PRIVATE_KEY_FILE points to an empty file.');
+      throw new Error(
+        "COLLABMD_GIT_SSH_PRIVATE_KEY_FILE points to an empty file.",
+      );
     }
 
     return {
@@ -236,17 +262,21 @@ async function createPrivateKeyFile(config) {
     };
   }
 
-  const tempDir = await mkdtemp(join(tmpdir(), 'collabmd-git-key-'));
-  const tempFile = join(tempDir, 'id_ed25519');
-  const decodedKey = Buffer.from(config.remote.sshPrivateKeyBase64, 'base64').toString('utf8').trim();
+  const tempDir = await mkdtemp(join(tmpdir(), "collabmd-git-key-"));
+  const tempFile = join(tempDir, "id_ed25519");
+  const decodedKey = Buffer.from(config.remote.sshPrivateKeyBase64, "base64")
+    .toString("utf8")
+    .trim();
 
   if (!decodedKey) {
     await rm(tempDir, { force: true, recursive: true });
-    throw new Error('COLLABMD_GIT_SSH_PRIVATE_KEY_B64 did not decode into a usable key.');
+    throw new Error(
+      "COLLABMD_GIT_SSH_PRIVATE_KEY_B64 did not decode into a usable key.",
+    );
   }
 
   await writeFile(tempFile, `${decodedKey}\n`, {
-    encoding: 'utf8',
+    encoding: "utf8",
     mode: 0o600,
   });
 
@@ -258,35 +288,35 @@ async function createPrivateKeyFile(config) {
   };
 }
 
-function buildGitSshCommand({
-  knownHostsFile,
-  privateKeyPath,
-}) {
+function buildGitSshCommand({ knownHostsFile, privateKeyPath }) {
   const commandParts = [
-    'ssh',
-    '-i',
+    "ssh",
+    "-i",
     quoteShellArg(privateKeyPath),
-    '-o',
-    quoteShellArg('IdentitiesOnly=yes'),
-    '-o',
-    quoteShellArg('BatchMode=yes'),
-    '-o',
-    quoteShellArg('LogLevel=ERROR'),
+    "-o",
+    quoteShellArg("IdentitiesOnly=yes"),
+    "-o",
+    quoteShellArg("BatchMode=yes"),
+    "-o",
+    quoteShellArg("LogLevel=ERROR"),
   ];
 
   if (knownHostsFile) {
-    commandParts.push('-o', quoteShellArg(`StrictHostKeyChecking=yes`));
-    commandParts.push('-o', quoteShellArg(`UserKnownHostsFile=${knownHostsFile}`));
+    commandParts.push("-o", quoteShellArg(`StrictHostKeyChecking=yes`));
+    commandParts.push(
+      "-o",
+      quoteShellArg(`UserKnownHostsFile=${knownHostsFile}`),
+    );
   } else {
-    commandParts.push('-o', quoteShellArg('StrictHostKeyChecking=accept-new'));
+    commandParts.push("-o", quoteShellArg("StrictHostKeyChecking=accept-new"));
   }
 
-  return commandParts.join(' ');
+  return commandParts.join(" ");
 }
 
 function buildGitIdentityEnv(identity = {}) {
-  const name = String(identity.name ?? '').trim();
-  const email = String(identity.email ?? '').trim();
+  const name = String(identity.name ?? "").trim();
+  const email = String(identity.email ?? "").trim();
 
   if (!name || !email) {
     return {};
@@ -321,24 +351,24 @@ async function prepareGitCommandEnv(config) {
         knownHostsFile: config.remote.sshKnownHostsFile,
         privateKeyPath: privateKeyFile.path,
       }),
-      GIT_TERMINAL_PROMPT: '0',
+      GIT_TERMINAL_PROMPT: "0",
     },
   };
 }
 
 async function ensureRepositoryIdentity(vaultDir, config, options = {}) {
-  const name = String(config.identity?.name ?? '').trim();
-  const email = String(config.identity?.email ?? '').trim();
+  const name = String(config.identity?.name ?? "").trim();
+  const email = String(config.identity?.email ?? "").trim();
 
   if (!name || !email) {
     return;
   }
 
-  await execGit(['config', 'user.name', name], {
+  await execGit(["config", "user.name", name], {
     ...options,
     cwd: vaultDir,
   });
-  await execGit(['config', 'user.email', email], {
+  await execGit(["config", "user.email", email], {
     ...options,
     cwd: vaultDir,
   });
@@ -351,10 +381,10 @@ export async function prepareConfigForStartup(config, options = {}) {
     enabled: config.gitEnabled !== false,
     remote: {
       enabled: false,
-      repoUrl: '',
-      sshKnownHostsFile: '',
-      sshPrivateKeyBase64: '',
-      sshPrivateKeyFile: '',
+      repoUrl: "",
+      sshKnownHostsFile: "",
+      sshPrivateKeyBase64: "",
+      sshPrivateKeyFile: "",
     },
   };
   let runtimeCleanup = async () => {};
@@ -376,14 +406,20 @@ export async function prepareConfigForStartup(config, options = {}) {
 
     if (await pathExists(config.vaultDir)) {
       if (!(await isDirectory(config.vaultDir))) {
-        throw new Error(`Vault path "${config.vaultDir}" exists but is not a directory.`);
+        throw new Error(
+          `Vault path "${config.vaultDir}" exists but is not a directory.`,
+        );
       }
 
       if (await isGitRepository(config.vaultDir, options)) {
-        const checkoutState = await updateExistingCheckout(config.vaultDir, config.git.remote.repoUrl, {
-          ...options,
-          commandEnv: config.git.commandEnv,
-        });
+        const checkoutState = await updateExistingCheckout(
+          config.vaultDir,
+          config.git.remote.repoUrl,
+          {
+            ...options,
+            commandEnv: config.git.commandEnv,
+          },
+        );
         await ensureLocalGitIgnore(config.vaultDir);
         await ensureRepositoryIdentity(config.vaultDir, config.git, {
           ...options,

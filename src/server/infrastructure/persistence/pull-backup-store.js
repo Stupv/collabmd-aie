@@ -1,22 +1,32 @@
-import { copyFile, mkdir, readFile, readdir, stat, writeFile } from 'node:fs/promises';
-import { dirname, join, resolve } from 'node:path';
+import {
+  copyFile,
+  mkdir,
+  readFile,
+  readdir,
+  stat,
+  writeFile,
+} from "node:fs/promises";
+import { dirname, join, resolve } from "node:path";
 
-import { sanitizeVaultPath } from './path-utils.js';
+import { sanitizeVaultPath } from "./path-utils.js";
 
-const PULL_BACKUP_STORAGE_ROOT = '.collabmd/pull-backups';
-const BACKUP_METADATA_PREFIX = '<!-- collabmd-pull-backup ';
-const BACKUP_METADATA_SUFFIX = ' -->';
+const PULL_BACKUP_STORAGE_ROOT = ".collabmd/pull-backups";
+const BACKUP_METADATA_PREFIX = "<!-- collabmd-pull-backup ";
+const BACKUP_METADATA_SUFFIX = " -->";
 
-function normalizeRelativePath(pathValue = '') {
-  return String(pathValue).replace(/\\/g, '/');
+function normalizeRelativePath(pathValue = "") {
+  return String(pathValue).replace(/\\/g, "/");
 }
 
 function createBackupId(headRef = null, createdAt = new Date().toISOString()) {
   const timestamp = normalizeRelativePath(createdAt)
-    .replace(/[^0-9T]/g, '')
-    .replace('T', '-')
-    .replace(/Z$/u, '');
-  const shortHead = String(headRef ?? 'workspace').trim().slice(0, 7) || 'workspace';
+    .replace(/[^0-9T]/g, "")
+    .replace("T", "-")
+    .replace(/Z$/u, "");
+  const shortHead =
+    String(headRef ?? "workspace")
+      .trim()
+      .slice(0, 7) || "workspace";
   return `${timestamp}-${shortHead}`;
 }
 
@@ -24,14 +34,22 @@ function formatBackupMetadata(metadata = {}) {
   return `${BACKUP_METADATA_PREFIX}${JSON.stringify(metadata)}${BACKUP_METADATA_SUFFIX}`;
 }
 
-function parseBackupMetadata(content = '') {
-  const firstLine = String(content).split(/\r?\n/u)[0] ?? '';
-  if (!firstLine.startsWith(BACKUP_METADATA_PREFIX) || !firstLine.endsWith(BACKUP_METADATA_SUFFIX)) {
+function parseBackupMetadata(content = "") {
+  const firstLine = String(content).split(/\r?\n/u)[0] ?? "";
+  if (
+    !firstLine.startsWith(BACKUP_METADATA_PREFIX) ||
+    !firstLine.endsWith(BACKUP_METADATA_SUFFIX)
+  ) {
     return null;
   }
 
   try {
-    return JSON.parse(firstLine.slice(BACKUP_METADATA_PREFIX.length, -BACKUP_METADATA_SUFFIX.length));
+    return JSON.parse(
+      firstLine.slice(
+        BACKUP_METADATA_PREFIX.length,
+        -BACKUP_METADATA_SUFFIX.length,
+      ),
+    );
   } catch {
     return null;
   }
@@ -54,58 +72,61 @@ function formatSummary({
     headRef,
     targetRef,
   });
-  const entryLines = backupEntries.length === 0
-    ? ['No overlapping files could be copied from the worktree.']
-    : backupEntries.flatMap((entry) => {
-      const lines = [`- Original path: \`${entry.path}\``];
-      if (entry.backupPath) {
-        lines.push(`  Saved copy: \`${entry.backupPath}\``);
-      } else {
-        lines.push('  Saved copy: none (the file no longer existed in the worktree at backup time)');
-      }
-      if (entry.stagedPatchPath) {
-        lines.push(`  Staged patch: \`${entry.stagedPatchPath}\``);
-      }
-      if (entry.worktreePatchPath) {
-        lines.push(`  Worktree patch: \`${entry.worktreePatchPath}\``);
-      }
-      return lines;
-    });
+  const entryLines =
+    backupEntries.length === 0
+      ? ["No overlapping files could be copied from the worktree."]
+      : backupEntries.flatMap((entry) => {
+          const lines = [`- Original path: \`${entry.path}\``];
+          if (entry.backupPath) {
+            lines.push(`  Saved copy: \`${entry.backupPath}\``);
+          } else {
+            lines.push(
+              "  Saved copy: none (the file no longer existed in the worktree at backup time)",
+            );
+          }
+          if (entry.stagedPatchPath) {
+            lines.push(`  Staged patch: \`${entry.stagedPatchPath}\``);
+          }
+          if (entry.worktreePatchPath) {
+            lines.push(`  Worktree patch: \`${entry.worktreePatchPath}\``);
+          }
+          return lines;
+        });
 
   return [
     metadata,
-    '# Pull Backup',
-    '',
+    "# Pull Backup",
+    "",
     `Created: \`${createdAt}\``,
-    `Branch: \`${branch || 'HEAD'}\``,
-    `Base ref: \`${headRef || 'none'}\``,
-    `Pulled to: \`${targetRef || 'none'}\``,
+    `Branch: \`${branch || "HEAD"}\``,
+    `Base ref: \`${headRef || "none"}\``,
+    `Pulled to: \`${targetRef || "none"}\``,
     `Files backed up: \`${fileCount}\``,
-    '',
-    'This backup was created because local dirty changes overlapped with incoming remote updates.',
-    'The working tree was updated to the remote version so the latest upstream content is visible immediately.',
-    '',
-    '## Saved Files',
-    '',
+    "",
+    "This backup was created because local dirty changes overlapped with incoming remote updates.",
+    "The working tree was updated to the remote version so the latest upstream content is visible immediately.",
+    "",
+    "## Saved Files",
+    "",
     ...entryLines,
-    '',
-    '## Recovery',
-    '',
-    'Compare the current file content against the saved copies above, then manually restore any changes you want to keep.',
-    'Use `git apply --cached <staged patch>` to inspect or restore staged/index-only changes on a safe branch.',
-    'Use `git apply <worktree patch>` to inspect or restore unstaged worktree changes on a safe branch.',
-    '',
-  ].join('\n');
+    "",
+    "## Recovery",
+    "",
+    "Compare the current file content against the saved copies above, then manually restore any changes you want to keep.",
+    "Use `git apply --cached <staged patch>` to inspect or restore staged/index-only changes on a safe branch.",
+    "Use `git apply <worktree patch>` to inspect or restore unstaged worktree changes on a safe branch.",
+    "",
+  ].join("\n");
 }
 
 async function ensureLocalGitExclude(vaultDir) {
-  const excludePath = resolve(vaultDir, '.git/info/exclude');
-  let existingContent = '';
+  const excludePath = resolve(vaultDir, ".git/info/exclude");
+  let existingContent = "";
 
   try {
-    existingContent = await readFile(excludePath, 'utf8');
+    existingContent = await readFile(excludePath, "utf8");
   } catch (error) {
-    if (error?.code !== 'ENOENT') {
+    if (error?.code !== "ENOENT") {
       throw error;
     }
   }
@@ -114,14 +135,17 @@ async function ensureLocalGitExclude(vaultDir) {
     .split(/\r?\n/u)
     .map((line) => line.trim())
     .filter(Boolean);
-  if (lines.includes('.collabmd') || lines.includes('.collabmd/')) {
+  if (lines.includes(".collabmd") || lines.includes(".collabmd/")) {
     return;
   }
 
-  const prefix = existingContent.length > 0 && !existingContent.endsWith('\n')
-    ? '\n'
-    : '';
-  await writeFile(excludePath, `${existingContent}${prefix}.collabmd/\n`, 'utf8');
+  const prefix =
+    existingContent.length > 0 && !existingContent.endsWith("\n") ? "\n" : "";
+  await writeFile(
+    excludePath,
+    `${existingContent}${prefix}.collabmd/\n`,
+    "utf8",
+  );
 }
 
 export class PullBackupStore {
@@ -152,8 +176,8 @@ export class PullBackupStore {
 
     const backupId = createBackupId(headRef, createdAt);
     const backupDir = this.getBackupPath(backupId);
-    const filesRoot = join(backupDir, 'files');
-    const patchesRoot = join(backupDir, 'patches');
+    const filesRoot = join(backupDir, "files");
+    const patchesRoot = join(backupDir, "patches");
     const backupEntries = [];
 
     await mkdir(filesRoot, { recursive: true });
@@ -165,7 +189,10 @@ export class PullBackupStore {
         continue;
       }
 
-      const absoluteSourcePath = sanitizeVaultPath(this.vaultDir, normalizedPath);
+      const absoluteSourcePath = sanitizeVaultPath(
+        this.vaultDir,
+        normalizedPath,
+      );
       const relativeBackupPath = `${PULL_BACKUP_STORAGE_ROOT}/${backupId}/files/${normalizedPath}`;
       const relativeStagedPatchPath = entry?.stagedPatchContent
         ? `${PULL_BACKUP_STORAGE_ROOT}/${backupId}/patches/${normalizedPath}.staged.patch`
@@ -183,38 +210,47 @@ export class PullBackupStore {
           await copyFile(absoluteSourcePath, absoluteBackupPath);
           backupPath = normalizeRelativePath(relativeBackupPath);
         } catch (error) {
-          if (error?.code !== 'ENOENT') {
+          if (error?.code !== "ENOENT") {
             throw error;
           }
         }
       }
 
       if (relativeStagedPatchPath) {
-        const absolutePatchPath = resolve(this.vaultDir, relativeStagedPatchPath);
+        const absolutePatchPath = resolve(
+          this.vaultDir,
+          relativeStagedPatchPath,
+        );
         await mkdir(dirname(absolutePatchPath), { recursive: true });
-        await writeFile(absolutePatchPath, entry.stagedPatchContent, 'utf8');
+        await writeFile(absolutePatchPath, entry.stagedPatchContent, "utf8");
       }
 
       if (relativeWorktreePatchPath) {
-        const absolutePatchPath = resolve(this.vaultDir, relativeWorktreePatchPath);
+        const absolutePatchPath = resolve(
+          this.vaultDir,
+          relativeWorktreePatchPath,
+        );
         await mkdir(dirname(absolutePatchPath), { recursive: true });
-        await writeFile(absolutePatchPath, entry.worktreePatchContent, 'utf8');
+        await writeFile(absolutePatchPath, entry.worktreePatchContent, "utf8");
       }
 
       backupEntries.push({
         backupPath,
-        oldPath: normalizeRelativePath(entry?.oldPath ?? ''),
+        oldPath: normalizeRelativePath(entry?.oldPath ?? ""),
         path: normalizedPath,
-        stagedPatchPath: relativeStagedPatchPath ? normalizeRelativePath(relativeStagedPatchPath) : null,
-        worktreePatchPath: relativeWorktreePatchPath ? normalizeRelativePath(relativeWorktreePatchPath) : null,
+        stagedPatchPath: relativeStagedPatchPath
+          ? normalizeRelativePath(relativeStagedPatchPath)
+          : null,
+        worktreePatchPath: relativeWorktreePatchPath
+          ? normalizeRelativePath(relativeWorktreePatchPath)
+          : null,
       });
     }
 
-    const fileCount = backupEntries.filter((entry) => (
-      entry.backupPath
-      || entry.stagedPatchPath
-      || entry.worktreePatchPath
-    )).length;
+    const fileCount = backupEntries.filter(
+      (entry) =>
+        entry.backupPath || entry.stagedPatchPath || entry.worktreePatchPath,
+    ).length;
     const summaryPath = this.getSummaryPath(backupId);
     await writeFile(
       resolve(this.vaultDir, summaryPath),
@@ -227,7 +263,7 @@ export class PullBackupStore {
         headRef,
         targetRef,
       }),
-      'utf8',
+      "utf8",
     );
 
     return {
@@ -244,40 +280,49 @@ export class PullBackupStore {
     try {
       entries = await readdir(this.getStorageRoot(), { withFileTypes: true });
     } catch (error) {
-      if (error?.code === 'ENOENT') {
+      if (error?.code === "ENOENT") {
         return [];
       }
       throw error;
     }
 
-    const backups = await Promise.all(entries
-      .filter((entry) => entry.isDirectory())
-      .map(async (entry) => {
-        const summaryPath = this.getSummaryPath(entry.name);
-        try {
-          const content = await readFile(resolve(this.vaultDir, summaryPath), 'utf8');
-          const metadata = parseBackupMetadata(content);
-          if (!metadata) {
-            return null;
-          }
+    const backups = await Promise.all(
+      entries
+        .filter((entry) => entry.isDirectory())
+        .map(async (entry) => {
+          const summaryPath = this.getSummaryPath(entry.name);
+          try {
+            const content = await readFile(
+              resolve(this.vaultDir, summaryPath),
+              "utf8",
+            );
+            const metadata = parseBackupMetadata(content);
+            if (!metadata) {
+              return null;
+            }
 
-          return {
-            branch: metadata.branch ?? null,
-            createdAt: metadata.createdAt ?? null,
-            fileCount: Number(metadata.fileCount ?? 0) || 0,
-            id: entry.name,
-            summaryPath,
-          };
-        } catch (error) {
-          if (error?.code === 'ENOENT') {
-            return null;
+            return {
+              branch: metadata.branch ?? null,
+              createdAt: metadata.createdAt ?? null,
+              fileCount: Number(metadata.fileCount ?? 0) || 0,
+              id: entry.name,
+              summaryPath,
+            };
+          } catch (error) {
+            if (error?.code === "ENOENT") {
+              return null;
+            }
+            throw error;
           }
-          throw error;
-        }
-      }));
+        }),
+    );
 
     return backups
       .filter(Boolean)
-      .sort((left, right) => String(right.createdAt || '').localeCompare(String(left.createdAt || '')));
+      .sort((left, right) =>
+        String(right.createdAt || "").localeCompare(
+          String(left.createdAt || ""),
+        ),
+      );
   }
 }

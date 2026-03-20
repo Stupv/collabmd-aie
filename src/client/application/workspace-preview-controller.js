@@ -1,8 +1,8 @@
 import {
   isDiagramFilePath,
   isMarkdownFilePath,
-} from '../../domain/file-kind.js';
-import { resolveApiUrl } from '../domain/runtime-paths.js';
+} from "../../domain/file-kind.js";
+import { resolveApiUrl } from "../domain/runtime-paths.js";
 
 export class WorkspacePreviewController {
   constructor({
@@ -39,31 +39,35 @@ export class WorkspacePreviewController {
     this.videoEmbed = videoEmbed;
   }
 
-  createDiagramPreviewDocument(language, source = '') {
-    const text = String(source ?? '');
-    const longestFence = Math.max(...(text.match(/`+/g)?.map((fence) => fence.length) ?? [0]));
-    const fence = '`'.repeat(Math.max(3, longestFence + 1));
+  createDiagramPreviewDocument(language, source = "") {
+    const text = String(source ?? "");
+    const longestFence = Math.max(
+      ...(text.match(/`+/g)?.map((fence) => fence.length) ?? [0]),
+    );
+    const fence = "`".repeat(Math.max(3, longestFence + 1));
     return `${fence}${language}\n${text}\n${fence}`;
   }
 
   getPreviewSource(filePath) {
-    const source = this.getSession()?.getText() ?? '';
+    const source = this.getSession()?.getText() ?? "";
     if (this.isMermaidFile(filePath)) {
-      return this.createDiagramPreviewDocument('mermaid', source);
+      return this.createDiagramPreviewDocument("mermaid", source);
     }
 
     if (this.isPlantUmlFile(filePath)) {
-      return this.createDiagramPreviewDocument('plantuml', source);
+      return this.createDiagramPreviewDocument("plantuml", source);
     }
 
     return source;
   }
 
   resetPreviewMode() {
-    this.elements.previewContent?.classList.remove('is-excalidraw-file-preview');
-    this.elements.previewContent?.classList.remove('is-image-file-preview');
-    this.elements.previewContent?.classList.remove('is-mermaid-file-preview');
-    this.elements.previewContent?.classList.remove('is-plantuml-file-preview');
+    this.elements.previewContent?.classList.remove(
+      "is-excalidraw-file-preview",
+    );
+    this.elements.previewContent?.classList.remove("is-image-file-preview");
+    this.elements.previewContent?.classList.remove("is-mermaid-file-preview");
+    this.elements.previewContent?.classList.remove("is-plantuml-file-preview");
   }
 
   syncFileChrome(filePath) {
@@ -74,13 +78,22 @@ export class WorkspacePreviewController {
     const isPlantUml = this.isPlantUmlFile(filePath);
     const isDiagramFile = isDiagramFilePath(filePath);
 
-    this.elements.markdownToolbar?.classList.toggle('hidden', !isMarkdown);
-    this.elements.outlineToggle?.classList.toggle('hidden', isDiagramFile || isImage);
-    this.elements.previewContent?.classList.toggle('is-mermaid-file-preview', isMermaid);
-    this.elements.previewContent?.classList.toggle('is-plantuml-file-preview', isPlantUml);
+    this.elements.markdownToolbar?.classList.toggle("hidden", !isMarkdown);
+    this.elements.outlineToggle?.classList.toggle(
+      "hidden",
+      isDiagramFile || isImage,
+    );
+    this.elements.previewContent?.classList.toggle(
+      "is-mermaid-file-preview",
+      isMermaid,
+    );
+    this.elements.previewContent?.classList.toggle(
+      "is-plantuml-file-preview",
+      isPlantUml,
+    );
 
     if (isExcalidraw || isImage) {
-      this.layoutController.setView('preview', { persist: false });
+      this.layoutController.setView("preview", { persist: false });
       this.outlineController.close();
       this.backlinksPanel.clear();
       return;
@@ -101,30 +114,32 @@ export class WorkspacePreviewController {
     this.videoEmbed?.detachForCommit();
     this.excalidrawEmbed.detachForCommit();
     this.resetPreviewMode();
-    previewElement.classList.add('is-excalidraw-file-preview');
+    previewElement.classList.add("is-excalidraw-file-preview");
     const renderHost = this.previewRenderer.ensureRenderHost();
     this.previewRenderer.normalizePreviewChildren(renderHost);
 
-    const placeholder = document.createElement('div');
-    placeholder.className = 'excalidraw-embed-placeholder';
+    const placeholder = document.createElement("div");
+    placeholder.className = "excalidraw-embed-placeholder";
     placeholder.dataset.embedKey = `${filePath}#file-preview`;
     placeholder.dataset.embedLabel = this.getDisplayName(filePath);
     placeholder.dataset.embedTarget = filePath;
-    const loadingShell = document.createElement('div');
-    loadingShell.className = 'preview-shell';
-    loadingShell.textContent = 'Loading Excalidraw preview…';
+    const loadingShell = document.createElement("div");
+    loadingShell.className = "preview-shell";
+    loadingShell.textContent = "Loading Excalidraw preview…";
     placeholder.appendChild(loadingShell);
     if (renderHost) {
       renderHost.replaceChildren(placeholder);
-      renderHost.style.minHeight = '';
+      renderHost.style.minHeight = "";
     }
 
-    previewElement.dataset.renderPhase = 'ready';
+    previewElement.dataset.renderPhase = "ready";
     this.outlineController.refresh();
     this.scrollSyncController.setLargeDocumentMode(false);
     this.scrollSyncController.invalidatePreviewBlocks();
     this.videoEmbed?.reconcileEmbeds(previewElement);
-    this.excalidrawEmbed.reconcileEmbeds(previewElement, { isLargeDocument: false });
+    this.excalidrawEmbed.reconcileEmbeds(previewElement, {
+      isLargeDocument: false,
+    });
     this.excalidrawEmbed.hydrateVisibleEmbeds();
     this.schedulePreviewLayoutSyncCallback({ delayMs: 0 });
   }
@@ -138,25 +153,27 @@ export class WorkspacePreviewController {
     this.videoEmbed?.detachForCommit();
     this.excalidrawEmbed.detachForCommit();
     this.resetPreviewMode();
-    previewElement.classList.add('is-image-file-preview');
+    previewElement.classList.add("is-image-file-preview");
     const renderHost = this.previewRenderer.ensureRenderHost();
     this.previewRenderer.normalizePreviewChildren(renderHost);
 
-    const shell = document.createElement('figure');
-    shell.className = 'image-file-preview-shell';
+    const shell = document.createElement("figure");
+    shell.className = "image-file-preview-shell";
 
-    const image = document.createElement('img');
-    image.className = 'image-file-preview-image';
+    const image = document.createElement("img");
+    image.className = "image-file-preview-image";
     image.alt = this.getDisplayName(filePath);
-    image.src = resolveApiUrl(`/attachment?path=${encodeURIComponent(filePath)}`);
+    image.src = resolveApiUrl(
+      `/attachment?path=${encodeURIComponent(filePath)}`,
+    );
     shell.appendChild(image);
 
     if (renderHost) {
       renderHost.replaceChildren(shell);
-      renderHost.style.minHeight = '';
+      renderHost.style.minHeight = "";
     }
 
-    previewElement.dataset.renderPhase = 'ready';
+    previewElement.dataset.renderPhase = "ready";
     this.outlineController.refresh();
     this.scrollSyncController.setLargeDocumentMode(false);
     this.scrollSyncController.invalidatePreviewBlocks();
@@ -176,7 +193,7 @@ export class WorkspacePreviewController {
   }
 
   initializePreviewLayoutObserver(onSchedule = () => {}) {
-    if (typeof ResizeObserver !== 'function' || !this.elements.previewContent) {
+    if (typeof ResizeObserver !== "function" || !this.elements.previewContent) {
       return null;
     }
 
@@ -205,12 +222,18 @@ export class WorkspacePreviewController {
       setPreviewLayoutSyncTimer(null);
 
       const hasSession = Boolean(this.getSession());
-      const isExcalidrawPreview = this.elements.previewContent?.classList?.contains?.('is-excalidraw-file-preview') ?? false;
-      if ((!hasSession && !isExcalidrawPreview) || !this.elements.previewContent) {
+      const isExcalidrawPreview =
+        this.elements.previewContent?.classList?.contains?.(
+          "is-excalidraw-file-preview",
+        ) ?? false;
+      if (
+        (!hasSession && !isExcalidrawPreview) ||
+        !this.elements.previewContent
+      ) {
         return;
       }
 
-      if (this.elements.previewContent.dataset.renderPhase === 'shell') {
+      if (this.elements.previewContent.dataset.renderPhase === "shell") {
         return;
       }
 

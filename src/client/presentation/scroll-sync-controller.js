@@ -1,4 +1,4 @@
-import { clamp } from '../domain/vault-utils.js';
+import { clamp } from "../domain/vault-utils.js";
 
 const VIEWPORT_FOCUS_RATIO = 0.35;
 const LARGE_DOCUMENT_EDITOR_IDLE_MS = 120;
@@ -14,7 +14,10 @@ function clampScrollTop(value) {
 }
 
 function getViewportFocusOffset(element) {
-  return Math.max(element.clientHeight * VIEWPORT_FOCUS_RATIO, MIN_VIEWPORT_FOCUS_OFFSET);
+  return Math.max(
+    element.clientHeight * VIEWPORT_FOCUS_RATIO,
+    MIN_VIEWPORT_FOCUS_OFFSET,
+  );
 }
 
 function isNearTopOfScrollRange(element) {
@@ -28,11 +31,11 @@ function getElementScrollTop(container, element) {
 }
 
 function isLeafSourceBlock(element) {
-  return !element.querySelector('[data-source-line]');
+  return !element.querySelector("[data-source-line]");
 }
 
 function requestIdleWork(callback) {
-  if (typeof window.requestIdleCallback === 'function') {
+  if (typeof window.requestIdleCallback === "function") {
     return window.requestIdleCallback(callback, { timeout: 500 });
   }
 
@@ -49,7 +52,7 @@ function cancelIdleWork(id) {
     return;
   }
 
-  if (typeof window.cancelIdleCallback === 'function') {
+  if (typeof window.cancelIdleCallback === "function") {
     window.cancelIdleCallback(id);
     return;
   }
@@ -80,15 +83,19 @@ export class ScrollSyncController {
     this.previewBlocksWarmId = null;
     this.previewBlocksReadyCallbacks = [];
     this.largeDocumentMode = false;
-    this.lastInteractionSource = 'editor';
+    this.lastInteractionSource = "editor";
     this.suspendedUntil = 0;
 
     this.handleEditorScroll = () => {
-      if (!this.editorScroller || this.lockedElements.has(this.editorScroller) || this.isSuspended()) {
+      if (
+        !this.editorScroller ||
+        this.lockedElements.has(this.editorScroller) ||
+        this.isSuspended()
+      ) {
         return;
       }
 
-      this.lastInteractionSource = 'editor';
+      this.lastInteractionSource = "editor";
       if (this.largeDocumentMode) {
         this.setEditorScrollActive(true);
         this.scheduleEditorScrollIdle();
@@ -102,17 +109,25 @@ export class ScrollSyncController {
     };
 
     this.handlePreviewScroll = () => {
-      if (!this.previewContainer || this.lockedElements.has(this.previewContainer) || this.isSuspended()) {
+      if (
+        !this.previewContainer ||
+        this.lockedElements.has(this.previewContainer) ||
+        this.isSuspended()
+      ) {
         return;
       }
 
-      this.lastInteractionSource = 'preview';
+      this.lastInteractionSource = "preview";
       this.scheduleSync(this.previewContainer, this.editorScroller);
     };
   }
 
   initialize() {
-    this.previewContainer?.addEventListener('scroll', this.handlePreviewScroll, { passive: true });
+    this.previewContainer?.addEventListener(
+      "scroll",
+      this.handlePreviewScroll,
+      { passive: true },
+    );
   }
 
   attachEditorScroller(editorScroller) {
@@ -120,24 +135,29 @@ export class ScrollSyncController {
       return;
     }
 
-    this.editorScroller?.removeEventListener('scroll', this.handleEditorScroll);
+    this.editorScroller?.removeEventListener("scroll", this.handleEditorScroll);
     this.editorScroller = editorScroller;
-    this.editorScroller?.addEventListener('scroll', this.handleEditorScroll, { passive: true });
+    this.editorScroller?.addEventListener("scroll", this.handleEditorScroll, {
+      passive: true,
+    });
   }
 
   syncPreviewToEditor() {
-    this.lastInteractionSource = 'editor';
+    this.lastInteractionSource = "editor";
     this.sync(this.editorScroller, this.previewContainer);
   }
 
   syncEditorToPreview() {
-    this.lastInteractionSource = 'preview';
+    this.lastInteractionSource = "preview";
     this.sync(this.previewContainer, this.editorScroller);
   }
 
   destroy() {
-    this.previewContainer?.removeEventListener('scroll', this.handlePreviewScroll);
-    this.editorScroller?.removeEventListener('scroll', this.handleEditorScroll);
+    this.previewContainer?.removeEventListener(
+      "scroll",
+      this.handlePreviewScroll,
+    );
+    this.editorScroller?.removeEventListener("scroll", this.handleEditorScroll);
     this.editorScroller = null;
     clearTimeout(this.editorScrollIdleTimer);
     this.editorScrollIdleTimer = null;
@@ -148,7 +168,7 @@ export class ScrollSyncController {
     this.previewBlocksReadyCallbacks = [];
     this.lockedElements.clear();
     this.editorScrollActive = false;
-    this.lastInteractionSource = 'editor';
+    this.lastInteractionSource = "editor";
     this.suspendedUntil = 0;
 
     if (this.frameId) {
@@ -158,7 +178,12 @@ export class ScrollSyncController {
   }
 
   scheduleSync(source, target, { preferApproximateMapping = false } = {}) {
-    if (!source || !target || this.lockedElements.has(source) || this.isSuspended()) {
+    if (
+      !source ||
+      !target ||
+      this.lockedElements.has(source) ||
+      this.isSuspended()
+    ) {
       return;
     }
 
@@ -203,7 +228,7 @@ export class ScrollSyncController {
   }
 
   warmPreviewBlocks({ onReady } = {}) {
-    if (typeof onReady === 'function') {
+    if (typeof onReady === "function") {
       if (this.previewBlocks) {
         onReady(this.previewBlocks);
       } else {
@@ -233,7 +258,7 @@ export class ScrollSyncController {
 
   realignAfterLayoutChange() {
     const runRealignment = () => {
-      if (this.lastInteractionSource === 'preview') {
+      if (this.lastInteractionSource === "preview") {
         this.syncEditorToPreview();
         return;
       }
@@ -269,7 +294,7 @@ export class ScrollSyncController {
       try {
         callback(this.previewBlocks ?? []);
       } catch (error) {
-        console.warn('[scroll-sync] Preview block callback failed:', error);
+        console.warn("[scroll-sync] Preview block callback failed:", error);
       }
     });
   }
@@ -293,11 +318,20 @@ export class ScrollSyncController {
   }
 
   sync(source, target, { preferApproximateMapping = false } = {}) {
-    if (!source || !target || this.lockedElements.has(source) || this.isSuspended()) {
+    if (
+      !source ||
+      !target ||
+      this.lockedElements.has(source) ||
+      this.isSuspended()
+    ) {
       return;
     }
 
-    if (!preferApproximateMapping && source === this.editorScroller && target === this.previewContainer) {
+    if (
+      !preferApproximateMapping &&
+      source === this.editorScroller &&
+      target === this.previewContainer
+    ) {
       const nextScrollTop = this.getPreviewScrollTopForEditorLine();
       if (nextScrollTop !== null) {
         this.setScrollTop(target, nextScrollTop);
@@ -356,7 +390,11 @@ export class ScrollSyncController {
     const maxScrollTop = getScrollableRange(this.previewContainer);
     const focusOffset = getViewportFocusOffset(this.previewContainer);
 
-    return clamp(block.top + (previewSpan * progress) - focusOffset, 0, maxScrollTop);
+    return clamp(
+      block.top + previewSpan * progress - focusOffset,
+      0,
+      maxScrollTop,
+    );
   }
 
   getEditorLineNumberForPreviewScroll() {
@@ -369,13 +407,16 @@ export class ScrollSyncController {
       return null;
     }
 
-    const previewTop = this.previewContainer.scrollTop + getViewportFocusOffset(this.previewContainer);
+    const previewTop =
+      this.previewContainer.scrollTop +
+      getViewportFocusOffset(this.previewContainer);
     const { block, index } = this.findBlockForScrollTop(blocks, previewTop);
     const previewSpan = this.getPreviewSpan(blocks, index);
     const sourceSpan = Math.max(block.end - block.start, 1);
-    const progress = previewSpan > 0 ? clamp((previewTop - block.top) / previewSpan, 0, 1) : 0;
+    const progress =
+      previewSpan > 0 ? clamp((previewTop - block.top) / previewSpan, 0, 1) : 0;
 
-    return Math.round(block.start + (sourceSpan * progress));
+    return Math.round(block.start + sourceSpan * progress);
   }
 
   getPreviewBlocks() {
@@ -396,10 +437,18 @@ export class ScrollSyncController {
   }
 
   buildPreviewBlocks() {
-    const allBlocks = Array.from(this.previewElement.querySelectorAll('[data-source-line]'))
+    const allBlocks = Array.from(
+      this.previewElement.querySelectorAll("[data-source-line]"),
+    )
       .map((element) => {
-        const start = Number.parseInt(element.getAttribute('data-source-line') || '', 10);
-        const end = Number.parseInt(element.getAttribute('data-source-line-end') || '', 10);
+        const start = Number.parseInt(
+          element.getAttribute("data-source-line") || "",
+          10,
+        );
+        const end = Number.parseInt(
+          element.getAttribute("data-source-line-end") || "",
+          10,
+        );
 
         if (!Number.isFinite(start)) {
           return null;
@@ -413,21 +462,26 @@ export class ScrollSyncController {
         };
       })
       .filter(Boolean)
-      .sort((left, right) => (
-        left.top - right.top
-        || left.start - right.start
-        || left.end - right.end
-      ));
+      .sort(
+        (left, right) =>
+          left.top - right.top ||
+          left.start - right.start ||
+          left.end - right.end,
+      );
 
-    const blocks = allBlocks.filter((block) => isLeafSourceBlock(block.element));
+    const blocks = allBlocks.filter((block) =>
+      isLeafSourceBlock(block.element),
+    );
     const resolvedBlocks = blocks.length > 0 ? blocks : allBlocks;
 
     return resolvedBlocks.filter((block, index) => {
       const previousBlock = resolvedBlocks[index - 1];
-      return !previousBlock
-        || Math.abs(previousBlock.top - block.top) > 1
-        || previousBlock.start !== block.start
-        || previousBlock.end !== block.end;
+      return (
+        !previousBlock ||
+        Math.abs(previousBlock.top - block.top) > 1 ||
+        previousBlock.start !== block.start ||
+        previousBlock.end !== block.end
+      );
     });
   }
 
@@ -446,7 +500,10 @@ export class ScrollSyncController {
 
         const matchedSpan = matchedBlock.end - matchedBlock.start;
         const candidateSpan = block.end - block.start;
-        if (candidateSpan < matchedSpan || (candidateSpan === matchedSpan && block.start >= matchedBlock.start)) {
+        if (
+          candidateSpan < matchedSpan ||
+          (candidateSpan === matchedSpan && block.start >= matchedBlock.start)
+        ) {
           matchedBlock = block;
           matchedIndex = index;
         }
@@ -492,7 +549,11 @@ export class ScrollSyncController {
 
     if (!nextBlock) {
       const maxScrollTop = getScrollableRange(this.previewContainer);
-      return Math.max(maxScrollTop - currentBlock.top + this.previewContainer.clientHeight, fallbackSpan, 1);
+      return Math.max(
+        maxScrollTop - currentBlock.top + this.previewContainer.clientHeight,
+        fallbackSpan,
+        1,
+      );
     }
 
     return Math.max(nextBlock.top - currentBlock.top, fallbackSpan, 1);

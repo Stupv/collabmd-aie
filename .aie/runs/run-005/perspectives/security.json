@@ -1,0 +1,153 @@
+{
+  "perspective_name": "security",
+  "raw_output": {
+    "findings": [
+      {
+        "id": "R-001",
+        "severity": "critical",
+        "title": "Password distributed via URL hash fragment",
+        "description": "The functions getPasswordFromHash, removePasswordFromHash, and consumeHashParam in auth-client.js confirm that the application shared access password is distributed to users embedded in URL fragments (e.g. https://app.example.com/#password=secret). Although URL fragments are not sent in HTTP requests, they are stored in full in browser history and bookmarks, readable by any JavaScript executing on the page including third-party or CDN-loaded scripts via location.hash, commonly leaked when users copy or share URLs, and present in the address bar during the initial render before removePasswordFromHash fires. The removePasswordFromHash function only mitigates the fragment after it has already been consumed, but the original URL is already in browser history at that point.",
+        "affected_files": ["src/client/infrastructure/auth-client.js"],
+        "affected_symbols": [
+          "getPasswordFromHash",
+          "removePasswordFromHash",
+          "consumeHashParam",
+          "ensureClientAuthenticated"
+        ],
+        "recommendation": "Replace URL-fragment-based password distribution with a server-side flow: have users submit the password via a POST form, or issue short-lived invite tokens server-side that are redeemed once and immediately exchanged for an HTTP-only session cookie then invalidated. Do not embed long-lived credentials in shareable URLs.",
+        "effort_to_fix": "medium"
+      },
+      {
+        "id": "R-002",
+        "severity": "critical",
+        "title": "postMessage handler in ExcalidrawEmbedController likely lacks origin validation",
+        "description": "The _onMessage method in ExcalidrawEmbedController receives message events from embedded Excalidraw iframes and dispatches application state changes based on the message payload. The same window.addEventListener('message') listener receives events from any origin. If the handler does not strictly validate event.origin against the expected iframe origin before acting, any page that can coexist with the app in a browser session can forge messages to drive arbitrary application behaviour including triggering file opens, manipulating shared scene state, or leaking followed-user state. The companion _postMessageToEntry function confirms two-way iframe communication, making this a high-value attack surface.",
+        "affected_files": [
+          "src/client/presentation/excalidraw-embed-controller.js"
+        ],
+        "affected_symbols": [
+          "ExcalidrawEmbedController._onMessage",
+          "ExcalidrawEmbedController._postMessageToEntry",
+          "ExcalidrawEmbedController._buildIframeUrl"
+        ],
+        "recommendation": "In _onMessage, immediately check if (event.origin !== expectedOrigin) return; before processing any payload. Derive expectedOrigin from the same base URL used in _buildIframeUrl. Enforce a strict allowlist of accepted message type values, discarding anything unexpected. Consider adding a per-instance nonce to further bind messages to specific iframes.",
+        "effort_to_fix": "small"
+      },
+      {
+        "id": "R-003",
+        "severity": "critical",
+        "title": "Potential shell injection in git remote bootstrap via config-supplied values",
+        "description": "The src/server/startup/git-remote-bootstrap.js module constructs and executes shell commands for git operations via execGit, buildGitSshCommand, prepareGitCommandEnv, and cloneIntoVault. A quoteShellArg helper is defined indicating awareness of the injection risk, but the many call-sites that accept values from environment variables or user-supplied configuration (clone URL, remote name, branch names, SSH key paths, identity config) mean any argument that bypasses quoteShellArg or is interpolated into a shell string before quoting could result in arbitrary command execution on the server. This is especially dangerous because git operations run as the server process user with full access to the vault filesystem.",
+        "affected_files": ["src/server/startup/git-remote-bootstrap.js"],
+        "affected_symbols": [
+          "quoteShellArg",
+          "execGit",
+          "buildGitSshCommand",
+          "prepareGitCommandEnv",
+          "createPrivateKeyFile",
+          "cloneIntoVault",
+          "buildGitIdentityEnv"
+        ],
+        "recommendation": "Audit every execGit callsite to confirm all variable arguments pass through quoteShellArg. Prefer child_process.execFile or spawn with argument arrays rather than shell strings to eliminate the injection surface entirely. Validate git remote URLs against a strict allowlist of accepted protocols (ssh://, https://) before use, and reject URLs containing shell metacharacters regardless of quoting.",
+        "effort_to_fix": "medium"
+      },
+      {
+        "id": "R-004",
+        "severity": "warning",
+        "title": "Secure-flag determination relies on potentially spoofable proxy headers",
+        "description": "The hasSecureRequestHeaders function in src/server/auth/session-cookie.js appears to determine whether a request arrived over HTTPS by inspecting HTTP headers such as X-Forwarded-Proto. This is used to decide whether to set the Secure attribute on session cookies. If the server is directly reachable by clients rather than exclusively behind a trusted reverse proxy, clients can forge these headers and trick the server into issuing Secure-flagged cookies over plain HTTP or suppressing the flag so session cookies are transmitted unencrypted.",
+        "affected_files": ["src/server/auth/session-cookie.js"],
+        "affected_symbols": [
+          "hasSecureRequestHeaders",
+          "createSessionCookieManager",
+          "createCookieAttributes"
+        ],
+        "recommendation": "Do not rely solely on forwarded headers for security decisions unless the application is provably behind a trusted reverse proxy. Prefer an explicit SECURE_COOKIES environment variable set at deployment time. When the deployment is known to be HTTPS, force secure: true unconditionally rather than inferring it from headers clients can manipulate.",
+        "effort_to_fix": "small"
+      },
+      {
+        "id": "R-005",
+        "severity": "warning",
+        "title": "Open redirect risk in post-authentication return-to URL handling",
+        "description": "The getCurrentReturnTo function in src/client/infrastructure/auth-client.js reads a redirect target from the current URL, and sanitizeReturnTo in src/server/auth/create-auth-service.js validates it before the server issues a post-login redirect. If sanitizeReturnTo validates only that the value is non-empty or starts with a slash, an attacker can craft a login link containing returnTo=//evil.example.com (protocol-relative URL) or returnTo=/\\evil.example.com (backslash normalization bypass in some browsers) and redirect authenticated users to a malicious site immediately after login, enabling session token or credential harvesting.",
+        "affected_files": [
+          "src/client/infrastructure/auth-client.js",
+          "src/server/auth/create-auth-service.js"
+        ],
+        "affected_symbols": [
+          "getCurrentReturnTo",
+          "sanitizeReturnTo",
+          "getDefaultReturnTo",
+          "prependBasePath"
+        ],
+        "recommendation": "In sanitizeReturnTo, validate that the return URL contains no scheme component, does not start with //, and does not contain a hostname. Parse via new URL(value, 'http://localhost') and assert parsedUrl.hostname === 'localhost' before accepting. Fall back to the default path on any failure. Add test cases for //evil.com, /\\evil.com, and https://evil.com.",
+        "effort_to_fix": "trivial"
+      },
+      {
+        "id": "R-006",
+        "severity": "warning",
+        "title": "SVG from PlantUML render server injected into DOM without proven DOM-level sanitization",
+        "description": "The sanitizeSvgMarkup function in preview-diagram-utils.js and the enhanceDiagram flow inject SVG received from the PlantUML render server directly into the DOM. PlantUML diagram source is editor-controlled collaborative content. SVG contains many XSS vectors that regex or string-based sanitizers frequently miss: script tags, on* event attributes, use xlink:href references to external resources, image href with javascript: URIs, CSS url() with javascript:, and foreignObject embedding arbitrary HTML. If sanitizeSvgMarkup does not use a DOM-parser-backed library with a strict allowlist such as DOMPurify, stored XSS is achievable via crafted diagram content shared between collaborators.",
+        "affected_files": [
+          "src/client/application/preview-diagram-utils.js",
+          "src/client/application/plantuml-preview-hydrator.js",
+          "src/client/application/preview-renderer.js"
+        ],
+        "affected_symbols": [
+          "sanitizeSvgMarkup",
+          "PlantUmlPreviewHydrator.enhanceDiagram",
+          "PreviewRenderer.enhancePlantUmlDiagram",
+          "PlantUmlPreviewHydrator.fetchSvg"
+        ],
+        "recommendation": "Replace or wrap sanitizeSvgMarkup with DOMPurify configured for SVG: DOMPurify.sanitize(markup, { USE_PROFILES: { svg: true }, FORBID_TAGS: ['script','foreignObject'], FORBID_ATTR: ['style','xlink:href'] }). Review whether use and external href references are needed; if not, block them explicitly. Apply identical treatment to Mermaid SVG output in normalizeMermaidSvg.",
+        "effort_to_fix": "small"
+      },
+      {
+        "id": "R-007",
+        "severity": "warning",
+        "title": "OIDC domain allowlist may be bypassable via suffix match",
+        "description": "The isOidcUserAllowed function in create-auth-service.js gates access based on an email or domain allowlist built by normalizeEmailAllowlist and normalizeDomainAllowlist. If the domain comparison uses a suffix check such as email.endsWith('@example.com') or domain.endsWith('example.com'), it can be bypassed with addresses like attacker@notexample.com or attacker@evil-example.com. The getEmailDomain helper extracts the domain, but unless it is compared with strict equality to each allowlist entry, subdomain and suffix attacks remain possible.",
+        "affected_files": [
+          "src/server/auth/create-auth-service.js",
+          "src/server/config/env.js"
+        ],
+        "affected_symbols": [
+          "isOidcUserAllowed",
+          "getEmailDomain",
+          "normalizeEmailAddress",
+          "normalizeDomainAllowlist",
+          "normalizeEmailAllowlist"
+        ],
+        "recommendation": "Use strict equality for domain comparison after extracting the domain from the email address: extractedDomain === allowedDomain, never endsWith. Normalize both sides to lowercase before comparing. Make subdomain allowances explicit in configuration. Add unit tests covering evil-example.com, notexample.com, and sub.example.com against an example.com-only allowlist.",
+        "effort_to_fix": "small"
+      },
+      {
+        "id": "R-008",
+        "severity": "info",
+        "title": "SSH private key temporary file may be created with world-readable permissions",
+        "description": "The createPrivateKeyFile function in git-remote-bootstrap.js writes an SSH private key sourced from environment configuration to a temporary file used by GIT_SSH_COMMAND. If this file is created with default Node.js fs.writeFile permissions of 0o666 before umask, other local users on a shared host could read the private key material. SSH itself warns about overly permissive key files but the application may not surface that warning or halt operation.",
+        "affected_files": ["src/server/startup/git-remote-bootstrap.js"],
+        "affected_symbols": [
+          "createPrivateKeyFile",
+          "buildGitSshCommand",
+          "prepareGitCommandEnv"
+        ],
+        "recommendation": "Write the private key file with mode 0o600 explicitly: fs.writeFile(path, content, { mode: 0o600 }). Place the file inside a directory created with mode 0o700. Alternatively inject the key via ssh-agent or an SSH_AUTH_SOCK to avoid writing key material to disk at all.",
+        "effort_to_fix": "trivial"
+      }
+    ],
+    "summary": "Security analysis of the collabmd codebase identified three critical issues and five warnings. The most severe concerns are: (1) shared passwords distributed in URL fragments expose credentials to browser history and page-resident JavaScript; (2) the Excalidraw iframe postMessage handler appears to lack origin validation, enabling cross-origin message forgery; and (3) the git remote bootstrap module constructs shell commands from config-supplied values where incomplete use of quoteShellArg could allow command injection on the server. Supporting warnings cover proxy-header spoofing affecting session cookie security flags, an open-redirect vector in the post-auth return-to URL, potentially insufficient DOM-level sanitization of PlantUML SVG output enabling stored XSS via collaborative diagram content, a possible suffix-match bypass in the OIDC domain allowlist, and world-readable SSH key file permissions. The authentication flow and git execution paths represent the highest-priority remediation targets."
+  },
+  "metadata": {
+    "model": "claude-sonnet-4-6",
+    "stage": "review_security",
+    "input_tokens": 6,
+    "output_tokens": 14656,
+    "duration_seconds": 255.39
+  },
+  "success": true,
+  "error": null,
+  "error_type": null,
+  "error_detail": null,
+  "duration_seconds": 255.39
+}

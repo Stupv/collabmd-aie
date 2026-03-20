@@ -194,22 +194,22 @@ collabmd [directory] [options]
 
 ### Arguments
 
-| Argument | Description |
-|----------|-------------|
+| Argument    | Description                                              |
+| ----------- | -------------------------------------------------------- |
 | `directory` | Path to the vault directory (default: current directory) |
 
 ### Options
 
-| Option | Description | Default |
-|--------|-------------|---------|
-| `-p, --port` | Port to listen on | `1234` |
-| `--host` | Host to bind to | `127.0.0.1` |
-| `--auth` | Auth strategy: `none`, `password`, `oidc` | `none` |
-| `--auth-password` | Password for `--auth password` | generated per run |
-| `--local-plantuml` | Start the bundled local docker-compose PlantUML service | off |
-| `--no-tunnel` | Don't start Cloudflare Tunnel | tunnel on |
-| `-v, --version` | Show version | |
-| `-h, --help` | Show help | |
+| Option             | Description                                             | Default           |
+| ------------------ | ------------------------------------------------------- | ----------------- |
+| `-p, --port`       | Port to listen on                                       | `1234`            |
+| `--host`           | Host to bind to                                         | `127.0.0.1`       |
+| `--auth`           | Auth strategy: `none`, `password`, `oidc`               | `none`            |
+| `--auth-password`  | Password for `--auth password`                          | generated per run |
+| `--local-plantuml` | Start the bundled local docker-compose PlantUML service | off               |
+| `--no-tunnel`      | Don't start Cloudflare Tunnel                           | tunnel on         |
+| `-v, --version`    | Show version                                            |                   |
+| `-h, --help`       | Show help                                               |                   |
 
 ### Examples
 
@@ -541,43 +541,44 @@ scripts/
 <details>
 <summary>Environment variables</summary>
 
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `HOST` | Bind host | `127.0.0.1` (dev), `0.0.0.0` (prod) |
-| `PORT` | HTTP + WebSocket port | `1234` |
-| `AUTH_STRATEGY` | Auth strategy: `none`, `password`, `oidc` | `none` |
-| `AUTH_PASSWORD` | Shared password for `AUTH_STRATEGY=password` | generated per run |
-| `AUTH_SESSION_COOKIE_NAME` | Session cookie name | `collabmd_auth` |
-| `AUTH_SESSION_SECRET` | Cookie signing secret | generated per run |
-| `PUBLIC_BASE_URL` | Stable public app origin required for `AUTH_STRATEGY=oidc` | |
-| `AUTH_OIDC_CLIENT_ID` | Google OAuth client ID used for `AUTH_STRATEGY=oidc` | |
-| `AUTH_OIDC_CLIENT_SECRET` | Google OAuth client secret used for `AUTH_STRATEGY=oidc` | |
-| `AUTH_OIDC_ALLOWED_EMAILS` | Comma-separated exact email allowlist for `AUTH_STRATEGY=oidc` | |
-| `AUTH_OIDC_ALLOWED_DOMAINS` | Comma-separated email domain allowlist for `AUTH_STRATEGY=oidc` | |
-| `BASE_PATH` | URL path prefix for subpath deployments | |
-| `PLANTUML_SERVER_URL` | Upstream PlantUML server base URL used for server-side SVG rendering | `https://www.plantuml.com/plantuml` |
-| `COLLABMD_VAULT_DIR` | Vault directory path | CLI: current directory, server entrypoint: `data/vault`, Docker: `/data` |
-| `COLLABMD_GIT_ENABLED` | Enable or disable git integration in the UI and API | `true` |
-| `COLLABMD_GIT_REPO_URL` | Remote git repository used to bootstrap the vault checkout | |
-| `COLLABMD_GIT_SSH_PRIVATE_KEY_FILE` | SSH private key file path for remote git auth; preferred over base64 input | |
-| `COLLABMD_GIT_SSH_PRIVATE_KEY_B64` | Base64-encoded SSH private key used when no key file path is provided | |
-| `COLLABMD_GIT_SSH_KNOWN_HOSTS_FILE` | Optional `known_hosts` file path for strict SSH host verification | |
-| `COLLABMD_GIT_USER_NAME` | Fallback git author/committer name for in-app commits when OIDC is not active | |
-| `COLLABMD_GIT_USER_EMAIL` | Fallback git author/committer email for in-app commits when OIDC is not active | |
-| `WS_BASE_PATH` | WebSocket base path | `/ws` |
-| `PUBLIC_WS_BASE_URL` | Public WebSocket URL override for reverse proxies | |
-| `HTTP_KEEP_ALIVE_TIMEOUT_MS` | Keep-alive timeout | `5000` |
-| `HTTP_HEADERS_TIMEOUT_MS` | Header read timeout | `60000` |
-| `HTTP_REQUEST_TIMEOUT_MS` | Request timeout | `30000` |
-| `WS_HEARTBEAT_INTERVAL_MS` | Heartbeat interval for evicting dead clients | `30000` |
-| `WS_ROOM_IDLE_GRACE_MS` | Delay before closing empty collaboration rooms to disk | `15000` |
-| `WS_MAX_BUFFERED_AMOUNT_BYTES` | Max outbound buffer per WebSocket | `16777216` |
-| `WS_MAX_PAYLOAD_BYTES` | Max inbound WebSocket frame | `16777216` |
-| `CLOUDFLARED_BIN` | `cloudflared` binary path | `cloudflared` |
-| `TUNNEL_TARGET_HOST` | Tunnel target host | `127.0.0.1` |
-| `TUNNEL_TARGET_PORT` | Tunnel target port | `1234` |
-| `TUNNEL_TARGET_URL` | Full tunnel target URL override | |
-| `CLOUDFLARED_EXTRA_ARGS` | Extra `cloudflared` flags | |
+| Variable                            | Description                                                                    | Default                                                                  |
+| ----------------------------------- | ------------------------------------------------------------------------------ | ------------------------------------------------------------------------ |
+| `HOST`                              | Bind host                                                                      | `127.0.0.1` (dev), `0.0.0.0` (prod)                                      |
+| `PORT`                              | HTTP + WebSocket port                                                          | `1234`                                                                   |
+| `AUTH_STRATEGY`                     | Auth strategy: `none`, `password`, `oidc`                                      | `none`                                                                   |
+| `AUTH_PASSWORD`                     | Shared password for `AUTH_STRATEGY=password`                                   | generated per run                                                        |
+| `AUTH_SESSION_COOKIE_NAME`          | Session cookie name                                                            | `collabmd_auth`                                                          |
+| `AUTH_SESSION_SECRET`               | Cookie signing secret                                                          | generated per run                                                        |
+| `SESSION_SECRET`                    | Stable session secret to persist sessions across restarts (min 32 chars)       |                                                                          |
+| `PUBLIC_BASE_URL`                   | Stable public app origin required for `AUTH_STRATEGY=oidc`                     |                                                                          |
+| `AUTH_OIDC_CLIENT_ID`               | Google OAuth client ID used for `AUTH_STRATEGY=oidc`                           |                                                                          |
+| `AUTH_OIDC_CLIENT_SECRET`           | Google OAuth client secret used for `AUTH_STRATEGY=oidc`                       |                                                                          |
+| `AUTH_OIDC_ALLOWED_EMAILS`          | Comma-separated exact email allowlist for `AUTH_STRATEGY=oidc`                 |                                                                          |
+| `AUTH_OIDC_ALLOWED_DOMAINS`         | Comma-separated email domain allowlist for `AUTH_STRATEGY=oidc`                |                                                                          |
+| `BASE_PATH`                         | URL path prefix for subpath deployments                                        |                                                                          |
+| `PLANTUML_SERVER_URL`               | Upstream PlantUML server base URL used for server-side SVG rendering           | `https://www.plantuml.com/plantuml`                                      |
+| `COLLABMD_VAULT_DIR`                | Vault directory path                                                           | CLI: current directory, server entrypoint: `data/vault`, Docker: `/data` |
+| `COLLABMD_GIT_ENABLED`              | Enable or disable git integration in the UI and API                            | `true`                                                                   |
+| `COLLABMD_GIT_REPO_URL`             | Remote git repository used to bootstrap the vault checkout                     |                                                                          |
+| `COLLABMD_GIT_SSH_PRIVATE_KEY_FILE` | SSH private key file path for remote git auth; preferred over base64 input     |                                                                          |
+| `COLLABMD_GIT_SSH_PRIVATE_KEY_B64`  | Base64-encoded SSH private key used when no key file path is provided          |                                                                          |
+| `COLLABMD_GIT_SSH_KNOWN_HOSTS_FILE` | Optional `known_hosts` file path for strict SSH host verification              |                                                                          |
+| `COLLABMD_GIT_USER_NAME`            | Fallback git author/committer name for in-app commits when OIDC is not active  |                                                                          |
+| `COLLABMD_GIT_USER_EMAIL`           | Fallback git author/committer email for in-app commits when OIDC is not active |                                                                          |
+| `WS_BASE_PATH`                      | WebSocket base path                                                            | `/ws`                                                                    |
+| `PUBLIC_WS_BASE_URL`                | Public WebSocket URL override for reverse proxies                              |                                                                          |
+| `HTTP_KEEP_ALIVE_TIMEOUT_MS`        | Keep-alive timeout                                                             | `5000`                                                                   |
+| `HTTP_HEADERS_TIMEOUT_MS`           | Header read timeout                                                            | `60000`                                                                  |
+| `HTTP_REQUEST_TIMEOUT_MS`           | Request timeout                                                                | `30000`                                                                  |
+| `WS_HEARTBEAT_INTERVAL_MS`          | Heartbeat interval for evicting dead clients                                   | `30000`                                                                  |
+| `WS_ROOM_IDLE_GRACE_MS`             | Delay before closing empty collaboration rooms to disk                         | `15000`                                                                  |
+| `WS_MAX_BUFFERED_AMOUNT_BYTES`      | Max outbound buffer per WebSocket                                              | `16777216`                                                               |
+| `WS_MAX_PAYLOAD_BYTES`              | Max inbound WebSocket frame                                                    | `16777216`                                                               |
+| `CLOUDFLARED_BIN`                   | `cloudflared` binary path                                                      | `cloudflared`                                                            |
+| `TUNNEL_TARGET_HOST`                | Tunnel target host                                                             | `127.0.0.1`                                                              |
+| `TUNNEL_TARGET_PORT`                | Tunnel target port                                                             | `1234`                                                                   |
+| `TUNNEL_TARGET_URL`                 | Full tunnel target URL override                                                |                                                                          |
+| `CLOUDFLARED_EXTRA_ARGS`            | Extra `cloudflared` flags                                                      |                                                                          |
 
 Copy the example file:
 

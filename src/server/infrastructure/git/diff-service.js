@@ -1,5 +1,9 @@
-import { countPatchLines, parseNumstatOutput, parseUnifiedDiff } from './parsers.js';
-import { createDiffResponse, createEmptyStats } from './responses.js';
+import {
+  countPatchLines,
+  parseNumstatOutput,
+  parseUnifiedDiff,
+} from "./parsers.js";
+import { createDiffResponse, createEmptyStats } from "./responses.js";
 
 function createSectionMap(sections = []) {
   return new Map(sections.map((section) => [section.key, section]));
@@ -7,12 +11,12 @@ function createSectionMap(sections = []) {
 
 function getStatusPriority(status) {
   switch (status) {
-    case 'deleted':
+    case "deleted":
       return 5;
-    case 'added':
-    case 'untracked':
+    case "added":
+    case "untracked":
       return 4;
-    case 'renamed':
+    case "renamed":
       return 3;
     default:
       return 2;
@@ -21,9 +25,9 @@ function getStatusPriority(status) {
 
 function createScopeFlags(scope) {
   return {
-    hasStagedChanges: scope === 'staged',
-    hasUntrackedChanges: scope === 'untracked',
-    hasWorkingTreeChanges: scope === 'working-tree',
+    hasStagedChanges: scope === "staged",
+    hasUntrackedChanges: scope === "untracked",
+    hasWorkingTreeChanges: scope === "working-tree",
   };
 }
 
@@ -44,9 +48,12 @@ function mergeScopedFile(existingFile, nextFile, scope) {
     return {
       ...existingFile,
       ...nextFile,
-      hasStagedChanges: existingFile.hasStagedChanges || nextFlags.hasStagedChanges,
-      hasUntrackedChanges: existingFile.hasUntrackedChanges || nextFlags.hasUntrackedChanges,
-      hasWorkingTreeChanges: existingFile.hasWorkingTreeChanges || nextFlags.hasWorkingTreeChanges,
+      hasStagedChanges:
+        existingFile.hasStagedChanges || nextFlags.hasStagedChanges,
+      hasUntrackedChanges:
+        existingFile.hasUntrackedChanges || nextFlags.hasUntrackedChanges,
+      hasWorkingTreeChanges:
+        existingFile.hasWorkingTreeChanges || nextFlags.hasWorkingTreeChanges,
       scope,
       stats: existingFile.stats ?? createEmptyStats(),
     };
@@ -54,9 +61,12 @@ function mergeScopedFile(existingFile, nextFile, scope) {
 
   return {
     ...existingFile,
-    hasStagedChanges: existingFile.hasStagedChanges || nextFlags.hasStagedChanges,
-    hasUntrackedChanges: existingFile.hasUntrackedChanges || nextFlags.hasUntrackedChanges,
-    hasWorkingTreeChanges: existingFile.hasWorkingTreeChanges || nextFlags.hasWorkingTreeChanges,
+    hasStagedChanges:
+      existingFile.hasStagedChanges || nextFlags.hasStagedChanges,
+    hasUntrackedChanges:
+      existingFile.hasUntrackedChanges || nextFlags.hasUntrackedChanges,
+    hasWorkingTreeChanges:
+      existingFile.hasWorkingTreeChanges || nextFlags.hasWorkingTreeChanges,
   };
 }
 
@@ -80,37 +90,43 @@ export class GitDiffService {
     this.pendingDiffRequests.clear();
   }
 
-  buildDiffCommandArgs({ hasHeadCommit = true, numstat = false, path = null, scope = 'working-tree' } = {}) {
+  buildDiffCommandArgs({
+    hasHeadCommit = true,
+    numstat = false,
+    path = null,
+    scope = "working-tree",
+  } = {}) {
     const args = numstat
-      ? ['diff', '--numstat']
-      : ['diff', '--no-color', '--no-ext-diff', '--find-renames'];
+      ? ["diff", "--numstat"]
+      : ["diff", "--no-color", "--no-ext-diff", "--find-renames"];
 
-    if (scope === 'staged') {
-      args.push('--cached');
-    } else if (scope === 'all') {
+    if (scope === "staged") {
+      args.push("--cached");
+    } else if (scope === "all") {
       if (hasHeadCommit) {
-        args.push('HEAD');
+        args.push("HEAD");
       } else {
-        args.push('--cached');
+        args.push("--cached");
       }
     }
 
     if (path) {
-      args.push('--', path);
+      args.push("--", path);
     }
 
     return args;
   }
 
-  getScopedFiles(status, scope = 'working-tree', path = null) {
+  getScopedFiles(status, scope = "working-tree", path = null) {
     const orderedFiles = [];
     const fileMap = new Map();
     const sectionMap = createSectionMap(status.sections);
-    const candidateSections = scope === 'staged'
-      ? ['staged']
-      : scope === 'all'
-        ? ['staged', 'working-tree', 'untracked']
-        : ['working-tree', 'untracked'];
+    const candidateSections =
+      scope === "staged"
+        ? ["staged"]
+        : scope === "all"
+          ? ["staged", "working-tree", "untracked"]
+          : ["working-tree", "untracked"];
 
     for (const sectionKey of candidateSections) {
       const section = sectionMap.get(sectionKey);
@@ -135,21 +151,24 @@ export class GitDiffService {
     files = [],
     hasHeadCommit = false,
     path = null,
-    scope = 'working-tree',
+    scope = "working-tree",
   } = {}) {
-    const trackedFiles = files.filter((entry) => entry.status !== 'untracked');
-    const trackedSummary = trackedFiles.length > 0
-      ? parseNumstatOutput(
-        await this.commandRunner.execGit(this.buildDiffCommandArgs({
-          hasHeadCommit,
-          numstat: true,
-          path,
-          scope,
-        })),
-      )
-      : createEmptyStats();
+    const trackedFiles = files.filter((entry) => entry.status !== "untracked");
+    const trackedSummary =
+      trackedFiles.length > 0
+        ? parseNumstatOutput(
+            await this.commandRunner.execGit(
+              this.buildDiffCommandArgs({
+                hasHeadCommit,
+                numstat: true,
+                path,
+                scope,
+              }),
+            ),
+          )
+        : createEmptyStats();
     const untrackedAdditions = await this.untrackedFileService.countAdditions(
-      files.filter((entry) => entry.status === 'untracked'),
+      files.filter((entry) => entry.status === "untracked"),
     );
 
     return {
@@ -159,7 +178,12 @@ export class GitDiffService {
     };
   }
 
-  async getDiff({ allowLargePatch = false, metaOnly = false, path = null, scope = 'working-tree' } = {}) {
+  async getDiff({
+    allowLargePatch = false,
+    metaOnly = false,
+    path = null,
+    scope = "working-tree",
+  } = {}) {
     const isGitRepo = await this.commandRunner.isGitRepo();
     if (!isGitRepo) {
       return createDiffResponse({
@@ -170,9 +194,8 @@ export class GitDiffService {
       });
     }
 
-    const resolvedScope = scope === 'staged' || scope === 'all'
-      ? scope
-      : 'working-tree';
+    const resolvedScope =
+      scope === "staged" || scope === "all" ? scope : "working-tree";
     const requestKey = JSON.stringify({
       allowLargePatch: Boolean(allowLargePatch),
       metaOnly: Boolean(metaOnly),
@@ -201,7 +224,12 @@ export class GitDiffService {
     }
   }
 
-  async getDiffUncached({ allowLargePatch = false, metaOnly = false, path = null, scope = 'working-tree' } = {}) {
+  async getDiffUncached({
+    allowLargePatch = false,
+    metaOnly = false,
+    path = null,
+    scope = "working-tree",
+  } = {}) {
     const status = await this.statusService.getStatus();
     const scopedFiles = this.getScopedFiles(status, scope, path);
     const hasHeadCommit = Boolean(status.branch?.hasCommits);
@@ -224,9 +252,11 @@ export class GitDiffService {
     }
 
     const isSinglePathRequest = Boolean(path);
-    const currentFile = isSinglePathRequest ? scopedFiles[0] ?? null : null;
-    if (currentFile?.status === 'untracked') {
-      const fileLineCount = await this.untrackedFileService.countAdditions([currentFile]);
+    const currentFile = isSinglePathRequest ? (scopedFiles[0] ?? null) : null;
+    if (currentFile?.status === "untracked") {
+      const fileLineCount = await this.untrackedFileService.countAdditions([
+        currentFile,
+      ]);
       const summary = {
         additions: fileLineCount,
         deletions: 0,
@@ -235,17 +265,19 @@ export class GitDiffService {
 
       if (!allowLargePatch && fileLineCount > this.maxInitialPatchLines) {
         return createDiffResponse({
-          files: [{
-            ...currentFile,
-            canLoadFullPatch: true,
-            hunks: [],
-            patchLineCount: fileLineCount,
-            stats: {
-              additions: fileLineCount,
-              deletions: 0,
+          files: [
+            {
+              ...currentFile,
+              canLoadFullPatch: true,
+              hunks: [],
+              patchLineCount: fileLineCount,
+              stats: {
+                additions: fileLineCount,
+                deletions: 0,
+              },
+              tooLarge: true,
             },
-            tooLarge: true,
-          }],
+          ],
           metaOnly: false,
           path,
           scope,
@@ -253,7 +285,8 @@ export class GitDiffService {
         });
       }
 
-      const syntheticFiles = await this.untrackedFileService.buildSyntheticDiffs([currentFile]);
+      const syntheticFiles =
+        await this.untrackedFileService.buildSyntheticDiffs([currentFile]);
       const detail = syntheticFiles[0] ?? {
         ...currentFile,
         hunks: [],
@@ -264,13 +297,15 @@ export class GitDiffService {
       };
 
       return createDiffResponse({
-        files: [{
-          ...currentFile,
-          ...detail,
-          canLoadFullPatch: false,
-          patchLineCount: countPatchLines(detail),
-          tooLarge: false,
-        }],
+        files: [
+          {
+            ...currentFile,
+            ...detail,
+            canLoadFullPatch: false,
+            patchLineCount: countPatchLines(detail),
+            tooLarge: false,
+          },
+        ],
         metaOnly: false,
         path,
         scope,
@@ -288,23 +323,27 @@ export class GitDiffService {
       });
 
       if (
-        currentFile
-        && !allowLargePatch
-        && singleFileSummary.filesChanged > 0
-        && (singleFileSummary.additions + singleFileSummary.deletions) > this.maxInitialPatchLines
+        currentFile &&
+        !allowLargePatch &&
+        singleFileSummary.filesChanged > 0 &&
+        singleFileSummary.additions + singleFileSummary.deletions >
+          this.maxInitialPatchLines
       ) {
         return createDiffResponse({
-          files: [{
-            ...currentFile,
-            canLoadFullPatch: true,
-            hunks: [],
-            patchLineCount: singleFileSummary.additions + singleFileSummary.deletions,
-            stats: {
-              additions: singleFileSummary.additions,
-              deletions: singleFileSummary.deletions,
+          files: [
+            {
+              ...currentFile,
+              canLoadFullPatch: true,
+              hunks: [],
+              patchLineCount:
+                singleFileSummary.additions + singleFileSummary.deletions,
+              stats: {
+                additions: singleFileSummary.additions,
+                deletions: singleFileSummary.deletions,
+              },
+              tooLarge: true,
             },
-            tooLarge: true,
-          }],
+          ],
           metaOnly: false,
           path,
           scope,
@@ -313,19 +352,30 @@ export class GitDiffService {
       }
     }
 
-    const diffText = await this.commandRunner.execGit(this.buildDiffCommandArgs({
-      hasHeadCommit,
-      path,
-      scope,
-    }));
+    const diffText = await this.commandRunner.execGit(
+      this.buildDiffCommandArgs({
+        hasHeadCommit,
+        path,
+        scope,
+      }),
+    );
     const parsedFiles = parseUnifiedDiff(diffText);
 
-    if (scope !== 'staged') {
-      const untrackedFiles = this.getScopedFiles(status, 'working-tree', path)
-        .filter((file) => file.status === 'untracked');
+    if (scope !== "staged") {
+      const untrackedFiles = this.getScopedFiles(
+        status,
+        "working-tree",
+        path,
+      ).filter((file) => file.status === "untracked");
       const trackedPathSet = new Set(parsedFiles.map((entry) => entry.path));
-      const missingUntrackedFiles = untrackedFiles.filter((file) => !trackedPathSet.has(file.path));
-      parsedFiles.push(...await this.untrackedFileService.buildSyntheticDiffs(missingUntrackedFiles));
+      const missingUntrackedFiles = untrackedFiles.filter(
+        (file) => !trackedPathSet.has(file.path),
+      );
+      parsedFiles.push(
+        ...(await this.untrackedFileService.buildSyntheticDiffs(
+          missingUntrackedFiles,
+        )),
+      );
     }
 
     const parsedFileMap = new Map(parsedFiles.map((file) => [file.path, file]));
@@ -341,12 +391,10 @@ export class GitDiffService {
 
       const patchLineCount = countPatchLines(detail);
       if (
-        isSinglePathRequest
-        && !allowLargePatch
-        && (
-          patchLineCount > this.maxInitialPatchLines
-          || diffText.length > this.maxInitialPatchBytes
-        )
+        isSinglePathRequest &&
+        !allowLargePatch &&
+        (patchLineCount > this.maxInitialPatchLines ||
+          diffText.length > this.maxInitialPatchBytes)
       ) {
         return {
           ...file,
@@ -368,22 +416,25 @@ export class GitDiffService {
       };
     });
 
-    const summary = parsedFiles.reduce((accumulator, file) => ({
-      additions: accumulator.additions + (file.stats?.additions ?? 0),
-      deletions: accumulator.deletions + (file.stats?.deletions ?? 0),
-      filesChanged: accumulator.filesChanged + 1,
-    }), {
-      additions: 0,
-      deletions: 0,
-      filesChanged: 0,
-    });
+    const summary = parsedFiles.reduce(
+      (accumulator, file) => ({
+        additions: accumulator.additions + (file.stats?.additions ?? 0),
+        deletions: accumulator.deletions + (file.stats?.deletions ?? 0),
+        filesChanged: accumulator.filesChanged + 1,
+      }),
+      {
+        additions: 0,
+        deletions: 0,
+        filesChanged: 0,
+      },
+    );
 
     return createDiffResponse({
       files: mergedFiles,
       metaOnly: false,
       path,
       scope,
-      summary: isSinglePathRequest ? singleFileSummary ?? summary : summary,
+      summary: isSinglePathRequest ? (singleFileSummary ?? summary) : summary,
     });
   }
 }

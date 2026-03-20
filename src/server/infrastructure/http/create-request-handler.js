@@ -1,9 +1,9 @@
-import { createAuthApiHandler } from './create-auth-api-handler.js';
-import { createGitApiHandler } from './create-git-api-handler.js';
-import { createEsmProxyHandler } from './create-esm-proxy-handler.js';
-import { createStaticHandler } from './create-static-handler.js';
-import { createVaultApiHandler } from './create-vault-api-handler.js';
-import { parseJsonBody } from './request-body.js';
+import { createAuthApiHandler } from "./create-auth-api-handler.js";
+import { createGitApiHandler } from "./create-git-api-handler.js";
+import { createEsmProxyHandler } from "./create-esm-proxy-handler.js";
+import { createStaticHandler } from "./create-static-handler.js";
+import { createVaultApiHandler } from "./create-vault-api-handler.js";
+import { parseJsonBody } from "./request-body.js";
 import {
   applyCorsHeaders,
   jsonResponse,
@@ -11,7 +11,7 @@ import {
   setHeaders,
   isSameOriginWriteRequest,
   WRITE_METHODS,
-} from './http-response.js';
+} from "./http-response.js";
 
 function stripBasePath(pathname, basePath) {
   if (!basePath) {
@@ -19,11 +19,11 @@ function stripBasePath(pathname, basePath) {
   }
 
   if (pathname === basePath) {
-    return '/';
+    return "/";
   }
 
   if (pathname.startsWith(`${basePath}/`)) {
-    return pathname.slice(basePath.length) || '/';
+    return pathname.slice(basePath.length) || "/";
   }
 
   return pathname;
@@ -31,7 +31,7 @@ function stripBasePath(pathname, basePath) {
 
 function createRequestUrlWithPathname(requestUrl, pathname) {
   const nextUrl = new URL(requestUrl.toString());
-  nextUrl.pathname = pathname || '/';
+  nextUrl.pathname = pathname || "/";
   return nextUrl;
 }
 
@@ -67,11 +67,14 @@ export function createRequestHandler(
   });
 
   return async function handleRequest(req, res) {
-    const originalRequestUrl = new URL(req.url || '/', `http://${req.headers.host || 'localhost'}`);
+    const originalRequestUrl = new URL(
+      req.url || "/",
+      `http://${req.headers.host || "localhost"}`,
+    );
     if (
-      config.basePath
-      && (req.method === 'GET' || req.method === 'HEAD')
-      && originalRequestUrl.pathname === config.basePath
+      config.basePath &&
+      (req.method === "GET" || req.method === "HEAD") &&
+      originalRequestUrl.pathname === config.basePath
     ) {
       const location = `${config.basePath}/${originalRequestUrl.search}`;
       res.writeHead(308, { Location: location });
@@ -87,11 +90,15 @@ export function createRequestHandler(
 
     setHeaders(res, SECURITY_HEADERS);
 
-    if (req.method === 'OPTIONS') {
-      const requestedMethod = String(req.headers['access-control-request-method'] || '').toUpperCase();
+    if (req.method === "OPTIONS") {
+      const requestedMethod = String(
+        req.headers["access-control-request-method"] || "",
+      ).toUpperCase();
       const preflightTargetsWrite = WRITE_METHODS.has(requestedMethod);
       if (preflightTargetsWrite && !isSameOriginWrite) {
-        jsonResponse(req, res, 403, { error: 'Cross-origin write requests are not allowed' });
+        jsonResponse(req, res, 403, {
+          error: "Cross-origin write requests are not allowed",
+        });
         return;
       }
 
@@ -105,11 +112,17 @@ export function createRequestHandler(
     }
 
     if (WRITE_METHODS.has(req.method) && !isSameOriginWrite) {
-      jsonResponse(req, res, 403, { error: 'Cross-origin write requests are not allowed' });
+      jsonResponse(req, res, 403, {
+        error: "Cross-origin write requests are not allowed",
+      });
       return;
     }
 
-    if (config.nodeEnv === 'test' && requestUrl.pathname === '/api/test/reset-state' && req.method === 'POST') {
+    if (
+      config.nodeEnv === "test" &&
+      requestUrl.pathname === "/api/test/reset-state" &&
+      req.method === "POST"
+    ) {
       await fileSystemSyncService?.resetForExternalStateChange?.();
       await roomRegistry?.reset?.();
       await backlinkIndex?.build?.();
@@ -119,15 +132,25 @@ export function createRequestHandler(
       return;
     }
 
-    if (config.nodeEnv === 'test' && requestUrl.pathname === '/api/test/hydrate-delay' && req.method === 'POST') {
+    if (
+      config.nodeEnv === "test" &&
+      requestUrl.pathname === "/api/test/hydrate-delay" &&
+      req.method === "POST"
+    ) {
       const body = await parseJsonBody(req).catch(() => ({}));
-      testControls.wsRoomHydrateDelayMs = Math.max(0, Number(body?.delayMs) || 0);
+      testControls.wsRoomHydrateDelayMs = Math.max(
+        0,
+        Number(body?.delayMs) || 0,
+      );
       await fileSystemSyncService?.resetForExternalStateChange?.();
       await roomRegistry?.reset?.();
       await backlinkIndex?.build?.();
       await workspaceMutationCoordinator?.initialize?.();
       await fileSystemSyncService?.resetForExternalStateChange?.();
-      jsonResponse(req, res, 200, { delayMs: testControls.wsRoomHydrateDelayMs, ok: true });
+      jsonResponse(req, res, 200, {
+        delayMs: testControls.wsRoomHydrateDelayMs,
+        ok: true,
+      });
       return;
     }
 
@@ -139,7 +162,7 @@ export function createRequestHandler(
       return;
     }
 
-    if (requestUrl.pathname.startsWith('/api/')) {
+    if (requestUrl.pathname.startsWith("/api/")) {
       const authorization = authService.authorizeApiRequest(req);
       if (!authorization.ok) {
         jsonResponse(req, res, authorization.statusCode, authorization.body);

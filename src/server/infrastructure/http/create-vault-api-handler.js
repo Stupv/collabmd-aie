@@ -1,6 +1,6 @@
-import { createPlantUmlApiHandler } from './create-plantuml-api-handler.js';
-import { createVaultApiCommandHandler } from './create-vault-api-command-handler.js';
-import { createVaultApiQueryHandler } from './create-vault-api-query-handler.js';
+import { createPlantUmlApiHandler } from "./create-plantuml-api-handler.js";
+import { createVaultApiCommandHandler } from "./create-vault-api-command-handler.js";
+import { createVaultApiQueryHandler } from "./create-vault-api-query-handler.js";
 
 export function createVaultApiHandler({
   backlinkIndex,
@@ -25,7 +25,7 @@ export function createVaultApiHandler({
   });
 
   return async function handleVaultApi(req, res, requestUrl) {
-    if (!requestUrl.pathname.startsWith('/api/')) {
+    if (!requestUrl.pathname.startsWith("/api/")) {
       return false;
     }
 

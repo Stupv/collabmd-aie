@@ -1,6 +1,6 @@
-import { clamp } from '../domain/vault-utils.js';
-import { setDiagramActionButtonIcon } from '../domain/diagram-action-icons.js';
-import { DiagramPreviewHydrator } from './diagram-preview-hydrator.js';
+import { clamp } from "../domain/vault-utils.js";
+import { setDiagramActionButtonIcon } from "../domain/diagram-action-icons.js";
+import { DiagramPreviewHydrator } from "./diagram-preview-hydrator.js";
 import {
   createMermaidPlaceholderCard,
   createMermaidPlaceholderCardWithMessage,
@@ -9,29 +9,30 @@ import {
   MERMAID_BATCH_SIZE,
   MERMAID_ZOOM,
   normalizeMermaidSvg,
-} from './preview-diagram-utils.js';
+} from "./preview-diagram-utils.js";
 
 export class MermaidPreviewHydrator extends DiagramPreviewHydrator {
   constructor(renderer) {
     super(renderer, {
       batchSize: MERMAID_BATCH_SIZE,
       datasetKeys: {
-        hydrated: 'mermaidHydrated',
-        instanceId: 'mermaidInstanceId',
-        key: 'mermaidKey',
-        label: 'mermaidLabel',
-        queued: 'mermaidQueued',
-        sourceHash: 'mermaidSourceHash',
-        sourceLine: 'sourceLine',
-        sourceLineEnd: 'sourceLineEnd',
-        target: 'mermaidTarget',
+        hydrated: "mermaidHydrated",
+        instanceId: "mermaidInstanceId",
+        key: "mermaidKey",
+        label: "mermaidLabel",
+        queued: "mermaidQueued",
+        sourceHash: "mermaidSourceHash",
+        sourceLine: "sourceLine",
+        sourceLineEnd: "sourceLineEnd",
+        target: "mermaidTarget",
       },
-      filePathLabel: 'Mermaid',
-      shellClassName: 'mermaid-shell',
-      sourceClassName: 'mermaid-source',
+      filePathLabel: "Mermaid",
+      shellClassName: "mermaid-shell",
+      sourceClassName: "mermaid-source",
     });
     this.renderer = renderer;
-    this.currentTheme = document.documentElement?.dataset.theme === 'light' ? 'light' : 'dark';
+    this.currentTheme =
+      document.documentElement?.dataset.theme === "light" ? "light" : "dark";
     this.loader = null;
     this.runtime = null;
     this.shellRefits = new WeakMap();
@@ -52,28 +53,31 @@ export class MermaidPreviewHydrator extends DiagramPreviewHydrator {
     mermaid.initialize({
       startOnLoad: false,
       flowchart: {
-        defaultRenderer: 'dagre-wrapper',
+        defaultRenderer: "dagre-wrapper",
         useMaxWidth: true,
       },
       class: {
-        defaultRenderer: 'dagre-wrapper',
+        defaultRenderer: "dagre-wrapper",
         useMaxWidth: true,
       },
-      theme: this.currentTheme === 'dark' ? 'dark' : 'default',
-      themeVariables: this.currentTheme === 'dark' ? {
-        background: '#161822',
-        clusterBkg: '#1a1c28',
-        edgeLabelBackground: '#161822',
-        lineColor: '#8b8ba0',
-        mainBkg: '#1c1e2c',
-        nodeBorder: '#383a50',
-        primaryBorderColor: '#383a50',
-        primaryColor: '#818cf8',
-        primaryTextColor: '#e2e2ea',
-        secondaryColor: '#1c1e2c',
-        tertiaryColor: '#161822',
-        titleColor: '#e2e2ea',
-      } : {},
+      theme: this.currentTheme === "dark" ? "dark" : "default",
+      themeVariables:
+        this.currentTheme === "dark"
+          ? {
+              background: "#161822",
+              clusterBkg: "#1a1c28",
+              edgeLabelBackground: "#161822",
+              lineColor: "#8b8ba0",
+              mainBkg: "#1c1e2c",
+              nodeBorder: "#383a50",
+              primaryBorderColor: "#383a50",
+              primaryColor: "#818cf8",
+              primaryTextColor: "#e2e2ea",
+              secondaryColor: "#1c1e2c",
+              tertiaryColor: "#161822",
+              titleColor: "#e2e2ea",
+            }
+          : {},
     });
   }
 
@@ -87,11 +91,11 @@ export class MermaidPreviewHydrator extends DiagramPreviewHydrator {
       return this.loader;
     }
 
-    this.loader = import('../mermaid-runtime.js')
+    this.loader = import("../mermaid-runtime.js")
       .then((module) => {
         const mermaid = module?.default;
         if (!mermaid) {
-          throw new Error('Mermaid runtime failed to initialize');
+          throw new Error("Mermaid runtime failed to initialize");
         }
 
         this.runtime = mermaid;
@@ -101,7 +105,11 @@ export class MermaidPreviewHydrator extends DiagramPreviewHydrator {
       .catch((error) => {
         this.loader = null;
         this.runtime = null;
-        throw new Error(error instanceof Error ? error.message : 'Failed to load Mermaid runtime');
+        throw new Error(
+          error instanceof Error
+            ? error.message
+            : "Failed to load Mermaid runtime",
+        );
       });
 
     return this.loader;
@@ -109,7 +117,7 @@ export class MermaidPreviewHydrator extends DiagramPreviewHydrator {
 
   handleReconcile({ restoredMaximizedShell }) {
     if (restoredMaximizedShell) {
-      document.body.classList.add('mermaid-maximized-open');
+      document.body.classList.add("mermaid-maximized-open");
     }
   }
 
@@ -118,7 +126,7 @@ export class MermaidPreviewHydrator extends DiagramPreviewHydrator {
   }
 
   handlePrepareHydrationBatchError(_shells, error) {
-    console.warn('[preview] Mermaid runtime failed to load:', error);
+    console.warn("[preview] Mermaid runtime failed to load:", error);
   }
 
   async hydrateShell(shell, mermaid) {
@@ -126,15 +134,15 @@ export class MermaidPreviewHydrator extends DiagramPreviewHydrator {
       return;
     }
 
-    let sourceNode = shell.querySelector('.mermaid-source');
+    let sourceNode = shell.querySelector(".mermaid-source");
     if (!sourceNode) {
-      sourceNode = document.createElement('span');
-      sourceNode.className = 'mermaid-source';
+      sourceNode = document.createElement("span");
+      sourceNode.className = "mermaid-source";
       sourceNode.hidden = true;
       shell.appendChild(sourceNode);
     }
 
-    let source = sourceNode.textContent ?? '';
+    let source = sourceNode.textContent ?? "";
     try {
       if (!source.trim() && shell.dataset.mermaidTarget) {
         source = await this.fetchSource(shell.dataset.mermaidTarget);
@@ -145,23 +153,27 @@ export class MermaidPreviewHydrator extends DiagramPreviewHydrator {
       }
 
       if (!source.trim()) {
-        throw new Error(shell.dataset.mermaidTarget ? 'Mermaid file is empty' : 'Mermaid source is empty');
+        throw new Error(
+          shell.dataset.mermaidTarget
+            ? "Mermaid file is empty"
+            : "Mermaid source is empty",
+        );
       }
 
       source = this.prepareSource(source);
 
-      shell.querySelector('.mermaid-placeholder-card')?.remove();
+      shell.querySelector(".mermaid-placeholder-card")?.remove();
 
-      const diagram = document.createElement('div');
-      diagram.className = 'mermaid mermaid-render-node';
+      const diagram = document.createElement("div");
+      diagram.className = "mermaid mermaid-render-node";
       diagram.id = shell.dataset.mermaidKey || `mermaid-${Date.now()}`;
-      const sourceLine = shell.getAttribute('data-source-line');
-      const sourceLineEnd = shell.getAttribute('data-source-line-end');
+      const sourceLine = shell.getAttribute("data-source-line");
+      const sourceLineEnd = shell.getAttribute("data-source-line-end");
       if (sourceLine) {
-        diagram.setAttribute('data-source-line', sourceLine);
+        diagram.setAttribute("data-source-line", sourceLine);
       }
       if (sourceLineEnd) {
-        diagram.setAttribute('data-source-line-end', sourceLineEnd);
+        diagram.setAttribute("data-source-line-end", sourceLineEnd);
       }
       diagram.textContent = source;
       shell.appendChild(diagram);
@@ -174,21 +186,26 @@ export class MermaidPreviewHydrator extends DiagramPreviewHydrator {
       this.enhanceDiagram(shell, diagram);
       this.markShellHydrated(shell);
     } catch (error) {
-      console.warn('[preview] Mermaid render failed:', error);
-      shell.querySelector(':scope > .mermaid-toolbar')?.remove();
-      shell.querySelector(':scope > .mermaid-frame')?.remove();
-      shell.querySelector(':scope > .mermaid-render-node')?.remove();
-      if (!shell.querySelector('.mermaid-placeholder-card')) {
-        sourceNode?.after(createMermaidPlaceholderCardWithMessage(shell.dataset.mermaidKey || 'mermaid', {
-          label: shell.dataset.mermaidLabel || 'Mermaid diagram',
-          message: error instanceof Error ? error.message : 'Render failed',
-        }));
+      console.warn("[preview] Mermaid render failed:", error);
+      shell.querySelector(":scope > .mermaid-toolbar")?.remove();
+      shell.querySelector(":scope > .mermaid-frame")?.remove();
+      shell.querySelector(":scope > .mermaid-render-node")?.remove();
+      if (!shell.querySelector(".mermaid-placeholder-card")) {
+        sourceNode?.after(
+          createMermaidPlaceholderCardWithMessage(
+            shell.dataset.mermaidKey || "mermaid",
+            {
+              label: shell.dataset.mermaidLabel || "Mermaid diagram",
+              message: error instanceof Error ? error.message : "Render failed",
+            },
+          ),
+        );
       }
     }
   }
 
   prepareSource(source) {
-    let text = String(source ?? '');
+    let text = String(source ?? "");
 
     if (!/%%\{[\s\S]*?\binit\s*:/m.test(text)) {
       const initConfig = this.getPreviewInitConfig(text);
@@ -201,14 +218,14 @@ export class MermaidPreviewHydrator extends DiagramPreviewHydrator {
       return text;
     }
 
-    const lines = text.split('\n');
+    const lines = text.split("\n");
     const ganttLineIndex = lines.findIndex((line) => /^\s*gantt\b/.test(line));
     if (ganttLineIndex === -1) {
       return text;
     }
 
-    lines.splice(ganttLineIndex + 1, 0, '    todayMarker off');
-    return lines.join('\n');
+    lines.splice(ganttLineIndex + 1, 0, "    todayMarker off");
+    return lines.join("\n");
   }
 
   getPreviewInitConfig(source) {
@@ -239,48 +256,62 @@ export class MermaidPreviewHydrator extends DiagramPreviewHydrator {
       return;
     }
 
-    const hydratedShells = Array.from(previewElement.querySelectorAll('.mermaid-shell[data-mermaid-hydrated="true"]'));
+    const hydratedShells = Array.from(
+      previewElement.querySelectorAll(
+        '.mermaid-shell[data-mermaid-hydrated="true"]',
+      ),
+    );
     if (hydratedShells.length === 0) {
       return;
     }
 
     hydratedShells.forEach((shell) => {
       this.shellRefits.delete(shell);
-      shell.removeAttribute('data-mermaid-hydrated');
-      shell.querySelector(':scope > .mermaid-toolbar')?.remove();
-      shell.querySelector(':scope > .mermaid-frame')?.remove();
-      shell.querySelector(':scope > .mermaid-render-node')?.remove();
-      if (!shell.querySelector('.mermaid-placeholder-card')) {
-        shell.querySelector('.mermaid-source')?.after(createMermaidPlaceholderCard(shell.dataset.mermaidKey || 'mermaid'));
+      shell.removeAttribute("data-mermaid-hydrated");
+      shell.querySelector(":scope > .mermaid-toolbar")?.remove();
+      shell.querySelector(":scope > .mermaid-frame")?.remove();
+      shell.querySelector(":scope > .mermaid-render-node")?.remove();
+      if (!shell.querySelector(".mermaid-placeholder-card")) {
+        shell
+          .querySelector(".mermaid-source")
+          ?.after(
+            createMermaidPlaceholderCard(shell.dataset.mermaidKey || "mermaid"),
+          );
       }
       this.enqueueShell(shell, { prioritize: true });
     });
   }
 
   enhanceDiagram(shell, renderedDiagram) {
-    const svg = renderedDiagram.querySelector('svg');
+    const svg = renderedDiagram.querySelector("svg");
     if (!svg) {
       renderedDiagram.remove();
       return;
     }
 
-    const toolbar = document.createElement('div');
-    toolbar.className = 'mermaid-toolbar diagram-preview-toolbar';
+    const toolbar = document.createElement("div");
+    toolbar.className = "mermaid-toolbar diagram-preview-toolbar";
 
-    const decreaseButton = this.createZoomButton('−', 'Zoom out');
-    const increaseButton = this.createZoomButton('+', 'Zoom in');
-    const resetButton = this.createZoomButton('Reset', 'Reset zoom');
-    const maximizeButton = this.createZoomButton('Max', 'Maximize diagram');
-    maximizeButton.classList.add('mermaid-maximize-btn');
-    setDiagramActionButtonIcon(maximizeButton, 'maximize');
-    const zoomLabel = document.createElement('span');
-    zoomLabel.className = 'mermaid-zoom-label diagram-preview-zoom-label';
-    zoomLabel.setAttribute('aria-live', 'polite');
+    const decreaseButton = this.createZoomButton("−", "Zoom out");
+    const increaseButton = this.createZoomButton("+", "Zoom in");
+    const resetButton = this.createZoomButton("Reset", "Reset zoom");
+    const maximizeButton = this.createZoomButton("Max", "Maximize diagram");
+    maximizeButton.classList.add("mermaid-maximize-btn");
+    setDiagramActionButtonIcon(maximizeButton, "maximize");
+    const zoomLabel = document.createElement("span");
+    zoomLabel.className = "mermaid-zoom-label diagram-preview-zoom-label";
+    zoomLabel.setAttribute("aria-live", "polite");
 
-    toolbar.append(decreaseButton, zoomLabel, resetButton, increaseButton, maximizeButton);
+    toolbar.append(
+      decreaseButton,
+      zoomLabel,
+      resetButton,
+      increaseButton,
+      maximizeButton,
+    );
 
-    const frame = document.createElement('div');
-    frame.className = 'mermaid-frame diagram-preview-frame';
+    const frame = document.createElement("div");
+    frame.className = "mermaid-frame diagram-preview-frame";
 
     const { width: baseWidth, height: baseHeight } = normalizeMermaidSvg(svg);
     let currentZoom = MERMAID_ZOOM.default;
@@ -296,13 +327,17 @@ export class MermaidPreviewHydrator extends DiagramPreviewHydrator {
     let panStartScrollLeft = 0;
     let panStartScrollTop = 0;
 
-    svg.style.display = 'block';
-    svg.style.margin = '0 auto';
-    svg.style.maxWidth = 'none';
+    svg.style.display = "block";
+    svg.style.margin = "0 auto";
+    svg.style.maxWidth = "none";
 
     const calculateDefaultZoom = () => {
       const viewport = getFrameViewportSize(frame);
-      if (!Number.isFinite(baseWidth) || baseWidth <= 0 || viewport.width <= 0) {
+      if (
+        !Number.isFinite(baseWidth) ||
+        baseWidth <= 0 ||
+        viewport.width <= 0
+      ) {
         return MERMAID_ZOOM.default;
       }
 
@@ -325,14 +360,16 @@ export class MermaidPreviewHydrator extends DiagramPreviewHydrator {
       increaseButton.disabled = currentZoom >= MERMAID_ZOOM.max;
 
       const viewport = getFrameViewportSize(frame);
-      const isPannable = (baseWidth * currentZoom) > viewport.width || (baseHeight * currentZoom) > viewport.height;
-      frame.classList.toggle('is-pannable', isPannable);
-      svg.style.margin = isPannable ? '0' : '0 auto';
+      const isPannable =
+        baseWidth * currentZoom > viewport.width ||
+        baseHeight * currentZoom > viewport.height;
+      frame.classList.toggle("is-pannable", isPannable);
+      svg.style.margin = isPannable ? "0" : "0 auto";
     };
 
     const getViewportCenter = () => ({
-      x: frame.scrollLeft + (frame.clientWidth / 2),
-      y: frame.scrollTop + (frame.clientHeight / 2),
+      x: frame.scrollLeft + frame.clientWidth / 2,
+      y: frame.scrollTop + frame.clientHeight / 2,
     });
 
     const restoreViewportCenter = (previousZoom, nextZoom, center) => {
@@ -341,8 +378,8 @@ export class MermaidPreviewHydrator extends DiagramPreviewHydrator {
       }
 
       const scale = nextZoom / previousZoom;
-      frame.scrollLeft = (center.x * scale) - (frame.clientWidth / 2);
-      frame.scrollTop = (center.y * scale) - (frame.clientHeight / 2);
+      frame.scrollLeft = center.x * scale - frame.clientWidth / 2;
+      frame.scrollTop = center.y * scale - frame.clientHeight / 2;
     };
 
     const animateZoomTo = (nextZoom) => {
@@ -361,9 +398,14 @@ export class MermaidPreviewHydrator extends DiagramPreviewHydrator {
       }
 
       const tick = (now) => {
-        const progress = clamp((now - startedAt) / MERMAID_ZOOM.animationDurationMs, 0, 1);
+        const progress = clamp(
+          (now - startedAt) / MERMAID_ZOOM.animationDurationMs,
+          0,
+          1,
+        );
         const easedProgress = easeOutCubic(progress);
-        const animatedZoom = startZoom + ((targetZoom - startZoom) * easedProgress);
+        const animatedZoom =
+          startZoom + (targetZoom - startZoom) * easedProgress;
 
         applyZoom(animatedZoom);
         restoreViewportCenter(startZoom, animatedZoom, center);
@@ -418,7 +460,8 @@ export class MermaidPreviewHydrator extends DiagramPreviewHydrator {
         }
 
         const viewportWidth = getFrameViewportSize(frame).width;
-        const viewportChanged = Math.abs(viewportWidth - lastAutoFitViewportWidth) > 1;
+        const viewportChanged =
+          Math.abs(viewportWidth - lastAutoFitViewportWidth) > 1;
         if (!force && hasManualZoom) {
           return;
         }
@@ -432,52 +475,59 @@ export class MermaidPreviewHydrator extends DiagramPreviewHydrator {
 
     this.shellRefits.set(shell, scheduleResetZoomToFit);
 
-    decreaseButton.addEventListener('click', () => zoomBy(-MERMAID_ZOOM.step));
-    increaseButton.addEventListener('click', () => zoomBy(MERMAID_ZOOM.step));
-    resetButton.addEventListener('click', () => {
+    decreaseButton.addEventListener("click", () => zoomBy(-MERMAID_ZOOM.step));
+    increaseButton.addEventListener("click", () => zoomBy(MERMAID_ZOOM.step));
+    resetButton.addEventListener("click", () => {
       resetZoomToFit({ animate: true });
     });
 
     const syncMaximizeButtonState = () => {
-      const isMaximized = shell.classList.contains('is-maximized');
-      setDiagramActionButtonIcon(maximizeButton, isMaximized ? 'restore' : 'maximize');
-      const label = isMaximized ? 'Restore diagram size' : 'Maximize diagram';
-      maximizeButton.setAttribute('aria-label', label);
+      const isMaximized = shell.classList.contains("is-maximized");
+      setDiagramActionButtonIcon(
+        maximizeButton,
+        isMaximized ? "restore" : "maximize",
+      );
+      const label = isMaximized ? "Restore diagram size" : "Maximize diagram";
+      maximizeButton.setAttribute("aria-label", label);
       maximizeButton.title = label;
     };
 
     const setMaximizedState = (shouldMaximize) => {
       const previewElement = this.renderer.previewElement;
       if (shouldMaximize) {
-        const activeContainer = previewElement.querySelector('.mermaid-shell.is-maximized');
+        const activeContainer = previewElement.querySelector(
+          ".mermaid-shell.is-maximized",
+        );
         if (activeContainer && activeContainer !== shell) {
-          activeContainer.classList.remove('is-maximized');
+          activeContainer.classList.remove("is-maximized");
           this.shellRefits.get(activeContainer)?.();
-          const activeButton = activeContainer.querySelector('.mermaid-maximize-btn');
+          const activeButton = activeContainer.querySelector(
+            ".mermaid-maximize-btn",
+          );
           if (activeButton) {
-            setDiagramActionButtonIcon(activeButton, 'maximize');
-            activeButton.setAttribute('aria-label', 'Maximize diagram');
-            activeButton.title = 'Maximize diagram';
+            setDiagramActionButtonIcon(activeButton, "maximize");
+            activeButton.setAttribute("aria-label", "Maximize diagram");
+            activeButton.title = "Maximize diagram";
           }
         }
-        shell.classList.add('is-maximized');
-        document.body.classList.add('mermaid-maximized-open');
+        shell.classList.add("is-maximized");
+        document.body.classList.add("mermaid-maximized-open");
         syncMaximizeButtonState();
         scheduleResetZoomToFit({ force: true });
         return;
       }
 
-      shell.classList.remove('is-maximized');
-      if (!previewElement.querySelector('.mermaid-shell.is-maximized')) {
-        document.body.classList.remove('mermaid-maximized-open');
+      shell.classList.remove("is-maximized");
+      if (!previewElement.querySelector(".mermaid-shell.is-maximized")) {
+        document.body.classList.remove("mermaid-maximized-open");
       }
       syncMaximizeButtonState();
       scheduleResetZoomToFit({ force: true });
     };
 
     syncMaximizeButtonState();
-    maximizeButton.addEventListener('click', () => {
-      setMaximizedState(!shell.classList.contains('is-maximized'));
+    maximizeButton.addEventListener("click", () => {
+      setMaximizedState(!shell.classList.contains("is-maximized"));
     });
 
     const stopPanning = () => {
@@ -486,9 +536,12 @@ export class MermaidPreviewHydrator extends DiagramPreviewHydrator {
       }
 
       isPanning = false;
-      frame.classList.remove('is-dragging');
+      frame.classList.remove("is-dragging");
 
-      if (activePointerId !== null && typeof frame.releasePointerCapture === 'function') {
+      if (
+        activePointerId !== null &&
+        typeof frame.releasePointerCapture === "function"
+      ) {
         try {
           frame.releasePointerCapture(activePointerId);
         } catch {
@@ -499,8 +552,8 @@ export class MermaidPreviewHydrator extends DiagramPreviewHydrator {
       activePointerId = null;
     };
 
-    frame.addEventListener('pointerdown', (event) => {
-      if (event.button !== 0 || !frame.classList.contains('is-pannable')) {
+    frame.addEventListener("pointerdown", (event) => {
+      if (event.button !== 0 || !frame.classList.contains("is-pannable")) {
         return;
       }
 
@@ -516,12 +569,12 @@ export class MermaidPreviewHydrator extends DiagramPreviewHydrator {
       panStartScrollLeft = frame.scrollLeft;
       panStartScrollTop = frame.scrollTop;
 
-      frame.classList.add('is-dragging');
+      frame.classList.add("is-dragging");
       frame.setPointerCapture?.(event.pointerId);
       event.preventDefault();
     });
 
-    frame.addEventListener('pointermove', (event) => {
+    frame.addEventListener("pointermove", (event) => {
       if (!isPanning) {
         return;
       }
@@ -530,12 +583,12 @@ export class MermaidPreviewHydrator extends DiagramPreviewHydrator {
       frame.scrollTop = panStartScrollTop - (event.clientY - panStartY);
     });
 
-    frame.addEventListener('pointerup', stopPanning);
-    frame.addEventListener('pointercancel', stopPanning);
-    frame.addEventListener('lostpointercapture', stopPanning);
+    frame.addEventListener("pointerup", stopPanning);
+    frame.addEventListener("pointercancel", stopPanning);
+    frame.addEventListener("lostpointercapture", stopPanning);
 
     frame.appendChild(svg);
-    const sourceNode = shell.querySelector('.mermaid-source');
+    const sourceNode = shell.querySelector(".mermaid-source");
     renderedDiagram.remove();
     shell.replaceChildren();
     if (sourceNode) {
@@ -553,16 +606,20 @@ export class MermaidPreviewHydrator extends DiagramPreviewHydrator {
       return;
     }
 
-    Array.from(previewElement.querySelectorAll('.mermaid-shell[data-mermaid-hydrated="true"]')).forEach((shell) => {
+    Array.from(
+      previewElement.querySelectorAll(
+        '.mermaid-shell[data-mermaid-hydrated="true"]',
+      ),
+    ).forEach((shell) => {
       this.shellRefits.get(shell)?.();
     });
   }
 
   createZoomButton(label, ariaLabel) {
-    const button = document.createElement('button');
-    button.type = 'button';
-    button.className = 'mermaid-zoom-btn diagram-preview-action-btn';
-    button.setAttribute('aria-label', ariaLabel);
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "mermaid-zoom-btn diagram-preview-action-btn";
+    button.setAttribute("aria-label", ariaLabel);
     button.title = ariaLabel;
     button.textContent = label;
     return button;

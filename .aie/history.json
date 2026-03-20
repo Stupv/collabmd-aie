@@ -1,0 +1,101 @@
+[
+  {
+    "run_id": "run-001",
+    "project_name": "collabmd",
+    "started_at": "2026-03-20T10:15:28.307389Z",
+    "status": "completed",
+    "metrics_summary": {
+      "eslint_violations": 1.0,
+      "prettier_violations": 129.0,
+      "dockerfile_issues": 1.0,
+      "secrets_detected": 5.0
+    },
+    "proposals_count": 0,
+    "tasks_count": 0,
+    "total_cost_usd": 0.0,
+    "run_type": "single",
+    "findings_count": 0,
+    "backlog_items_count": 0
+  },
+  {
+    "run_id": "run-002",
+    "project_name": "collabmd",
+    "started_at": "2026-03-20T10:16:05.017479Z",
+    "status": "completed",
+    "metrics_summary": {
+      "eslint_violations": 1.0,
+      "prettier_violations": 129.0,
+      "dockerfile_issues": 1.0,
+      "secrets_detected": 5.0
+    },
+    "proposals_count": 4,
+    "tasks_count": 0,
+    "total_cost_usd": 0.495027,
+    "run_type": "single",
+    "findings_count": 0,
+    "backlog_items_count": 0
+  },
+  {
+    "run_id": "run-003",
+    "project_name": "collabmd",
+    "started_at": "2026-03-20T10:22:53.887831Z",
+    "status": "completed",
+    "metrics_summary": {
+      "eslint_violations": 1.0,
+      "prettier_violations": 129.0,
+      "dockerfile_issues": 1.0,
+      "secrets_detected": 5.0
+    },
+    "proposals_count": 5,
+    "tasks_count": 5,
+    "run_type": "single",
+    "findings_count": 0,
+    "backlog_items_count": 0
+  },
+  {
+    "run_id": "run-003",
+    "project_name": "collabmd",
+    "started_at": "2026-03-20T10:22:53.887831Z",
+    "status": "failed",
+    "metrics_summary": {
+      "eslint_violations": 1.0,
+      "prettier_violations": 129.0,
+      "dockerfile_issues": 1.0,
+      "secrets_detected": 5.0
+    },
+    "proposals_count": 5,
+    "tasks_count": 5,
+    "run_type": "single",
+    "findings_count": 0,
+    "backlog_items_count": 0
+  },
+  {
+    "run_id": "run-004",
+    "project_name": "collabmd",
+    "started_at": "2026-03-20T11:08:11.474264Z",
+    "status": "completed",
+    "metrics_summary": {
+      "eslint_violations": 1.0,
+      "prettier_violations": 129.0,
+      "dockerfile_issues": 1.0,
+      "secrets_detected": 5.0
+    },
+    "proposals_count": 4,
+    "tasks_count": 5,
+    "run_type": "single",
+    "findings_count": 0,
+    "backlog_items_count": 0
+  },
+  {
+    "run_id": "run-005",
+    "project_name": "collabmd",
+    "started_at": "2026-03-20T11:08:15.621097Z",
+    "status": "completed",
+    "metrics_summary": {},
+    "proposals_count": 0,
+    "tasks_count": 0,
+    "run_type": "review",
+    "findings_count": 22,
+    "backlog_items_count": 0
+  }
+]

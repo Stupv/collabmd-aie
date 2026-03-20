@@ -1,5 +1,5 @@
-import { parseNumstatOutput, parseStatusOutput } from './parsers.js';
-import { createEmptyStatusResponse } from './responses.js';
+import { parseNumstatOutput, parseStatusOutput } from "./parsers.js";
+import { createEmptyStatusResponse } from "./responses.js";
 
 export class GitStatusService {
   constructor({
@@ -42,12 +42,29 @@ export class GitStatusService {
 
     const statusPromise = (async () => {
       const parsed = parseStatusOutput(
-        await this.commandRunner.execGit(['status', '--porcelain=v1', '--branch', '--untracked-files=all']),
+        await this.commandRunner.execGit([
+          "status",
+          "--porcelain=v1",
+          "--branch",
+          "--untracked-files=all",
+        ]),
       );
       const sections = [
-        { files: parsed.sections.staged, key: 'staged', label: 'Staged Changes' },
-        { files: parsed.sections['working-tree'], key: 'working-tree', label: 'Changes' },
-        { files: parsed.sections.untracked, key: 'untracked', label: 'Untracked' },
+        {
+          files: parsed.sections.staged,
+          key: "staged",
+          label: "Staged Changes",
+        },
+        {
+          files: parsed.sections["working-tree"],
+          key: "working-tree",
+          label: "Changes",
+        },
+        {
+          files: parsed.sections.untracked,
+          key: "untracked",
+          label: "Untracked",
+        },
       ];
       const localSummary = await this.getLocalChangeSummary({
         hasHeadCommit: parsed.branch.hasCommits,
@@ -83,13 +100,19 @@ export class GitStatusService {
     }
   }
 
-  async getLocalChangeSummary({ hasHeadCommit = false, untrackedFiles = [] } = {}) {
+  async getLocalChangeSummary({
+    hasHeadCommit = false,
+    untrackedFiles = [],
+  } = {}) {
     const trackedSummary = parseNumstatOutput(
-      await this.commandRunner.execGit(hasHeadCommit
-        ? ['diff', '--numstat', 'HEAD']
-        : ['diff', '--cached', '--numstat']),
+      await this.commandRunner.execGit(
+        hasHeadCommit
+          ? ["diff", "--numstat", "HEAD"]
+          : ["diff", "--cached", "--numstat"],
+      ),
     );
-    const untrackedAdditions = await this.untrackedFileService.countAdditions(untrackedFiles);
+    const untrackedAdditions =
+      await this.untrackedFileService.countAdditions(untrackedFiles);
 
     return {
       additions: trackedSummary.additions + untrackedAdditions,

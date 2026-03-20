@@ -1,8 +1,8 @@
-import { spawn } from 'child_process';
-import readline from 'readline';
+import { spawn } from "child_process";
+import readline from "readline";
 
 function getCloudflaredCommand() {
-  return process.env.CLOUDFLARED_BIN || 'cloudflared';
+  return process.env.CLOUDFLARED_BIN || "cloudflared";
 }
 
 function getTunnelTargetUrl() {
@@ -10,19 +10,20 @@ function getTunnelTargetUrl() {
     return process.env.TUNNEL_TARGET_URL;
   }
 
-  const host = process.env.TUNNEL_TARGET_HOST || process.env.HOST || '127.0.0.1';
-  const port = process.env.TUNNEL_TARGET_PORT || process.env.PORT || '1234';
+  const host =
+    process.env.TUNNEL_TARGET_HOST || process.env.HOST || "127.0.0.1";
+  const port = process.env.TUNNEL_TARGET_PORT || process.env.PORT || "1234";
 
   return `http://${host}:${port}`;
 }
 
 function getTunnelArgs(targetUrl) {
-  const customArgs = (process.env.CLOUDFLARED_EXTRA_ARGS || '')
+  const customArgs = (process.env.CLOUDFLARED_EXTRA_ARGS || "")
     .split(/\s+/)
     .map((value) => value.trim())
     .filter(Boolean);
 
-  return ['tunnel', '--url', targetUrl, ...customArgs];
+  return ["tunnel", "--url", targetUrl, ...customArgs];
 }
 
 const targetUrl = getTunnelTargetUrl();
@@ -35,7 +36,7 @@ let shareLinkLogged = false;
 console.log(`[tunnel] Starting Cloudflare Tunnel for ${targetUrl}`);
 
 function buildShareUrl(publicUrl) {
-  if (process.env.AUTH_STRATEGY !== 'password' || !process.env.AUTH_PASSWORD) {
+  if (process.env.AUTH_STRATEGY !== "password" || !process.env.AUTH_PASSWORD) {
     return null;
   }
 
@@ -55,7 +56,9 @@ function maybeLogShareLink(line) {
     return;
   }
 
-  const match = String(line).match(/https:\/\/[a-z0-9.-]+\.trycloudflare\.com\b/i);
+  const match = String(line).match(
+    /https:\/\/[a-z0-9.-]+\.trycloudflare\.com\b/i,
+  );
   if (!match) {
     return;
   }
@@ -67,31 +70,35 @@ function maybeLogShareLink(line) {
 
   shareLinkLogged = true;
   console.log(`[tunnel] Share URL: ${shareUrl}`);
-  console.log('[tunnel] The password is stored in the URL fragment. It is not sent to the server, but anyone with the full URL can use it.');
+  console.log(
+    "[tunnel] The password is stored in the URL fragment. It is not sent to the server, but anyone with the full URL can use it.",
+  );
 }
 
 const child = spawn(cloudflaredCommand, cloudflaredArgs, {
   env: process.env,
-  stdio: ['inherit', 'pipe', 'pipe'],
+  stdio: ["inherit", "pipe", "pipe"],
 });
 
 const stdoutInterface = readline.createInterface({ input: child.stdout });
-stdoutInterface.on('line', (line) => {
+stdoutInterface.on("line", (line) => {
   console.log(line);
   maybeLogShareLink(line);
 });
 
 const stderrInterface = readline.createInterface({ input: child.stderr });
-stderrInterface.on('line', (line) => {
+stderrInterface.on("line", (line) => {
   console.error(line);
   maybeLogShareLink(line);
 });
 
-child.on('error', (error) => {
-  if (error.code === 'ENOENT') {
-    console.error(`[tunnel] Could not find "${cloudflaredCommand}". Install Cloudflare Tunnel first: https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/downloads/`);
+child.on("error", (error) => {
+  if (error.code === "ENOENT") {
+    console.error(
+      `[tunnel] Could not find "${cloudflaredCommand}". Install Cloudflare Tunnel first: https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/downloads/`,
+    );
   } else {
-    console.error('[tunnel] Failed to start Cloudflare Tunnel:', error.message);
+    console.error("[tunnel] Failed to start Cloudflare Tunnel:", error.message);
   }
 
   process.exit(1);
@@ -111,7 +118,7 @@ function shutdown(signal) {
 
   forceExitTimer = setTimeout(() => {
     if (child.exitCode === null && !child.killed) {
-      child.kill('SIGKILL');
+      child.kill("SIGKILL");
     }
 
     process.exit(1);
@@ -119,10 +126,10 @@ function shutdown(signal) {
   forceExitTimer.unref?.();
 }
 
-process.once('SIGINT', () => shutdown('SIGINT'));
-process.once('SIGTERM', () => shutdown('SIGTERM'));
+process.once("SIGINT", () => shutdown("SIGINT"));
+process.once("SIGTERM", () => shutdown("SIGTERM"));
 
-child.on('exit', (code, signal) => {
+child.on("exit", (code, signal) => {
   stdoutInterface.close();
   stderrInterface.close();
 

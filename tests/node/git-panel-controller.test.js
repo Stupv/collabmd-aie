@@ -1,7 +1,7 @@
-import test from 'node:test';
-import assert from 'node:assert/strict';
+import test from "node:test";
+import assert from "node:assert/strict";
 
-import { GitPanelController } from '../../src/client/presentation/git-panel-controller.js';
+import { GitPanelController } from "../../src/client/presentation/git-panel-controller.js";
 
 class FakeElement {
   constructor(attributes = {}, closestMap = {}) {
@@ -24,14 +24,14 @@ function createPanelHarness() {
     addEventListener(type, handler) {
       listeners.set(type, handler);
     },
-    innerHTML: '',
+    innerHTML: "",
   };
 
   const previousDocument = globalThis.document;
   const previousElement = globalThis.Element;
   globalThis.document = {
     getElementById(id) {
-      return id === 'gitPanel' ? panel : null;
+      return id === "gitPanel" ? panel : null;
     },
   };
   globalThis.Element = FakeElement;
@@ -43,7 +43,7 @@ function createPanelHarness() {
       globalThis.Element = previousElement;
     },
     triggerClick(target) {
-      const handler = listeners.get('click');
+      const handler = listeners.get("click");
       handler?.({
         preventDefault() {},
         stopPropagation() {},
@@ -53,7 +53,7 @@ function createPanelHarness() {
   };
 }
 
-test('GitPanelController renders pull backups and opens the summary when selected', async (t) => {
+test("GitPanelController renders pull backups and opens the summary when selected", async (t) => {
   const harness = createPanelHarness();
   t.after(() => harness.restore());
 
@@ -68,8 +68,8 @@ test('GitPanelController renders pull backups and opens the summary when selecte
     branch: {
       ahead: 0,
       behind: 0,
-      name: 'master',
-      upstream: 'origin/master',
+      name: "master",
+      upstream: "origin/master",
     },
     isGitRepo: true,
     sections: [],
@@ -78,27 +78,36 @@ test('GitPanelController renders pull backups and opens the summary when selecte
       staged: 0,
     },
   };
-  controller.pullBackups = [{
-    branch: 'master',
-    createdAt: '2026-03-17T10:00:00.000Z',
-    fileCount: 2,
-    id: '20260317-100000-abc1234',
-    summaryPath: '.collabmd/pull-backups/20260317-100000-abc1234/summary.md',
-  }];
+  controller.pullBackups = [
+    {
+      branch: "master",
+      createdAt: "2026-03-17T10:00:00.000Z",
+      fileCount: 2,
+      id: "20260317-100000-abc1234",
+      summaryPath: ".collabmd/pull-backups/20260317-100000-abc1234/summary.md",
+    },
+  ];
 
   controller.render();
 
   assert.match(harness.panel.innerHTML, /Pull Backups/);
   assert.match(harness.panel.innerHTML, /20260317-100000-abc1234/);
 
-  const backupButton = new FakeElement({
-    'data-git-pull-backup-path': '.collabmd/pull-backups/20260317-100000-abc1234/summary.md',
-  }, {
-    '[data-git-pull-backup-path]': new FakeElement({
-      'data-git-pull-backup-path': '.collabmd/pull-backups/20260317-100000-abc1234/summary.md',
-    }),
-  });
+  const backupButton = new FakeElement(
+    {
+      "data-git-pull-backup-path":
+        ".collabmd/pull-backups/20260317-100000-abc1234/summary.md",
+    },
+    {
+      "[data-git-pull-backup-path]": new FakeElement({
+        "data-git-pull-backup-path":
+          ".collabmd/pull-backups/20260317-100000-abc1234/summary.md",
+      }),
+    },
+  );
   harness.triggerClick(backupButton);
 
-  assert.deepEqual(openedPaths, ['.collabmd/pull-backups/20260317-100000-abc1234/summary.md']);
+  assert.deepEqual(openedPaths, [
+    ".collabmd/pull-backups/20260317-100000-abc1234/summary.md",
+  ]);
 });

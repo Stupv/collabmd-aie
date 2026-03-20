@@ -1,19 +1,19 @@
-import { normalizeVaultPathInput } from '../domain/vault-paths.js';
+import { normalizeVaultPathInput } from "../domain/vault-paths.js";
 
 function flattenTree(nodes, files = []) {
   for (const node of nodes) {
     if (
-      node.type === 'file'
-      || node.type === 'excalidraw'
-      || node.type === 'mermaid'
-      || node.type === 'plantuml'
-      || node.type === 'image'
+      node.type === "file" ||
+      node.type === "excalidraw" ||
+      node.type === "mermaid" ||
+      node.type === "plantuml" ||
+      node.type === "image"
     ) {
       files.push(node.path);
       continue;
     }
 
-    if (node.type === 'directory' && Array.isArray(node.children)) {
+    if (node.type === "directory" && Array.isArray(node.children)) {
       flattenTree(node.children, files);
     }
   }
@@ -27,7 +27,7 @@ export class FileTreeState {
     this.flatFiles = [];
     this.activeFilePath = null;
     this.expandedDirs = new Set();
-    this.searchQuery = '';
+    this.searchQuery = "";
   }
 
   setTree(tree) {
@@ -36,7 +36,9 @@ export class FileTreeState {
   }
 
   setSearchQuery(value) {
-    this.searchQuery = String(value ?? '').trim().toLowerCase();
+    this.searchQuery = String(value ?? "")
+      .trim()
+      .toLowerCase();
   }
 
   getSearchMatches() {
@@ -44,7 +46,9 @@ export class FileTreeState {
       return [];
     }
 
-    return this.flatFiles.filter((path) => path.toLowerCase().includes(this.searchQuery));
+    return this.flatFiles.filter((path) =>
+      path.toLowerCase().includes(this.searchQuery),
+    );
   }
 
   setActiveFile(filePath) {
@@ -71,12 +75,16 @@ export class FileTreeState {
       return;
     }
 
-    const segments = normalized.split('/');
-    const segmentCount = includeLeaf ? segments.length : Math.max(segments.length - 1, 0);
-    let currentPath = '';
+    const segments = normalized.split("/");
+    const segmentCount = includeLeaf
+      ? segments.length
+      : Math.max(segments.length - 1, 0);
+    let currentPath = "";
 
     for (let index = 0; index < segmentCount; index += 1) {
-      currentPath = currentPath ? `${currentPath}/${segments[index]}` : segments[index];
+      currentPath = currentPath
+        ? `${currentPath}/${segments[index]}`
+        : segments[index];
       this.expandedDirs.add(currentPath);
     }
   }

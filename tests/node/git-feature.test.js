@@ -1,16 +1,16 @@
-import test from 'node:test';
-import assert from 'node:assert/strict';
+import test from "node:test";
+import assert from "node:assert/strict";
 
-import { gitFeature } from '../../src/client/application/app-shell/git-feature.js';
+import { gitFeature } from "../../src/client/application/app-shell/git-feature.js";
 
 function createContext(overrides = {}) {
   const events = [];
   const gitOperationStatus = {
-    _text: '',
+    _text: "",
     _hidden: true,
     classList: {
       toggle(name, force) {
-        if (name === 'hidden') {
+        if (name === "hidden") {
           gitOperationStatus._hidden = Boolean(force);
         }
       },
@@ -24,46 +24,46 @@ function createContext(overrides = {}) {
   };
   const context = {
     ...gitFeature,
-    currentFilePath: 'README.md',
+    currentFilePath: "README.md",
     elements: {
       gitOperationStatus,
     },
     fileExplorer: {
       async refresh() {
-        events.push(['refresh-explorer']);
+        events.push(["refresh-explorer"]);
       },
     },
     getDisplayName(filePath) {
-      return filePath.replace(/\.md$/u, '');
+      return filePath.replace(/\.md$/u, "");
     },
     gitPanel: {
       async refresh() {
-        events.push(['refresh-git-panel']);
+        events.push(["refresh-git-panel"]);
       },
     },
     isTabActive: true,
     lobby: {
       sendWorkspaceEvent(payload) {
-        events.push(['workspace-event', payload]);
+        events.push(["workspace-event", payload]);
       },
     },
     navigation: {
       getHashRoute() {
-        return { scope: 'all', type: 'empty' };
+        return { scope: "all", type: "empty" };
       },
       navigateToFile(filePath) {
-        events.push(['navigate-file', filePath]);
+        events.push(["navigate-file", filePath]);
       },
       navigateToGitDiff(payload) {
-        events.push(['navigate-diff', payload]);
+        events.push(["navigate-diff", payload]);
       },
     },
     showGitDiff: async () => {
-      events.push(['show-git-diff']);
+      events.push(["show-git-diff"]);
     },
     toastController: {
       show(message) {
-        events.push(['toast', message]);
+        events.push(["toast", message]);
       },
     },
     ...overrides,
@@ -77,10 +77,10 @@ function installWindowStub(t) {
   globalThis.window = {
     __COLLABMD_CONFIG__: {},
     location: {
-      host: 'localhost',
-      origin: 'http://localhost',
-      protocol: 'http:',
-      search: '',
+      host: "localhost",
+      origin: "http://localhost",
+      protocol: "http:",
+      search: "",
     },
   };
   t.after(() => {
@@ -88,12 +88,12 @@ function installWindowStub(t) {
   });
 }
 
-test('gitFeature finalizes git actions by refreshing locally without publishing a lobby workspace event', async () => {
+test("gitFeature finalizes git actions by refreshing locally without publishing a lobby workspace event", async () => {
   const { context, events } = createContext();
 
   await gitFeature.finalizeGitAction.call(context, {
-    action: 'stage',
-    preferredScope: 'staged',
+    action: "stage",
+    preferredScope: "staged",
     result: {
       workspaceChange: {
         changedPaths: [],
@@ -104,54 +104,51 @@ test('gitFeature finalizes git actions by refreshing locally without publishing 
     },
   });
 
-  assert.deepEqual(events, [
-    ['refresh-explorer'],
-    ['refresh-git-panel'],
-  ]);
+  assert.deepEqual(events, [["refresh-explorer"], ["refresh-git-panel"]]);
 });
 
-test('gitFeature closes the current file when an incoming workspace event deletes it', async () => {
+test("gitFeature closes the current file when an incoming workspace event deletes it", async () => {
   const { context, events } = createContext();
 
   await gitFeature.handleIncomingWorkspaceEvent.call(context, {
-    action: 'pull',
-    origin: 'git',
+    action: "pull",
+    origin: "git",
     workspaceChange: {
       changedPaths: [],
-      deletedPaths: ['README.md'],
+      deletedPaths: ["README.md"],
       refreshExplorer: true,
       renamedPaths: [],
     },
   });
 
   assert.deepEqual(events, [
-    ['refresh-git-panel'],
-    ['navigate-file', null],
-    ['toast', 'README was removed after a pull operation'],
+    ["refresh-git-panel"],
+    ["navigate-file", null],
+    ["toast", "README was removed after a pull operation"],
   ]);
 });
 
-test('gitFeature follows the renamed current file for incoming workspace events', async () => {
+test("gitFeature follows the renamed current file for incoming workspace events", async () => {
   const { context, events } = createContext();
 
   await gitFeature.handleIncomingWorkspaceEvent.call(context, {
-    action: 'filesystem-sync',
-    origin: 'filesystem',
+    action: "filesystem-sync",
+    origin: "filesystem",
     workspaceChange: {
       changedPaths: [],
       deletedPaths: [],
       refreshExplorer: true,
-      renamedPaths: [{ oldPath: 'README.md', newPath: 'docs/README.md' }],
+      renamedPaths: [{ oldPath: "README.md", newPath: "docs/README.md" }],
     },
   });
 
   assert.deepEqual(events, [
-    ['navigate-file', 'docs/README.md'],
-    ['toast', 'README moved on disk'],
+    ["navigate-file", "docs/README.md"],
+    ["toast", "README moved on disk"],
   ]);
 });
 
-test('gitFeature highlights single-file filesystem updates for the current file instead of showing a toast', async () => {
+test("gitFeature highlights single-file filesystem updates for the current file instead of showing a toast", async () => {
   const flashCalls = [];
   const { context, events } = createContext({
     session: {
@@ -163,22 +160,22 @@ test('gitFeature highlights single-file filesystem updates for the current file 
   });
 
   await gitFeature.handleIncomingWorkspaceEvent.call(context, {
-    action: 'filesystem-sync',
-    highlightRanges: [{ path: 'README.md', from: 2, to: 8 }],
-    origin: 'filesystem',
+    action: "filesystem-sync",
+    highlightRanges: [{ path: "README.md", from: 2, to: 8 }],
+    origin: "filesystem",
     workspaceChange: {
-      changedPaths: ['README.md'],
+      changedPaths: ["README.md"],
       deletedPaths: [],
       refreshExplorer: true,
       renamedPaths: [],
     },
   });
 
-  assert.deepEqual(flashCalls, [{ path: 'README.md', from: 2, to: 8 }]);
+  assert.deepEqual(flashCalls, [{ path: "README.md", from: 2, to: 8 }]);
   assert.deepEqual(events, []);
 });
 
-test('gitFeature keeps the toast fallback for multi-file filesystem updates', async () => {
+test("gitFeature keeps the toast fallback for multi-file filesystem updates", async () => {
   const flashCalls = [];
   const { context, events } = createContext({
     session: {
@@ -190,11 +187,11 @@ test('gitFeature keeps the toast fallback for multi-file filesystem updates', as
   });
 
   await gitFeature.handleIncomingWorkspaceEvent.call(context, {
-    action: 'filesystem-sync',
-    highlightRanges: [{ path: 'README.md', from: 2, to: 8 }],
-    origin: 'filesystem',
+    action: "filesystem-sync",
+    highlightRanges: [{ path: "README.md", from: 2, to: 8 }],
+    origin: "filesystem",
     workspaceChange: {
-      changedPaths: ['README.md', 'docs/guide.md'],
+      changedPaths: ["README.md", "docs/guide.md"],
       deletedPaths: [],
       refreshExplorer: true,
       renamedPaths: [],
@@ -202,10 +199,10 @@ test('gitFeature keeps the toast fallback for multi-file filesystem updates', as
   });
 
   assert.deepEqual(flashCalls, []);
-  assert.deepEqual(events, [['toast', 'README updated from disk']]);
+  assert.deepEqual(events, [["toast", "README updated from disk"]]);
 });
 
-test('gitFeature falls back to a toast when a filesystem update cannot be highlighted', async () => {
+test("gitFeature falls back to a toast when a filesystem update cannot be highlighted", async () => {
   const flashCalls = [];
   const { context, events } = createContext({
     session: {
@@ -217,42 +214,46 @@ test('gitFeature falls back to a toast when a filesystem update cannot be highli
   });
 
   await gitFeature.handleIncomingWorkspaceEvent.call(context, {
-    action: 'filesystem-sync',
-    highlightRanges: [{ path: 'README.md', from: 2, to: 8 }],
-    origin: 'filesystem',
+    action: "filesystem-sync",
+    highlightRanges: [{ path: "README.md", from: 2, to: 8 }],
+    origin: "filesystem",
     workspaceChange: {
-      changedPaths: ['README.md'],
+      changedPaths: ["README.md"],
       deletedPaths: [],
       refreshExplorer: true,
       renamedPaths: [],
     },
   });
 
-  assert.deepEqual(flashCalls, [{ path: 'README.md', from: 2, to: 8 }]);
-  assert.deepEqual(events, [['toast', 'README updated from disk']]);
+  assert.deepEqual(flashCalls, [{ path: "README.md", from: 2, to: 8 }]);
+  assert.deepEqual(events, [["toast", "README updated from disk"]]);
 });
 
-test('gitFeature shows and clears the shared git operation status around a long-running action', async () => {
+test("gitFeature shows and clears the shared git operation status around a long-running action", async () => {
   const states = [];
   const { context, gitOperationStatus } = createContext();
 
-  await gitFeature.runGitActionWithStatus.call(context, 'Resetting file...', async () => {
-    states.push([gitOperationStatus.textContent, gitOperationStatus._hidden]);
-  });
+  await gitFeature.runGitActionWithStatus.call(
+    context,
+    "Resetting file...",
+    async () => {
+      states.push([gitOperationStatus.textContent, gitOperationStatus._hidden]);
+    },
+  );
 
   states.push([gitOperationStatus.textContent, gitOperationStatus._hidden]);
 
   assert.deepEqual(states, [
-    ['Resetting file...', false],
-    ['', true],
+    ["Resetting file...", false],
+    ["", true],
   ]);
 });
 
-test('gitFeature shows a pull backup toast after a successful overlap backup pull', async (t) => {
+test("gitFeature shows a pull backup toast after a successful overlap backup pull", async (t) => {
   installWindowStub(t);
   const { context, events } = createContext({
     finalizeGitAction: async ({ action, result }) => {
-      events.push(['finalize', action, result.pullBackup?.fileCount ?? 0]);
+      events.push(["finalize", action, result.pullBackup?.fileCount ?? 0]);
     },
     postGitAction: async () => ({
       pullBackup: {
@@ -270,17 +271,20 @@ test('gitFeature shows a pull backup toast after a successful overlap backup pul
   await gitFeature.pullGitBranch.call(context);
 
   assert.deepEqual(events, [
-    ['finalize', 'pull', 2],
-    ['toast', 'Pulled latest changes. 2 overlapping local files were backed up.'],
+    ["finalize", "pull", 2],
+    [
+      "toast",
+      "Pulled latest changes. 2 overlapping local files were backed up.",
+    ],
   ]);
 });
 
-test('gitFeature shows a specific toast when pull fails because fast-forward is not possible', async (t) => {
+test("gitFeature shows a specific toast when pull fails because fast-forward is not possible", async (t) => {
   installWindowStub(t);
   const { context, events } = createContext({
     postGitAction: async () => {
-      const error = new Error('ff only');
-      error.code = 'pull_diverged_ff_only';
+      const error = new Error("ff only");
+      error.code = "pull_diverged_ff_only";
       throw error;
     },
   });
@@ -288,6 +292,9 @@ test('gitFeature shows a specific toast when pull fails because fast-forward is 
   await gitFeature.pullGitBranch.call(context);
 
   assert.deepEqual(events, [
-    ['toast', 'Cannot pull because local and remote commits have diverged. Fast-forward only pull is not possible.'],
+    [
+      "toast",
+      "Cannot pull because local and remote commits have diverged. Fast-forward only pull is not possible.",
+    ],
   ]);
 });

@@ -1,15 +1,20 @@
-import assert from 'node:assert/strict';
+import assert from "node:assert/strict";
 
-import WebSocket from 'ws';
-import * as Y from 'yjs';
-import * as syncProtocol from 'y-protocols/sync';
-import * as encoding from 'lib0/encoding';
-import * as decoding from 'lib0/decoding';
+import WebSocket from "ws";
+import * as Y from "yjs";
+import * as syncProtocol from "y-protocols/sync";
+import * as encoding from "lib0/encoding";
+import * as decoding from "lib0/decoding";
 
-import { MSG_AWARENESS, MSG_SYNC } from '../../../src/server/domain/collaboration/protocol.js';
+import {
+  MSG_AWARENESS,
+  MSG_SYNC,
+} from "../../../src/server/domain/collaboration/protocol.js";
 
 function normalizeMessagePayload(payload) {
-  return payload instanceof Buffer ? new Uint8Array(payload) : new Uint8Array(payload);
+  return payload instanceof Buffer
+    ? new Uint8Array(payload)
+    : new Uint8Array(payload);
 }
 
 export function createSyncMessage() {
@@ -44,7 +49,7 @@ export function encodeSyncStep1Message(doc = new Y.Doc()) {
   return Buffer.from(encoding.toUint8Array(encoder));
 }
 
-export function applySyncMessageToDoc(message, doc, origin = 'test') {
+export function applySyncMessageToDoc(message, doc, origin = "test") {
   const decoder = decoding.createDecoder(message);
   const messageType = decoding.readVarUint(decoder);
   assert.equal(messageType, MSG_SYNC);
@@ -61,13 +66,13 @@ export async function syncClientDocWithRoom(socket, doc) {
   let handledSyncMessage = false;
   await new Promise((resolve, reject) => {
     const timer = setTimeout(() => {
-      socket.off('message', handleMessage);
-      reject(new Error('Timed out while syncing client doc with room'));
+      socket.off("message", handleMessage);
+      reject(new Error("Timed out while syncing client doc with room"));
     }, 5000);
 
     function finish() {
       clearTimeout(timer);
-      socket.off('message', handleMessage);
+      socket.off("message", handleMessage);
       resolve();
     }
 
@@ -86,7 +91,7 @@ export async function syncClientDocWithRoom(socket, doc) {
       setTimeout(finish, 50);
     }
 
-    socket.on('message', handleMessage);
+    socket.on("message", handleMessage);
     socket.send(encodeSyncStep1Message(doc));
   });
 
@@ -99,27 +104,27 @@ export function waitForOpen(socket) {
   }
 
   return new Promise((resolve, reject) => {
-    socket.once('open', resolve);
-    socket.once('error', reject);
+    socket.once("open", resolve);
+    socket.once("error", reject);
   });
 }
 
 export function waitForUnexpectedResponse(socket) {
   return new Promise((resolve, reject) => {
-    socket.once('unexpected-response', (_request, response) => {
+    socket.once("unexpected-response", (_request, response) => {
       resolve(response);
     });
-    socket.once('error', reject);
+    socket.once("error", reject);
   });
 }
 
 export function waitForClose(socket) {
   if (socket.readyState === WebSocket.CLOSED) {
-    return Promise.resolve({ code: 1005, reason: '' });
+    return Promise.resolve({ code: 1005, reason: "" });
   }
 
   return new Promise((resolve) => {
-    socket.once('close', (code, reason) => {
+    socket.once("close", (code, reason) => {
       resolve({
         code,
         reason: reason.toString(),
@@ -131,8 +136,12 @@ export function waitForClose(socket) {
 export function waitForMessage(socket, predicate, timeoutMs = 5000) {
   return new Promise((resolve, reject) => {
     const timer = setTimeout(() => {
-      socket.off('message', handleMessage);
-      reject(new Error(`Timed out after ${timeoutMs}ms waiting for websocket message`));
+      socket.off("message", handleMessage);
+      reject(
+        new Error(
+          `Timed out after ${timeoutMs}ms waiting for websocket message`,
+        ),
+      );
     }, timeoutMs);
 
     function handleMessage(payload) {
@@ -142,30 +151,35 @@ export function waitForMessage(socket, predicate, timeoutMs = 5000) {
       }
 
       clearTimeout(timer);
-      socket.off('message', handleMessage);
+      socket.off("message", handleMessage);
       resolve(data);
     }
 
-    socket.on('message', handleMessage);
+    socket.on("message", handleMessage);
   });
 }
 
-export function collectMessages(socket, predicate, {
-  idleMs = 50,
-  timeoutMs = 1000,
-} = {}) {
+export function collectMessages(
+  socket,
+  predicate,
+  { idleMs = 50, timeoutMs = 1000 } = {},
+) {
   return new Promise((resolve, reject) => {
     const matches = [];
     let idleTimer = null;
     const timeoutTimer = setTimeout(() => {
       cleanup();
-      reject(new Error(`Timed out after ${timeoutMs}ms while collecting websocket messages`));
+      reject(
+        new Error(
+          `Timed out after ${timeoutMs}ms while collecting websocket messages`,
+        ),
+      );
     }, timeoutMs);
 
     function cleanup() {
       clearTimeout(timeoutTimer);
       clearTimeout(idleTimer);
-      socket.off('message', handleMessage);
+      socket.off("message", handleMessage);
     }
 
     function finish() {
@@ -188,7 +202,7 @@ export function collectMessages(socket, predicate, {
       scheduleFinish();
     }
 
-    socket.on('message', handleMessage);
+    socket.on("message", handleMessage);
     scheduleFinish();
   });
 }
@@ -200,8 +214,10 @@ export function waitForProviderSync(provider, timeoutMs = 5000) {
 
   return new Promise((resolve, reject) => {
     const timer = setTimeout(() => {
-      provider.off('sync', handleSync);
-      reject(new Error(`Timed out after ${timeoutMs}ms waiting for provider sync`));
+      provider.off("sync", handleSync);
+      reject(
+        new Error(`Timed out after ${timeoutMs}ms waiting for provider sync`),
+      );
     }, timeoutMs);
 
     const handleSync = (isSynced) => {
@@ -210,10 +226,10 @@ export function waitForProviderSync(provider, timeoutMs = 5000) {
       }
 
       clearTimeout(timer);
-      provider.off('sync', handleSync);
+      provider.off("sync", handleSync);
       resolve();
     };
 
-    provider.on('sync', handleSync);
+    provider.on("sync", handleSync);
   });
 }

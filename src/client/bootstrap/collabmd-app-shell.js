@@ -1,37 +1,40 @@
-import { PreviewRenderer } from '../application/preview-renderer.js';
-import { WorkspaceRouteController } from '../application/workspace-route-controller.js';
-import { WikiLinkFileController } from '../application/wiki-link-file-controller.js';
-import { WorkspacePreviewController } from '../application/workspace-preview-controller.js';
-import { WorkspaceCoordinator } from '../application/workspace-coordinator.js';
-import { WorkspaceStateStore } from '../application/workspace-state-store.js';
-import { bindAppShellElements } from '../application/app-shell-elements.js';
-import { chatFeature } from '../application/app-shell/chat-feature.js';
-import { commentsFeature } from '../application/app-shell/comments-feature.js';
-import { gitFeature } from '../application/app-shell/git-feature.js';
-import { presenceFeature } from '../application/app-shell/presence-feature.js';
-import { uiFeature } from '../application/app-shell/ui-feature.js';
-import { workspaceFeature } from '../application/app-shell/workspace-feature.js';
-import { LOBBY_CHAT_MESSAGE_MAX_LENGTH, LobbyPresence } from '../infrastructure/lobby-presence.js';
-import { BrowserNavigationPort } from '../infrastructure/browser-navigation-port.js';
-import { BrowserNotificationPort } from '../infrastructure/browser-notification-port.js';
-import { BrowserPreferencesPort } from '../infrastructure/browser-preferences-port.js';
-import { getRuntimeConfig } from '../infrastructure/runtime-config.js';
-import { TabActivityLock } from '../infrastructure/tab-activity-lock.js';
-import { vaultApiClient } from '../infrastructure/vault-api-client.js';
-import { WorkspaceSyncClient } from '../infrastructure/workspace-sync-client.js';
-import { BacklinksPanel } from '../presentation/backlinks-panel.js';
-import { CommentUiController } from '../presentation/comment-ui-controller.js';
-import { ExcalidrawEmbedController } from '../presentation/excalidraw-embed-controller.js';
-import { FileExplorerController } from '../presentation/file-explorer-controller.js';
-import { GitDiffViewController } from '../presentation/git-diff-view-controller.js';
-import { GitPanelController } from '../presentation/git-panel-controller.js';
-import { LayoutController } from '../presentation/layout-controller.js';
-import { OutlineController } from '../presentation/outline-controller.js';
-import { ScrollSyncController } from '../presentation/scroll-sync-controller.js';
-import { ThemeController } from '../presentation/theme-controller.js';
-import { ToastController } from '../presentation/toast-controller.js';
-import { VideoEmbedController } from '../presentation/video-embed-controller.js';
-import { ImageLightboxController } from '../presentation/image-lightbox-controller.js';
+import { PreviewRenderer } from "../application/preview-renderer.js";
+import { WorkspaceRouteController } from "../application/workspace-route-controller.js";
+import { WikiLinkFileController } from "../application/wiki-link-file-controller.js";
+import { WorkspacePreviewController } from "../application/workspace-preview-controller.js";
+import { WorkspaceCoordinator } from "../application/workspace-coordinator.js";
+import { WorkspaceStateStore } from "../application/workspace-state-store.js";
+import { bindAppShellElements } from "../application/app-shell-elements.js";
+import { chatFeature } from "../application/app-shell/chat-feature.js";
+import { commentsFeature } from "../application/app-shell/comments-feature.js";
+import { gitFeature } from "../application/app-shell/git-feature.js";
+import { presenceFeature } from "../application/app-shell/presence-feature.js";
+import { uiFeature } from "../application/app-shell/ui-feature.js";
+import { workspaceFeature } from "../application/app-shell/workspace-feature.js";
+import {
+  LOBBY_CHAT_MESSAGE_MAX_LENGTH,
+  LobbyPresence,
+} from "../infrastructure/lobby-presence.js";
+import { BrowserNavigationPort } from "../infrastructure/browser-navigation-port.js";
+import { BrowserNotificationPort } from "../infrastructure/browser-notification-port.js";
+import { BrowserPreferencesPort } from "../infrastructure/browser-preferences-port.js";
+import { getRuntimeConfig } from "../infrastructure/runtime-config.js";
+import { TabActivityLock } from "../infrastructure/tab-activity-lock.js";
+import { vaultApiClient } from "../infrastructure/vault-api-client.js";
+import { WorkspaceSyncClient } from "../infrastructure/workspace-sync-client.js";
+import { BacklinksPanel } from "../presentation/backlinks-panel.js";
+import { CommentUiController } from "../presentation/comment-ui-controller.js";
+import { ExcalidrawEmbedController } from "../presentation/excalidraw-embed-controller.js";
+import { FileExplorerController } from "../presentation/file-explorer-controller.js";
+import { GitDiffViewController } from "../presentation/git-diff-view-controller.js";
+import { GitPanelController } from "../presentation/git-panel-controller.js";
+import { LayoutController } from "../presentation/layout-controller.js";
+import { OutlineController } from "../presentation/outline-controller.js";
+import { ScrollSyncController } from "../presentation/scroll-sync-controller.js";
+import { ThemeController } from "../presentation/theme-controller.js";
+import { ToastController } from "../presentation/toast-controller.js";
+import { VideoEmbedController } from "../presentation/video-embed-controller.js";
+import { ImageLightboxController } from "../presentation/image-lightbox-controller.js";
 
 const APP_SHELL_FEATURES = Object.freeze({
   chat: chatFeature,
@@ -47,7 +50,7 @@ function installAppShellFeatures(appShell) {
 
   Object.entries(APP_SHELL_FEATURES).forEach(([featureName, feature]) => {
     Object.entries(feature).forEach(([methodName, method]) => {
-      if (typeof method !== 'function') {
+      if (typeof method !== "function") {
         return;
       }
 
@@ -73,7 +76,7 @@ function installAppShellFeatures(appShell) {
     });
   });
 
-  Object.defineProperty(appShell, 'featureMethodOwners', {
+  Object.defineProperty(appShell, "featureMethodOwners", {
     configurable: false,
     enumerable: false,
     value: Object.freeze(featureMethodOwners),
@@ -89,10 +92,10 @@ export class CollabMdAppShell {
     this.stateStore = new WorkspaceStateStore();
     this.navigation = new BrowserNavigationPort();
     this.preferences = new BrowserPreferencesPort({
-      chatNotificationsKey: 'collabmd-chat-notifications-enabled',
-      lineWrappingKey: 'collabmd-editor-line-wrap',
-      sidebarVisibleKey: 'collabmd-sidebar-visible',
-      userNameKey: 'collabmd-user-name',
+      chatNotificationsKey: "collabmd-chat-notifications-enabled",
+      lineWrappingKey: "collabmd-editor-line-wrap",
+      sidebarVisibleKey: "collabmd-sidebar-visible",
+      userNameKey: "collabmd-user-name",
     });
     this.notifications = new BrowserNotificationPort();
     this.vaultApiClient = vaultApiClient;
@@ -104,14 +107,18 @@ export class CollabMdAppShell {
     this._previewLayoutResizeObserver = null;
     this._previewLayoutSyncTimer = null;
     this.pendingGitResetPath = null;
-    this.chatTimeFormatter = new Intl.DateTimeFormat(undefined, { hour: 'numeric', minute: '2-digit' });
-    this.chatNotificationsEnabled = this.preferences.getChatNotificationsEnabled();
+    this.chatTimeFormatter = new Intl.DateTimeFormat(undefined, {
+      hour: "numeric",
+      minute: "2-digit",
+    });
+    this.chatNotificationsEnabled =
+      this.preferences.getChatNotificationsEnabled();
     this.chatNotificationPermission = this.notifications.getPermission();
     this.lobbyChatMessageMaxLength = LOBBY_CHAT_MESSAGE_MAX_LENGTH;
     this.quickSwitcher = null;
     this.quickSwitcherModulePromise = null;
     this.fileExplorerReadyPromise = Promise.resolve();
-    this.mobileBreakpointQuery = window.matchMedia('(max-width: 768px)');
+    this.mobileBreakpointQuery = window.matchMedia("(max-width: 768px)");
     this.pendingWorkspaceRequestIds = new Set();
     this._fileOpenPerf = null;
 
@@ -135,24 +142,40 @@ export class CollabMdAppShell {
     });
 
     this.toastController = new ToastController(this.elements.toastContainer);
-    this.chatToastController = new ToastController(this.elements.chatToastContainer);
+    this.chatToastController = new ToastController(
+      this.elements.chatToastContainer,
+    );
     this.fileExplorer = new FileExplorerController({
       onFileDelete: () => this.navigation.navigateToFile(null),
-      onFileSelect: (filePath) => this.handleFileSelection(filePath, { closeSidebarOnMobile: true }),
+      onFileSelect: (filePath) =>
+        this.handleFileSelection(filePath, { closeSidebarOnMobile: true }),
       toastController: this.toastController,
     });
     this.gitPanel = new GitPanelController({
       enabled: this.runtimeConfig.gitEnabled !== false,
       onCommitStaged: () => this.openGitCommitDialog(),
-      onOpenPullBackup: (filePath) => filePath && this.navigation.navigateToFile(filePath),
+      onOpenPullBackup: (filePath) =>
+        filePath && this.navigation.navigateToFile(filePath),
       onPullBranch: () => this.pullGitBranch(),
       onPushBranch: () => this.pushGitBranch(),
-      onRepoChange: (isGitRepo, status) => this.handleGitRepoChange(isGitRepo, status),
-      onResetFile: (filePath, { scope }) => this.openGitResetDialog(filePath, { scope }),
-      onSelectDiff: (filePath, { scope }) => this.handleGitDiffSelection(filePath, { closeSidebarOnMobile: true, scope }),
-      onStageFile: (filePath, { scope }) => this.stageGitFile(filePath, { scope }),
-      onUnstageFile: (filePath, { scope }) => this.unstageGitFile(filePath, { scope }),
-      onViewAllDiff: () => this.handleGitDiffSelection(null, { closeSidebarOnMobile: true, scope: 'all' }),
+      onRepoChange: (isGitRepo, status) =>
+        this.handleGitRepoChange(isGitRepo, status),
+      onResetFile: (filePath, { scope }) =>
+        this.openGitResetDialog(filePath, { scope }),
+      onSelectDiff: (filePath, { scope }) =>
+        this.handleGitDiffSelection(filePath, {
+          closeSidebarOnMobile: true,
+          scope,
+        }),
+      onStageFile: (filePath, { scope }) =>
+        this.stageGitFile(filePath, { scope }),
+      onUnstageFile: (filePath, { scope }) =>
+        this.unstageGitFile(filePath, { scope }),
+      onViewAllDiff: () =>
+        this.handleGitDiffSelection(null, {
+          closeSidebarOnMobile: true,
+          scope: "all",
+        }),
       searchInput: this.elements.gitSearchInput,
       toastController: this.toastController,
     });
@@ -176,13 +199,15 @@ export class CollabMdAppShell {
       getFileList: () => this.fileExplorer.flatDocumentFiles,
       getSourceFilePath: () => this.currentFilePath,
       onAfterRenderCommit: (_previewElement, stats) => {
-        this.recordFileOpenMetric('preview_committed', {
+        this.recordFileOpenMetric("preview_committed", {
           chars: stats?.chars ?? 0,
           renderVersion: stats?.renderVersion ?? 0,
         });
         this.videoEmbed.reconcileEmbeds(this.elements.previewContent);
         this.videoEmbed.syncLayout();
-        this.excalidrawEmbed.reconcileEmbeds(this.elements.previewContent, { isLargeDocument: stats.isLargeDocument });
+        this.excalidrawEmbed.reconcileEmbeds(this.elements.previewContent, {
+          isLargeDocument: stats.isLargeDocument,
+        });
         this.excalidrawEmbed.syncLayout();
         this.scrollSyncController.setLargeDocumentMode(stats.isLargeDocument);
         this.schedulePreviewLayoutSync({ delayMs: 0 });
@@ -202,27 +227,34 @@ export class CollabMdAppShell {
       previewContainer: this.elements.previewContainer,
       previewElement: this.elements.previewContent,
     });
-    this.themeController = new ThemeController({ onChange: (theme) => this.handleThemeChange(theme) });
+    this.themeController = new ThemeController({
+      onChange: (theme) => this.handleThemeChange(theme),
+    });
     this.layoutController = new LayoutController({
       mobileBreakpointQuery: this.mobileBreakpointQuery,
       onMeasureEditor: () => this.session?.requestMeasure(),
     });
     this.scrollSyncController = new ScrollSyncController({
-      getEditorLineNumber: () => this.session?.getTopVisibleLineNumber(0.35) ?? 1,
-      onEditorScrollActivityChange: (isActive) => this.handleEditorScrollActivityChange(isActive),
+      getEditorLineNumber: () =>
+        this.session?.getTopVisibleLineNumber(0.35) ?? 1,
+      onEditorScrollActivityChange: (isActive) =>
+        this.handleEditorScrollActivityChange(isActive),
       previewContainer: this.elements.previewContainer,
       previewElement: this.elements.previewContent,
-      scrollEditorToLine: (lineNumber, viewportRatio) => this.session?.scrollToLine(lineNumber, viewportRatio),
+      scrollEditorToLine: (lineNumber, viewportRatio) =>
+        this.session?.scrollToLine(lineNumber, viewportRatio),
     });
     this.backlinksPanel = new BacklinksPanel({
       inlinePanelElement: this.elements.backlinksInlinePanel,
-      onFileSelect: (filePath) => this.handleFileSelection(filePath, { closeSidebarOnMobile: true }),
+      onFileSelect: (filePath) =>
+        this.handleFileSelection(filePath, { closeSidebarOnMobile: true }),
       panelElement: this.elements.backlinksPanel,
     });
     this.excalidrawEmbed = new ExcalidrawEmbedController({
       getLocalUser: () => this.lobby.getLocalUser(),
       getTheme: () => this.themeController.getTheme(),
-      onOpenFile: (filePath) => filePath && this.navigation.navigateToFile(filePath),
+      onOpenFile: (filePath) =>
+        filePath && this.navigation.navigateToFile(filePath),
       previewContainer: this.elements.previewContainer,
       previewElement: this.elements.previewContent,
       toastController: this.toastController,
@@ -237,14 +269,18 @@ export class CollabMdAppShell {
       onWillOpenDrawer: () => this.outlineController.close(),
       previewContainer: this.elements.previewContainer,
       previewElement: this.elements.previewContent,
-      onCreateThread: ({ anchor, body }) => this.session?.createCommentThread({ anchor, body }),
+      onCreateThread: ({ anchor, body }) =>
+        this.session?.createCommentThread({ anchor, body }),
       onNavigateToLine: (lineNumber) => {
         this.scrollSyncController.suspendSync(250);
         this.session?.scrollToLine(lineNumber, 0.2);
       },
-      onReplyToThread: (threadId, body) => this.session?.replyToCommentThread(threadId, body),
-      onToggleReaction: (threadId, messageId, emoji) => this.session?.toggleCommentReaction(threadId, messageId, emoji),
-      onResolveThread: (threadId) => this.session?.deleteCommentThread(threadId),
+      onReplyToThread: (threadId, body) =>
+        this.session?.replyToCommentThread(threadId, body),
+      onToggleReaction: (threadId, messageId, emoji) =>
+        this.session?.toggleCommentReaction(threadId, messageId, emoji),
+      onResolveThread: (threadId) =>
+        this.session?.deleteCommentThread(threadId),
     });
     this.workspacePreviewController = new WorkspacePreviewController({
       backlinksPanel: this.backlinksPanel,
@@ -259,7 +295,8 @@ export class CollabMdAppShell {
       layoutController: this.layoutController,
       outlineController: this.outlineController,
       previewRenderer: this.previewRenderer,
-      schedulePreviewLayoutSync: (options) => this.schedulePreviewLayoutSync(options),
+      schedulePreviewLayoutSync: (options) =>
+        this.schedulePreviewLayoutSync(options),
       scrollSyncController: this.scrollSyncController,
       videoEmbed: this.videoEmbed,
     });
@@ -272,41 +309,46 @@ export class CollabMdAppShell {
     });
     this.gitDiffView = new GitDiffViewController({
       onCommitStaged: () => this.openGitCommitDialog(),
-      onOpenFile: (filePath) => filePath && this.navigation.navigateToFile(filePath),
-      onStageFile: (filePath, { scope }) => this.stageGitFile(filePath, { scope }),
-      onUnstageFile: (filePath, { scope }) => this.unstageGitFile(filePath, { scope }),
+      onOpenFile: (filePath) =>
+        filePath && this.navigation.navigateToFile(filePath),
+      onStageFile: (filePath, { scope }) =>
+        this.stageGitFile(filePath, { scope }),
+      onUnstageFile: (filePath, { scope }) =>
+        this.unstageGitFile(filePath, { scope }),
       toastController: this.toastController,
     });
     this.tabActivityLock = new TabActivityLock({
       onActivated: ({ takeover }) => this.handleTabActivated({ takeover }),
-      onBlocked: () => this.handleTabBlocked({ reason: 'active-elsewhere' }),
-      onStolen: () => this.handleTabBlocked({ reason: 'taken-over' }),
+      onBlocked: () => this.handleTabBlocked({ reason: "active-elsewhere" }),
+      onStolen: () => this.handleTabBlocked({ reason: "taken-over" }),
     });
     this.workspaceCoordinator = new WorkspaceCoordinator({
-      attachEditorScroller: (scroller) => this.scrollSyncController.attachEditorScroller(scroller),
+      attachEditorScroller: (scroller) =>
+        this.scrollSyncController.attachEditorScroller(scroller),
       beginDocumentLoad: () => this.previewRenderer.beginDocumentLoad(),
       cleanupAfterSessionDestroy: () => {
         this.scrollSyncController.setLargeDocumentMode(false);
         this.scrollSyncController.invalidatePreviewBlocks();
         this.outlineController.cleanup();
-        this.followedCursorSignature = '';
+        this.followedCursorSignature = "";
         clearTimeout(this._backlinkRefreshTimer);
       },
-      createEditorSession: (EditorSession, options) => new EditorSession({
-        editorContainer: this.elements.editorContainer,
-        getFileList: options.getFileList,
-        initialTheme: options.theme,
-        lineInfoElement: this.elements.lineInfo,
-        lineWrappingEnabled: options.lineWrappingEnabled,
-        localUser: options.localUser,
-        onImagePaste: options.onImagePaste,
-        onAwarenessChange: options.onAwarenessChange,
-        onCommentsChange: options.onCommentsChange,
-        onConnectionChange: options.onConnectionChange,
-        onContentChange: options.onContentChange,
-        onSelectionChange: options.onSelectionChange,
-        preferredUserName: options.preferredUserName,
-      }),
+      createEditorSession: (EditorSession, options) =>
+        new EditorSession({
+          editorContainer: this.elements.editorContainer,
+          getFileList: options.getFileList,
+          initialTheme: options.theme,
+          lineInfoElement: this.elements.lineInfo,
+          lineWrappingEnabled: options.lineWrappingEnabled,
+          localUser: options.localUser,
+          onImagePaste: options.onImagePaste,
+          onAwarenessChange: options.onAwarenessChange,
+          onCommentsChange: options.onCommentsChange,
+          onConnectionChange: options.onConnectionChange,
+          onContentChange: options.onContentChange,
+          onSelectionChange: options.onSelectionChange,
+          preferredUserName: options.preferredUserName,
+        }),
       getDisplayName: (filePath) => this.getDisplayName(filePath),
       getFileList: () => this.fileExplorer.flatDocumentFiles,
       getLineWrappingEnabled: () => this.getStoredLineWrapping(),
@@ -320,7 +362,7 @@ export class CollabMdAppShell {
       isTabActive: () => this.isTabActive,
       loadBootstrapContent: async (filePath) => {
         const response = await this.vaultApiClient.readFile(filePath);
-        return typeof response?.content === 'string' ? response.content : null;
+        return typeof response?.content === "string" ? response.content : null;
       },
       loadEditorSessionClass: () => this.loadEditorSessionClass(),
       loadBacklinks: (filePath) => this.backlinksPanel.load(filePath),
@@ -329,9 +371,9 @@ export class CollabMdAppShell {
         this.commentUi.attachSession(null);
         this.layoutController.reset();
         this.resetPreviewMode();
-        this.elements.emptyState?.classList.add('hidden');
-        this.elements.editorPage?.classList.remove('hidden');
-        this.elements.diffPage?.classList.add('hidden');
+        this.elements.emptyState?.classList.add("hidden");
+        this.elements.editorPage?.classList.remove("hidden");
+        this.elements.diffPage?.classList.add("hidden");
         this.clearInitialFileBootstrap();
       },
       onConnectionChange: (state) => this.handleConnectionChange(state),
@@ -347,26 +389,30 @@ export class CollabMdAppShell {
       onFileOpenError: () => {
         this.showEditorLoadError();
         this.syncWrapToggle();
-        this.toastController.show('Failed to initialize editor');
+        this.toastController.show("Failed to initialize editor");
       },
       onFileOpenReady: () => {
         this.hideEditorLoading();
       },
       onSelectionChange: (anchor) => this.handleCommentSelectionChange(anchor),
       onImagePaste: (file) => this.handleEditorImageInsert(file),
-      onFileOpenMetric: (name, payload) => this.recordFileOpenMetric(name, payload),
+      onFileOpenMetric: (name, payload) =>
+        this.recordFileOpenMetric(name, payload),
       onSessionAssigned: (session) => {
         this.session = session;
         this.commentUi.attachSession(session);
       },
-      onRenderExcalidrawPreview: (filePath) => this.renderExcalidrawFilePreview(filePath),
+      onRenderExcalidrawPreview: (filePath) =>
+        this.renderExcalidrawFilePreview(filePath),
       onRenderImagePreview: (filePath) => this.renderImageFilePreview(filePath),
       onSyncWrapToggle: () => this.syncWrapToggle(),
-      onUpdateActiveFile: (filePath) => this.fileExplorer.setActiveFile(filePath),
+      onUpdateActiveFile: (filePath) =>
+        this.fileExplorer.setActiveFile(filePath),
       onUpdateCurrentFile: (filePath) => {
         this.currentFilePath = filePath;
       },
-      onUpdateLobbyCurrentFile: (filePath) => this.lobby.setCurrentFile(filePath),
+      onUpdateLobbyCurrentFile: (filePath) =>
+        this.lobby.setCurrentFile(filePath),
       onUpdateVisibleChrome: (filePath, { displayName }) => {
         this.syncFileChrome(filePath);
         this.syncCommentChrome(filePath);
@@ -422,66 +468,134 @@ export class CollabMdAppShell {
       workspaceCoordinator: this.workspaceCoordinator,
     });
 
-    if (this.chatNotificationPermission !== 'granted') {
+    if (this.chatNotificationPermission !== "granted") {
       this.chatNotificationsEnabled = false;
     }
   }
 
-  get session() { return this._session; }
-  set session(value) { this._session = value; }
-  get currentFilePath() { return this.stateStore.get('currentFilePath'); }
-  set currentFilePath(value) { this.stateStore.set('currentFilePath', value); }
-  get globalUsers() { return this.stateStore.get('globalUsers'); }
-  set globalUsers(value) { this.stateStore.set('globalUsers', value); }
-  get connectionState() { return this.stateStore.get('connectionState'); }
-  set connectionState(value) { this.stateStore.set('connectionState', value); }
-  get sessionLoadToken() { return this.stateStore.get('sessionLoadToken'); }
-  set sessionLoadToken(value) { this.stateStore.set('sessionLoadToken', value); }
-  get connectionHelpShown() { return this.stateStore.get('connectionHelpShown'); }
-  set connectionHelpShown(value) { this.stateStore.set('connectionHelpShown', value); }
-  get chatMessages() { return this.stateStore.get('chatMessages'); }
-  set chatMessages(value) { this.stateStore.set('chatMessages', value); }
-  get chatMessageIds() { return this.stateStore.get('chatMessageIds'); }
-  set chatMessageIds(value) { this.stateStore.set('chatMessageIds', value); }
-  get chatUnreadCount() { return this.stateStore.get('chatUnreadCount'); }
-  set chatUnreadCount(value) { this.stateStore.set('chatUnreadCount', value); }
-  get chatIsOpen() { return this.stateStore.get('chatIsOpen'); }
-  set chatIsOpen(value) { this.stateStore.set('chatIsOpen', value); }
-  get chatInitialSyncComplete() { return this.stateStore.get('chatInitialSyncComplete'); }
-  set chatInitialSyncComplete(value) { this.stateStore.set('chatInitialSyncComplete', value); }
-  get isTabActive() { return this.stateStore.get('isTabActive'); }
-  set isTabActive(value) { this.stateStore.set('isTabActive', value); }
-  get fileExplorerReady() { return this.stateStore.get('fileExplorerReady'); }
-  set fileExplorerReady(value) { this.stateStore.set('fileExplorerReady', value); }
-  get gitRepoAvailable() { return this.stateStore.get('gitRepoAvailable'); }
-  set gitRepoAvailable(value) { this.stateStore.set('gitRepoAvailable', value); }
-  get activeSidebarTab() { return this.stateStore.get('activeSidebarTab'); }
-  set activeSidebarTab(value) { this.stateStore.set('activeSidebarTab', value); }
-  get followedUserClientId() { return this.stateStore.get('followedUserClientId'); }
-  set followedUserClientId(value) { this.stateStore.set('followedUserClientId', value); }
-  get followedCursorSignature() { return this.stateStore.get('followedCursorSignature'); }
-  set followedCursorSignature(value) { this.stateStore.set('followedCursorSignature', value); }
+  get session() {
+    return this._session;
+  }
+  set session(value) {
+    this._session = value;
+  }
+  get currentFilePath() {
+    return this.stateStore.get("currentFilePath");
+  }
+  set currentFilePath(value) {
+    this.stateStore.set("currentFilePath", value);
+  }
+  get globalUsers() {
+    return this.stateStore.get("globalUsers");
+  }
+  set globalUsers(value) {
+    this.stateStore.set("globalUsers", value);
+  }
+  get connectionState() {
+    return this.stateStore.get("connectionState");
+  }
+  set connectionState(value) {
+    this.stateStore.set("connectionState", value);
+  }
+  get sessionLoadToken() {
+    return this.stateStore.get("sessionLoadToken");
+  }
+  set sessionLoadToken(value) {
+    this.stateStore.set("sessionLoadToken", value);
+  }
+  get connectionHelpShown() {
+    return this.stateStore.get("connectionHelpShown");
+  }
+  set connectionHelpShown(value) {
+    this.stateStore.set("connectionHelpShown", value);
+  }
+  get chatMessages() {
+    return this.stateStore.get("chatMessages");
+  }
+  set chatMessages(value) {
+    this.stateStore.set("chatMessages", value);
+  }
+  get chatMessageIds() {
+    return this.stateStore.get("chatMessageIds");
+  }
+  set chatMessageIds(value) {
+    this.stateStore.set("chatMessageIds", value);
+  }
+  get chatUnreadCount() {
+    return this.stateStore.get("chatUnreadCount");
+  }
+  set chatUnreadCount(value) {
+    this.stateStore.set("chatUnreadCount", value);
+  }
+  get chatIsOpen() {
+    return this.stateStore.get("chatIsOpen");
+  }
+  set chatIsOpen(value) {
+    this.stateStore.set("chatIsOpen", value);
+  }
+  get chatInitialSyncComplete() {
+    return this.stateStore.get("chatInitialSyncComplete");
+  }
+  set chatInitialSyncComplete(value) {
+    this.stateStore.set("chatInitialSyncComplete", value);
+  }
+  get isTabActive() {
+    return this.stateStore.get("isTabActive");
+  }
+  set isTabActive(value) {
+    this.stateStore.set("isTabActive", value);
+  }
+  get fileExplorerReady() {
+    return this.stateStore.get("fileExplorerReady");
+  }
+  set fileExplorerReady(value) {
+    this.stateStore.set("fileExplorerReady", value);
+  }
+  get gitRepoAvailable() {
+    return this.stateStore.get("gitRepoAvailable");
+  }
+  set gitRepoAvailable(value) {
+    this.stateStore.set("gitRepoAvailable", value);
+  }
+  get activeSidebarTab() {
+    return this.stateStore.get("activeSidebarTab");
+  }
+  set activeSidebarTab(value) {
+    this.stateStore.set("activeSidebarTab", value);
+  }
+  get followedUserClientId() {
+    return this.stateStore.get("followedUserClientId");
+  }
+  set followedUserClientId(value) {
+    this.stateStore.set("followedUserClientId", value);
+  }
+  get followedCursorSignature() {
+    return this.stateStore.get("followedCursorSignature");
+  }
+  set followedCursorSignature(value) {
+    this.stateStore.set("followedCursorSignature", value);
+  }
 
   publishFileOpenPerf() {
-    if (typeof window === 'undefined') {
+    if (typeof window === "undefined") {
       return;
     }
 
     window.__COLLABMD_PERF__ ??= {};
     window.__COLLABMD_PERF__.fileOpen = this._fileOpenPerf
       ? {
-        ...this._fileOpenPerf,
-        details: { ...this._fileOpenPerf.details },
-        marks: { ...this._fileOpenPerf.marks },
-      }
+          ...this._fileOpenPerf,
+          details: { ...this._fileOpenPerf.details },
+          marks: { ...this._fileOpenPerf.marks },
+        }
       : null;
   }
 
   recordFileOpenMetric(name, payload = {}) {
-    if (name === 'open_started') {
+    if (name === "open_started") {
       this._fileOpenPerf = {
         details: {
-          filePath: payload.filePath || this.currentFilePath || '',
+          filePath: payload.filePath || this.currentFilePath || "",
           loadToken: payload.loadToken ?? 0,
         },
         marks: {
@@ -496,7 +610,8 @@ export class CollabMdAppShell {
       return;
     }
 
-    const metricLoadToken = payload.loadToken ?? this._fileOpenPerf.details.loadToken;
+    const metricLoadToken =
+      payload.loadToken ?? this._fileOpenPerf.details.loadToken;
     if (metricLoadToken !== this._fileOpenPerf.details.loadToken) {
       return;
     }
@@ -506,7 +621,7 @@ export class CollabMdAppShell {
       this._fileOpenPerf.details.filePath = payload.filePath;
     }
     Object.entries(payload).forEach(([key, value]) => {
-      if (key === 'filePath' || key === 'loadToken') {
+      if (key === "filePath" || key === "loadToken") {
         return;
       }
       this._fileOpenPerf.details[key] = value;
@@ -516,8 +631,10 @@ export class CollabMdAppShell {
 
   loadEditorSessionClass() {
     if (!this._editorSessionModulePromise) {
-      this._editorSessionModulePromise = import('../infrastructure/editor-session.js')
-        .then((module) => module.EditorSession);
+      this._editorSessionModulePromise =
+        import("../infrastructure/editor-session.js").then(
+          (module) => module.EditorSession,
+        );
     }
 
     return this._editorSessionModulePromise;
@@ -533,8 +650,11 @@ export class CollabMdAppShell {
       void this.loadEditorSessionClass();
     };
 
-    if (typeof window.requestIdleCallback === 'function') {
-      this._editorSessionPrewarmHandle = window.requestIdleCallback(runPrewarm, { timeout });
+    if (typeof window.requestIdleCallback === "function") {
+      this._editorSessionPrewarmHandle = window.requestIdleCallback(
+        runPrewarm,
+        { timeout },
+      );
       return;
     }
 
@@ -547,15 +667,18 @@ export class CollabMdAppShell {
     }
 
     if (!this.quickSwitcherModulePromise) {
-      this.quickSwitcherModulePromise = import('../presentation/quick-switcher-controller.js')
-        .then((module) => module.QuickSwitcherController);
+      this.quickSwitcherModulePromise =
+        import("../presentation/quick-switcher-controller.js").then(
+          (module) => module.QuickSwitcherController,
+        );
     }
 
     const QuickSwitcherController = await this.quickSwitcherModulePromise;
     if (!this.quickSwitcher) {
       this.quickSwitcher = new QuickSwitcherController({
         getFileList: () => this.fileExplorer.flatFiles,
-        onFileSelect: (filePath) => this.handleFileSelection(filePath, { closeSidebarOnMobile: true }),
+        onFileSelect: (filePath) =>
+          this.handleFileSelection(filePath, { closeSidebarOnMobile: true }),
       });
     }
 

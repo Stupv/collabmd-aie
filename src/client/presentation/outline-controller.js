@@ -1,6 +1,6 @@
 export class OutlineController {
   constructor({
-    mobileBreakpointQuery = window.matchMedia('(max-width: 768px)'),
+    mobileBreakpointQuery = window.matchMedia("(max-width: 768px)"),
     onNavigateToHeading,
     onWillOpen,
   } = {}) {
@@ -11,10 +11,10 @@ export class OutlineController {
     this.pinnedHeadingId = null;
     this.onNavigateToHeading = onNavigateToHeading;
     this.onWillOpen = onWillOpen;
-    this.panel = document.getElementById('outlinePanel');
-    this.navigation = document.getElementById('outlineNav');
-    this.previewContainer = document.getElementById('previewContainer');
-    this.toggleButton = document.getElementById('outlineToggle');
+    this.panel = document.getElementById("outlinePanel");
+    this.navigation = document.getElementById("outlineNav");
+    this.previewContainer = document.getElementById("previewContainer");
+    this.toggleButton = document.getElementById("outlineToggle");
     this.mobileBreakpointQuery = mobileBreakpointQuery;
     this.handlePreviewScroll = () => this.scheduleActiveHeadingUpdate();
     this.handleDocumentPointerDown = (event) => {
@@ -24,11 +24,8 @@ export class OutlineController {
 
       const target = event.target;
       if (
-        target instanceof Node
-        && (
-          this.panel?.contains(target)
-          || this.toggleButton?.contains(target)
-        )
+        target instanceof Node &&
+        (this.panel?.contains(target) || this.toggleButton?.contains(target))
       ) {
         return;
       }
@@ -38,8 +35,8 @@ export class OutlineController {
   }
 
   initialize() {
-    this.toggleButton?.addEventListener('click', () => this.toggle());
-    document.addEventListener('pointerdown', this.handleDocumentPointerDown);
+    this.toggleButton?.addEventListener("click", () => this.toggle());
+    document.addEventListener("pointerdown", this.handleDocumentPointerDown);
   }
 
   toggle() {
@@ -56,8 +53,8 @@ export class OutlineController {
     }
 
     this.outlineOpen = nextState;
-    this.panel?.classList.toggle('hidden', !this.outlineOpen);
-    this.toggleButton?.classList.toggle('active', this.outlineOpen);
+    this.panel?.classList.toggle("hidden", !this.outlineOpen);
+    this.toggleButton?.classList.toggle("active", this.outlineOpen);
 
     if (this.outlineOpen) {
       this.refresh();
@@ -77,42 +74,52 @@ export class OutlineController {
       return;
     }
 
-    const previewContent = document.getElementById('previewContent');
-    const headings = previewContent?.querySelectorAll('h1, h2, h3, h4, h5, h6') ?? [];
+    const previewContent = document.getElementById("previewContent");
+    const headings =
+      previewContent?.querySelectorAll("h1, h2, h3, h4, h5, h6") ?? [];
 
     if (headings.length === 0) {
-      this.navigation.innerHTML = '<div class="outline-empty">No headings found</div>';
+      this.navigation.innerHTML =
+        '<div class="outline-empty">No headings found</div>';
       this.cleanup();
       return;
     }
 
     const items = Array.from(headings).map((heading, index) => {
       if (!heading.id) {
-        heading.id = `heading-${index}-${heading.textContent.trim().toLowerCase()
-          .replace(/[^a-z0-9]+/g, '-')
-          .replace(/^-|-$/g, '')
+        heading.id = `heading-${index}-${heading.textContent
+          .trim()
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, "-")
+          .replace(/^-|-$/g, "")
           .slice(0, 40)}`;
       }
 
       return {
         id: heading.id,
         level: Number.parseInt(heading.tagName[1], 10),
-        sourceLine: Number.parseInt(heading.getAttribute('data-source-line') || '', 10),
+        sourceLine: Number.parseInt(
+          heading.getAttribute("data-source-line") || "",
+          10,
+        ),
         text: heading.textContent.trim(),
       };
     });
 
-    this.navigation.innerHTML = items.map((item) => (
-      `<button class="outline-item" data-level="${item.level}" data-target="${item.id}"${Number.isFinite(item.sourceLine) ? ` data-source-line="${item.sourceLine}"` : ''} title="${item.text.replace(/"/g, '&quot;')}">${item.text}</button>`
-    )).join('');
+    this.navigation.innerHTML = items
+      .map(
+        (item) =>
+          `<button class="outline-item" data-level="${item.level}" data-target="${item.id}"${Number.isFinite(item.sourceLine) ? ` data-source-line="${item.sourceLine}"` : ""} title="${item.text.replace(/"/g, "&quot;")}">${item.text}</button>`,
+      )
+      .join("");
 
-    this.navigation.querySelectorAll('.outline-item').forEach((button) => {
-      button.addEventListener('click', () => {
+    this.navigation.querySelectorAll(".outline-item").forEach((button) => {
+      button.addEventListener("click", () => {
         const target = document.getElementById(button.dataset.target);
         this.pinnedHeadingId = button.dataset.target;
         this.notifyHeadingNavigation(target, button.dataset.target);
-        this.scrollHeadingIntoView(target, { behavior: 'auto' });
-        this.setActiveItem(button.dataset.target, { behavior: 'auto' });
+        this.scrollHeadingIntoView(target, { behavior: "auto" });
+        this.setActiveItem(button.dataset.target, { behavior: "auto" });
 
         if (this.mobileBreakpointQuery.matches) {
           this.close();
@@ -129,22 +136,25 @@ export class OutlineController {
       this.activeHeadingFrame = null;
     }
 
-    this.previewContainer?.removeEventListener('scroll', this.handlePreviewScroll);
+    this.previewContainer?.removeEventListener(
+      "scroll",
+      this.handlePreviewScroll,
+    );
     this.headings = [];
     this.pinnedHeadingId = null;
   }
 
-  setActiveItem(id, { scrollIntoView = true, behavior = 'smooth' } = {}) {
+  setActiveItem(id, { scrollIntoView = true, behavior = "smooth" } = {}) {
     this.activeHeadingId = id;
 
-    this.navigation?.querySelectorAll('.outline-item').forEach((item) => {
-      item.classList.toggle('active', item.dataset.target === id);
+    this.navigation?.querySelectorAll(".outline-item").forEach((item) => {
+      item.classList.toggle("active", item.dataset.target === id);
     });
 
     if (scrollIntoView) {
-      this.navigation?.querySelector('.outline-item.active')?.scrollIntoView({
+      this.navigation?.querySelector(".outline-item.active")?.scrollIntoView({
         behavior,
-        block: 'nearest',
+        block: "nearest",
       });
     }
   }
@@ -157,7 +167,9 @@ export class OutlineController {
     }
 
     this.headings = headings;
-    this.previewContainer.addEventListener('scroll', this.handlePreviewScroll, { passive: true });
+    this.previewContainer.addEventListener("scroll", this.handlePreviewScroll, {
+      passive: true,
+    });
     this.updateActiveHeading();
   }
 
@@ -180,7 +192,7 @@ export class OutlineController {
     const pinnedHeading = this.getPinnedHeading();
     if (pinnedHeading && this.shouldKeepPinnedHeadingActive(pinnedHeading)) {
       this.setActiveItem(pinnedHeading.id, {
-        behavior: 'auto',
+        behavior: "auto",
         scrollIntoView: true,
       });
       return;
@@ -200,7 +212,7 @@ export class OutlineController {
     }
 
     this.setActiveItem(activeHeading.id, {
-      behavior: 'auto',
+      behavior: "auto",
       scrollIntoView: true,
     });
   }
@@ -212,7 +224,9 @@ export class OutlineController {
 
     const previewRect = this.previewContainer.getBoundingClientRect();
     const headingRect = heading.getBoundingClientRect();
-    return this.previewContainer.scrollTop + (headingRect.top - previewRect.top);
+    return (
+      this.previewContainer.scrollTop + (headingRect.top - previewRect.top)
+    );
   }
 
   getPinnedHeading() {
@@ -220,7 +234,10 @@ export class OutlineController {
       return null;
     }
 
-    return this.headings.find((heading) => heading.id === this.pinnedHeadingId) ?? null;
+    return (
+      this.headings.find((heading) => heading.id === this.pinnedHeadingId) ??
+      null
+    );
   }
 
   shouldKeepPinnedHeadingActive(heading) {
@@ -228,7 +245,8 @@ export class OutlineController {
       return false;
     }
 
-    const headingTop = this.getHeadingScrollTop(heading) - this.previewContainer.scrollTop;
+    const headingTop =
+      this.getHeadingScrollTop(heading) - this.previewContainer.scrollTop;
     const headingBottom = headingTop + heading.getBoundingClientRect().height;
     const activationWindow = this.previewContainer.clientHeight * 0.45;
 
@@ -240,21 +258,25 @@ export class OutlineController {
       return;
     }
 
-    const sourceLine = Number.parseInt(target.getAttribute('data-source-line') || '', 10);
+    const sourceLine = Number.parseInt(
+      target.getAttribute("data-source-line") || "",
+      10,
+    );
     this.onNavigateToHeading?.({
       headingId,
       sourceLine: Number.isFinite(sourceLine) ? sourceLine : null,
     });
   }
 
-  scrollHeadingIntoView(target, { behavior = 'smooth' } = {}) {
+  scrollHeadingIntoView(target, { behavior = "smooth" } = {}) {
     if (!target || !this.previewContainer) {
       return;
     }
 
     const previewRect = this.previewContainer.getBoundingClientRect();
     const targetRect = target.getBoundingClientRect();
-    const nextScrollTop = this.previewContainer.scrollTop + (targetRect.top - previewRect.top);
+    const nextScrollTop =
+      this.previewContainer.scrollTop + (targetRect.top - previewRect.top);
 
     this.previewContainer.scrollTo({
       behavior,

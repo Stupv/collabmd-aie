@@ -10,29 +10,32 @@ export function clampImageLightboxScale(value) {
     return MIN_SCALE;
   }
 
-  return Math.min(MAX_SCALE, Math.max(MIN_SCALE, Math.round(numericValue * 100) / 100));
+  return Math.min(
+    MAX_SCALE,
+    Math.max(MIN_SCALE, Math.round(numericValue * 100) / 100),
+  );
 }
 
-export function clampImageLightboxOffset(offset, {
-  contentSize = 0,
-  scale = 1,
-  viewportSize = 0,
-} = {}) {
+export function clampImageLightboxOffset(
+  offset,
+  { contentSize = 0, scale = 1, viewportSize = 0 } = {},
+) {
   const numericOffset = Number(offset);
   const numericContentSize = Number(contentSize);
   const numericScale = Number(scale);
   const numericViewportSize = Number(viewportSize);
 
   if (
-    !Number.isFinite(numericOffset)
-    || !Number.isFinite(numericContentSize)
-    || !Number.isFinite(numericScale)
-    || !Number.isFinite(numericViewportSize)
+    !Number.isFinite(numericOffset) ||
+    !Number.isFinite(numericContentSize) ||
+    !Number.isFinite(numericScale) ||
+    !Number.isFinite(numericViewportSize)
   ) {
     return 0;
   }
 
-  const overflow = ((numericContentSize * numericScale) - numericViewportSize) / 2;
+  const overflow =
+    (numericContentSize * numericScale - numericViewportSize) / 2;
   if (overflow <= 0) {
     return 0;
   }
@@ -41,11 +44,7 @@ export function clampImageLightboxOffset(offset, {
 }
 
 export class ImageLightboxController {
-  constructor({
-    previewElement,
-    documentRef = document,
-    windowRef = window,
-  }) {
+  constructor({ previewElement, documentRef = document, windowRef = window }) {
     this.previewElement = previewElement;
     this.document = documentRef;
     this.window = windowRef;
@@ -72,12 +71,16 @@ export class ImageLightboxController {
         return;
       }
 
-      const image = target.closest('img');
+      const image = target.closest("img");
       if (!image || !this.previewElement?.contains(image)) {
         return;
       }
 
-      if (image.closest('[data-video-overlay-root="true"], [data-excalidraw-overlay-root="true"]')) {
+      if (
+        image.closest(
+          '[data-video-overlay-root="true"], [data-excalidraw-overlay-root="true"]',
+        )
+      ) {
         return;
       }
 
@@ -91,25 +94,25 @@ export class ImageLightboxController {
         return;
       }
 
-      if (event.key === 'Escape') {
+      if (event.key === "Escape") {
         event.preventDefault();
         this.close();
         return;
       }
 
-      if (event.key === '+' || event.key === '=') {
+      if (event.key === "+" || event.key === "=") {
         event.preventDefault();
         this.zoomBy(ZOOM_STEP);
         return;
       }
 
-      if (event.key === '-') {
+      if (event.key === "-") {
         event.preventDefault();
         this.zoomBy(-ZOOM_STEP);
         return;
       }
 
-      if (event.key === '0') {
+      if (event.key === "0") {
         event.preventDefault();
         this.resetView();
       }
@@ -124,15 +127,15 @@ export class ImageLightboxController {
       this.syncTransform();
     };
 
-    this.previewElement?.addEventListener('click', this.handlePreviewClick);
-    this.document.addEventListener('keydown', this.handleKeyDown);
-    this.window.addEventListener('resize', this.handleWindowResize);
+    this.previewElement?.addEventListener("click", this.handlePreviewClick);
+    this.document.addEventListener("keydown", this.handleKeyDown);
+    this.window.addEventListener("resize", this.handleWindowResize);
   }
 
   destroy() {
-    this.previewElement?.removeEventListener('click', this.handlePreviewClick);
-    this.document.removeEventListener('keydown', this.handleKeyDown);
-    this.window.removeEventListener('resize', this.handleWindowResize);
+    this.previewElement?.removeEventListener("click", this.handlePreviewClick);
+    this.document.removeEventListener("keydown", this.handleKeyDown);
+    this.window.removeEventListener("resize", this.handleWindowResize);
     this.close();
     this.overlayRoot?.remove();
     this.overlayRoot = null;
@@ -144,19 +147,20 @@ export class ImageLightboxController {
   }
 
   openFromImage(image) {
-    const src = image?.currentSrc || image?.getAttribute?.('src') || '';
+    const src = image?.currentSrc || image?.getAttribute?.("src") || "";
     if (!src) {
       return false;
     }
 
     this.ensureOverlayRoot();
     this.resetView();
-    this.titleElement.textContent = image.getAttribute('alt') || 'Image preview';
+    this.titleElement.textContent =
+      image.getAttribute("alt") || "Image preview";
     this.imageElement.src = src;
-    this.imageElement.alt = image.getAttribute('alt') || '';
+    this.imageElement.alt = image.getAttribute("alt") || "";
     this.overlayRoot.hidden = false;
     this.isOpen = true;
-    this.document.body.classList.add('image-lightbox-open');
+    this.document.body.classList.add("image-lightbox-open");
     this.syncTransform();
     this.overlayRoot.focus?.();
     return true;
@@ -169,12 +173,12 @@ export class ImageLightboxController {
 
     this.activePointerId = null;
     this.didDrag = false;
-    this.viewport?.classList?.remove('is-dragging');
+    this.viewport?.classList?.remove("is-dragging");
     if (this.overlayRoot) {
       this.overlayRoot.hidden = true;
     }
     this.isOpen = false;
-    this.document.body.classList.remove('image-lightbox-open');
+    this.document.body.classList.remove("image-lightbox-open");
   }
 
   resetView() {
@@ -219,84 +223,101 @@ export class ImageLightboxController {
     }
 
     this.imageElement.style.transform = `translate3d(${this.offsetX}px, ${this.offsetY}px, 0) scale(${this.scale})`;
-    this.imageElement.style.cursor = this.scale > MIN_SCALE ? 'grab' : 'zoom-in';
+    this.imageElement.style.cursor =
+      this.scale > MIN_SCALE ? "grab" : "zoom-in";
     if (this.zoomLabel) {
       this.zoomLabel.textContent = `${Math.round(this.scale * 100)}%`;
     }
     if (this.resetButton) {
-      this.resetButton.disabled = this.scale <= MIN_SCALE && this.offsetX === 0 && this.offsetY === 0;
+      this.resetButton.disabled =
+        this.scale <= MIN_SCALE && this.offsetX === 0 && this.offsetY === 0;
     }
   }
 
   ensureOverlayRoot() {
-    if (this.overlayRoot?.isConnected && this.overlayRoot.parentElement === this.document.body) {
+    if (
+      this.overlayRoot?.isConnected &&
+      this.overlayRoot.parentElement === this.document.body
+    ) {
       return this.overlayRoot;
     }
 
-    const overlayRoot = this.document.createElement('div');
-    overlayRoot.className = 'image-lightbox-root';
-    overlayRoot.dataset.imageLightboxRoot = 'true';
+    const overlayRoot = this.document.createElement("div");
+    overlayRoot.className = "image-lightbox-root";
+    overlayRoot.dataset.imageLightboxRoot = "true";
     overlayRoot.hidden = true;
     overlayRoot.tabIndex = -1;
 
-    const backdrop = this.document.createElement('button');
-    backdrop.className = 'image-lightbox-backdrop';
-    backdrop.type = 'button';
-    backdrop.setAttribute('aria-label', 'Close image preview');
-    backdrop.addEventListener('click', (event) => {
+    const backdrop = this.document.createElement("button");
+    backdrop.className = "image-lightbox-backdrop";
+    backdrop.type = "button";
+    backdrop.setAttribute("aria-label", "Close image preview");
+    backdrop.addEventListener("click", (event) => {
       event.preventDefault();
       event.stopPropagation();
       this.close();
     });
 
-    const shell = this.document.createElement('div');
-    shell.className = 'image-lightbox-shell';
-    shell.setAttribute('role', 'dialog');
-    shell.setAttribute('aria-modal', 'true');
-    shell.setAttribute('aria-label', 'Image preview');
-    shell.addEventListener('click', (event) => event.stopPropagation());
-    shell.addEventListener('pointerdown', (event) => event.stopPropagation());
+    const shell = this.document.createElement("div");
+    shell.className = "image-lightbox-shell";
+    shell.setAttribute("role", "dialog");
+    shell.setAttribute("aria-modal", "true");
+    shell.setAttribute("aria-label", "Image preview");
+    shell.addEventListener("click", (event) => event.stopPropagation());
+    shell.addEventListener("pointerdown", (event) => event.stopPropagation());
 
-    const toolbar = this.document.createElement('div');
-    toolbar.className = 'image-lightbox-toolbar';
+    const toolbar = this.document.createElement("div");
+    toolbar.className = "image-lightbox-toolbar";
 
-    const title = this.document.createElement('div');
-    title.className = 'image-lightbox-title';
-    title.textContent = 'Image preview';
+    const title = this.document.createElement("div");
+    title.className = "image-lightbox-title";
+    title.textContent = "Image preview";
 
-    const controls = this.document.createElement('div');
-    controls.className = 'image-lightbox-controls';
+    const controls = this.document.createElement("div");
+    controls.className = "image-lightbox-controls";
 
-    const zoomLabel = this.document.createElement('span');
-    zoomLabel.className = 'image-lightbox-zoom-label';
-    zoomLabel.textContent = '100%';
-    const resetButton = this.createControlButton('Reset', 'Reset zoom and position', () => this.resetView());
-    const closeButton = this.createControlButton('Close', 'Close image preview', () => this.close());
+    const zoomLabel = this.document.createElement("span");
+    zoomLabel.className = "image-lightbox-zoom-label";
+    zoomLabel.textContent = "100%";
+    const resetButton = this.createControlButton(
+      "Reset",
+      "Reset zoom and position",
+      () => this.resetView(),
+    );
+    const closeButton = this.createControlButton(
+      "Close",
+      "Close image preview",
+      () => this.close(),
+    );
 
     controls.append(zoomLabel, resetButton, closeButton);
     toolbar.append(title, controls);
 
-    const viewport = this.document.createElement('div');
-    viewport.className = 'image-lightbox-viewport';
+    const viewport = this.document.createElement("div");
+    viewport.className = "image-lightbox-viewport";
 
-    const image = this.document.createElement('img');
-    image.className = 'image-lightbox-image';
-    image.alt = '';
-    image.addEventListener('load', () => {
+    const image = this.document.createElement("img");
+    image.className = "image-lightbox-image";
+    image.alt = "";
+    image.addEventListener("load", () => {
       this.clampOffsets();
       this.syncTransform();
     });
 
-    viewport.addEventListener('wheel', (event) => {
-      if (!this.isOpen) {
-        return;
-      }
+    viewport.addEventListener(
+      "wheel",
+      (event) => {
+        if (!this.isOpen) {
+          return;
+        }
 
-      event.preventDefault();
-      this.zoomBy(event.deltaY < 0 ? ZOOM_STEP : -ZOOM_STEP);
-    }, { passive: false });
+        event.preventDefault();
+        this.zoomBy(event.deltaY < 0 ? ZOOM_STEP : -ZOOM_STEP);
+      },
+      { passive: false },
+    );
 
-    viewport.addEventListener('pointerdown', (event) => {
+    viewport.addEventListener("pointerdown", (event) => {
       if (!this.isOpen || this.scale <= MIN_SCALE || event.button !== 0) {
         return;
       }
@@ -307,20 +328,20 @@ export class ImageLightboxController {
       this.dragOriginX = this.offsetX;
       this.dragOriginY = this.offsetY;
       this.didDrag = false;
-      viewport.classList.add('is-dragging');
+      viewport.classList.add("is-dragging");
       viewport.setPointerCapture?.(event.pointerId);
       event.preventDefault();
     });
 
-    viewport.addEventListener('pointermove', (event) => {
+    viewport.addEventListener("pointermove", (event) => {
       if (!this.isOpen || this.activePointerId !== event.pointerId) {
         return;
       }
 
       if (
-        !this.didDrag
-        && (Math.abs(event.clientX - this.dragStartX) >= DRAG_THRESHOLD_PX
-          || Math.abs(event.clientY - this.dragStartY) >= DRAG_THRESHOLD_PX)
+        !this.didDrag &&
+        (Math.abs(event.clientX - this.dragStartX) >= DRAG_THRESHOLD_PX ||
+          Math.abs(event.clientY - this.dragStartY) >= DRAG_THRESHOLD_PX)
       ) {
         this.didDrag = true;
       }
@@ -337,14 +358,15 @@ export class ImageLightboxController {
       }
 
       this.activePointerId = null;
-      viewport.classList.remove('is-dragging');
+      viewport.classList.remove("is-dragging");
       viewport.releasePointerCapture?.(event.pointerId);
-      this.imageElement.style.cursor = this.scale > MIN_SCALE ? 'grab' : 'zoom-in';
+      this.imageElement.style.cursor =
+        this.scale > MIN_SCALE ? "grab" : "zoom-in";
     };
 
-    viewport.addEventListener('pointerup', finishDrag);
-    viewport.addEventListener('pointercancel', finishDrag);
-    image.addEventListener('click', (event) => {
+    viewport.addEventListener("pointerup", finishDrag);
+    viewport.addEventListener("pointercancel", finishDrag);
+    image.addEventListener("click", (event) => {
       if (!this.isOpen) {
         return;
       }
@@ -376,15 +398,13 @@ export class ImageLightboxController {
     return overlayRoot;
   }
 
-  createControlButton(label, ariaLabel, onClick, {
-    className = '',
-  } = {}) {
-    const button = this.document.createElement('button');
+  createControlButton(label, ariaLabel, onClick, { className = "" } = {}) {
+    const button = this.document.createElement("button");
     button.className = `image-lightbox-btn ${className}`.trim();
-    button.type = 'button';
-    button.setAttribute('aria-label', ariaLabel);
+    button.type = "button";
+    button.setAttribute("aria-label", ariaLabel);
     button.textContent = label;
-    button.addEventListener('click', (event) => {
+    button.addEventListener("click", (event) => {
       event.preventDefault();
       event.stopPropagation();
       onClick(event);

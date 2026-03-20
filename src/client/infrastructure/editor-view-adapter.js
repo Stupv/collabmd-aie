@@ -1,6 +1,15 @@
-import { autocompletion, closeBrackets, closeBracketsKeymap } from '@codemirror/autocomplete';
-import { defaultKeymap, history, historyKeymap, indentWithTab } from '@codemirror/commands';
-import { markdown, markdownLanguage } from '@codemirror/lang-markdown';
+import {
+  autocompletion,
+  closeBrackets,
+  closeBracketsKeymap,
+} from "@codemirror/autocomplete";
+import {
+  defaultKeymap,
+  history,
+  historyKeymap,
+  indentWithTab,
+} from "@codemirror/commands";
+import { markdown, markdownLanguage } from "@codemirror/lang-markdown";
 import {
   bracketMatching,
   defaultHighlightStyle,
@@ -8,11 +17,18 @@ import {
   foldKeymap,
   indentOnInput,
   syntaxHighlighting,
-} from '@codemirror/language';
-import { languages } from '@codemirror/language-data';
-import { highlightSelectionMatches, searchKeymap } from '@codemirror/search';
-import { Compartment, EditorSelection, EditorState, Prec, StateEffect, StateField } from '@codemirror/state';
-import { oneDark } from '@codemirror/theme-one-dark';
+} from "@codemirror/language";
+import { languages } from "@codemirror/language-data";
+import { highlightSelectionMatches, searchKeymap } from "@codemirror/search";
+import {
+  Compartment,
+  EditorSelection,
+  EditorState,
+  Prec,
+  StateEffect,
+  StateField,
+} from "@codemirror/state";
+import { oneDark } from "@codemirror/theme-one-dark";
 import {
   Decoration,
   EditorView,
@@ -25,28 +41,35 @@ import {
   keymap,
   lineNumbers,
   rectangularSelection,
-} from '@codemirror/view';
-import { yCollab } from 'y-codemirror.next';
+} from "@codemirror/view";
+import { yCollab } from "y-codemirror.next";
 
-import { normalizeCommentQuote } from '../../domain/comment-threads.js';
-import { createMarkdownToolbarEdit } from '../domain/markdown-formatting.js';
-import { wikiLinkCompletions } from '../domain/wiki-link-completions.js';
-import { plantUmlLanguage, plantUmlLanguageDescription } from '../domain/plantuml-language.js';
-import { handleImagePasteEvent } from './editor-paste-utils.js';
+import { normalizeCommentQuote } from "../../domain/comment-threads.js";
+import { createMarkdownToolbarEdit } from "../domain/markdown-formatting.js";
+import { wikiLinkCompletions } from "../domain/wiki-link-completions.js";
+import {
+  plantUmlLanguage,
+  plantUmlLanguageDescription,
+} from "../domain/plantuml-language.js";
+import { handleImagePasteEvent } from "./editor-paste-utils.js";
 
 const markdownCodeLanguages = [...languages, plantUmlLanguageDescription];
-const pairedMatchingBracketMark = Decoration.mark({ class: 'cm-matchingBracket cm-matchingBracket-paired' });
-const nonmatchingBracketMark = Decoration.mark({ class: 'cm-nonmatchingBracket' });
-const remoteUpdateMark = Decoration.mark({ class: 'cm-remoteUpdateFlash' });
+const pairedMatchingBracketMark = Decoration.mark({
+  class: "cm-matchingBracket cm-matchingBracket-paired",
+});
+const nonmatchingBracketMark = Decoration.mark({
+  class: "cm-nonmatchingBracket",
+});
+const remoteUpdateMark = Decoration.mark({ class: "cm-remoteUpdateFlash" });
 const REMOTE_UPDATE_FLASH_DURATION_MS = 1350;
 const REMOTE_UPDATE_CARET_MAX_LENGTH = 160;
 const RECENT_LOCAL_INPUT_WINDOW_MS = 900;
 
 class RemoteUpdateCaretWidget extends WidgetType {
   toDOM() {
-    const element = document.createElement('span');
-    element.className = 'cm-remoteUpdateCaretWidget';
-    element.setAttribute('aria-hidden', 'true');
+    const element = document.createElement("span");
+    element.className = "cm-remoteUpdateCaretWidget";
+    element.setAttribute("aria-hidden", "true");
     return element;
   }
 
@@ -75,14 +98,17 @@ const remoteUpdateFlashField = StateField.define({
           nextRanges.push(remoteUpdateMark.range(from, to));
         }
         if (showCaret) {
-          nextRanges.push(Decoration.widget({
-            side: -1,
-            widget: new RemoteUpdateCaretWidget(),
-          }).range(from));
+          nextRanges.push(
+            Decoration.widget({
+              side: -1,
+              widget: new RemoteUpdateCaretWidget(),
+            }).range(from),
+          );
         }
-        nextDecorations = nextRanges.length > 0
-          ? Decoration.set(nextRanges, true)
-          : Decoration.none;
+        nextDecorations =
+          nextRanges.length > 0
+            ? Decoration.set(nextRanges, true)
+            : Decoration.none;
       }
     });
 
@@ -92,8 +118,9 @@ const remoteUpdateFlashField = StateField.define({
 });
 
 function isBracketBeforeCaret(range, state) {
-  return state.selection.ranges.some((selectionRange) =>
-    selectionRange.empty && range.to === selectionRange.head
+  return state.selection.ranges.some(
+    (selectionRange) =>
+      selectionRange.empty && range.to === selectionRange.head,
   );
 }
 
@@ -101,199 +128,243 @@ function renderBracketMatch(match, state) {
   const decorations = [];
 
   if (!match.matched) {
-    decorations.push(nonmatchingBracketMark.range(match.start.from, match.start.to));
+    decorations.push(
+      nonmatchingBracketMark.range(match.start.from, match.start.to),
+    );
     if (match.end) {
-      decorations.push(nonmatchingBracketMark.range(match.end.from, match.end.to));
+      decorations.push(
+        nonmatchingBracketMark.range(match.end.from, match.end.to),
+      );
     }
     return decorations;
   }
 
   const shouldHideStartBracket = isBracketBeforeCaret(match.start, state);
-  const shouldHideEndBracket = match.end ? isBracketBeforeCaret(match.end, state) : false;
+  const shouldHideEndBracket = match.end
+    ? isBracketBeforeCaret(match.end, state)
+    : false;
 
   if (!shouldHideStartBracket) {
-    decorations.push(pairedMatchingBracketMark.range(match.start.from, match.start.to));
+    decorations.push(
+      pairedMatchingBracketMark.range(match.start.from, match.start.to),
+    );
   }
   if (match.end && !shouldHideEndBracket) {
-    decorations.push(pairedMatchingBracketMark.range(match.end.from, match.end.to));
+    decorations.push(
+      pairedMatchingBracketMark.range(match.end.from, match.end.to),
+    );
   }
 
   return decorations;
 }
 
 function createEditorTheme(theme) {
-  const activeLineBackground = theme === 'dark'
-    ? 'oklch(from var(--color-surface-offset) l c h / 0.55)'
-    : 'oklch(from var(--color-surface-offset) l c h / 0.75)';
-  const activeLineAccent = theme === 'dark'
-    ? 'oklch(from var(--color-primary) l c h / 0.28)'
-    : 'oklch(from var(--color-primary) l c h / 0.18)';
-  const selectionBackground = theme === 'dark'
-    ? 'oklch(from var(--color-primary) l c h / 0.4)'
-    : 'oklch(from var(--color-primary) l c h / 0.26)';
-  const selectionBorder = theme === 'dark'
-    ? 'oklch(from var(--color-primary) l c h / 0.65)'
-    : 'oklch(from var(--color-primary) l c h / 0.5)';
-  const caretColor = theme === 'dark'
-    ? 'color-mix(in oklab, var(--color-primary) 78%, white)'
-    : 'color-mix(in oklab, var(--color-primary) 84%, black)';
-  const bracketPairBackground = theme === 'dark'
-    ? 'oklch(from var(--color-primary) l c h / 0.2)'
-    : 'oklch(from var(--color-primary) l c h / 0.12)';
-  const bracketPairOutline = theme === 'dark'
-    ? 'oklch(from var(--color-primary) calc(l + 0.08) c h / 0.85)'
-    : 'oklch(from var(--color-primary) calc(l - 0.04) c h / 0.7)';
-  const nonmatchingBracketBackground = theme === 'dark'
-    ? 'oklch(from var(--color-error) l c h / 0.12)'
-    : 'oklch(from var(--color-error) l c h / 0.1)';
-  const nonmatchingBracketOutline = theme === 'dark'
-    ? 'oklch(from var(--color-error) calc(l + 0.08) c h / 0.8)'
-    : 'oklch(from var(--color-error) calc(l - 0.04) c h / 0.7)';
+  const activeLineBackground =
+    theme === "dark"
+      ? "oklch(from var(--color-surface-offset) l c h / 0.55)"
+      : "oklch(from var(--color-surface-offset) l c h / 0.75)";
+  const activeLineAccent =
+    theme === "dark"
+      ? "oklch(from var(--color-primary) l c h / 0.28)"
+      : "oklch(from var(--color-primary) l c h / 0.18)";
+  const selectionBackground =
+    theme === "dark"
+      ? "oklch(from var(--color-primary) l c h / 0.4)"
+      : "oklch(from var(--color-primary) l c h / 0.26)";
+  const selectionBorder =
+    theme === "dark"
+      ? "oklch(from var(--color-primary) l c h / 0.65)"
+      : "oklch(from var(--color-primary) l c h / 0.5)";
+  const caretColor =
+    theme === "dark"
+      ? "color-mix(in oklab, var(--color-primary) 78%, white)"
+      : "color-mix(in oklab, var(--color-primary) 84%, black)";
+  const bracketPairBackground =
+    theme === "dark"
+      ? "oklch(from var(--color-primary) l c h / 0.2)"
+      : "oklch(from var(--color-primary) l c h / 0.12)";
+  const bracketPairOutline =
+    theme === "dark"
+      ? "oklch(from var(--color-primary) calc(l + 0.08) c h / 0.85)"
+      : "oklch(from var(--color-primary) calc(l - 0.04) c h / 0.7)";
+  const nonmatchingBracketBackground =
+    theme === "dark"
+      ? "oklch(from var(--color-error) l c h / 0.12)"
+      : "oklch(from var(--color-error) l c h / 0.1)";
+  const nonmatchingBracketOutline =
+    theme === "dark"
+      ? "oklch(from var(--color-error) calc(l + 0.08) c h / 0.8)"
+      : "oklch(from var(--color-error) calc(l - 0.04) c h / 0.7)";
 
-  return EditorView.theme({
-    '&': {
-      backgroundColor: 'var(--color-bg)',
-      color: 'var(--color-text)',
-    },
-    '.cm-content': {
-      caretColor,
-      fontFamily: 'var(--font-mono)',
-      padding: '16px 0',
-    },
-    '.cm-cursor, .cm-dropCursor': {
-      borderLeftColor: caretColor,
-      borderLeftWidth: '3px',
-      marginLeft: '-1px',
-    },
-    '.cm-foldPlaceholder': {
-      backgroundColor: 'var(--color-surface-dynamic)',
-      border: 'none',
-      color: 'var(--color-text-muted)',
-    },
-    '.cm-gutters': {
-      backgroundColor: 'var(--color-surface)',
-      borderRight: '1px solid var(--color-divider)',
-      color: 'var(--color-text-muted)',
-      minWidth: '44px',
-    },
-    '.cm-line': {
-      padding: '0 16px',
-    },
-    '.cm-activeLine': {
-      backgroundColor: activeLineBackground,
-      boxShadow: `inset 3px 0 0 ${activeLineAccent}`,
-    },
-    '.cm-activeLineGutter': {
-      backgroundColor: activeLineBackground,
-      boxShadow: `inset 3px 0 0 ${activeLineAccent}`,
-      color: 'var(--color-text-muted)',
-    },
-    '.cm-matchingBracket': {
-      borderRadius: '2px',
-      color: 'inherit',
-    },
-    '.cm-matchingBracket.cm-matchingBracket-paired': {
-      backgroundColor: bracketPairBackground,
-      outline: `1px solid ${bracketPairOutline}`,
-    },
-    '.cm-nonmatchingBracket': {
-      backgroundColor: nonmatchingBracketBackground,
-      outline: `1px solid ${nonmatchingBracketOutline}`,
-      borderRadius: '2px',
-    },
-    '.cm-selectionMatch': {
-      backgroundColor: 'var(--color-primary-highlight)',
-    },
-    '.cm-remoteUpdateFlash': {
-      animation: 'collabmd-remote-update-flash 1.35s ease-out',
-      backgroundColor: theme === 'dark'
-        ? 'oklch(from var(--color-primary) l c h / 0.22)'
-        : 'oklch(from var(--color-primary) l c h / 0.16)',
-      borderRadius: '3px',
-      boxShadow: `0 0 0 1px ${theme === 'dark'
-        ? 'oklch(from var(--color-primary) calc(l + 0.05) c h / 0.26)'
-        : 'oklch(from var(--color-primary) calc(l - 0.04) c h / 0.2)'}`,
-    },
-    '.cm-remoteUpdateCaretWidget': {
-      animation: 'collabmd-remote-update-caret 1s ease-out',
-      backgroundColor: 'transparent',
-      borderLeft: `2px solid ${theme === 'dark'
-        ? 'color-mix(in oklab, var(--color-primary) 78%, white)'
-        : 'color-mix(in oklab, var(--color-primary) 84%, black)'}`,
-      borderRadius: '999px',
-      boxShadow: `0 0 0 1px ${theme === 'dark'
-        ? 'oklch(from var(--color-primary) calc(l + 0.06) c h / 0.22)'
-        : 'oklch(from var(--color-primary) calc(l - 0.04) c h / 0.16)'}`,
-      display: 'inline-block',
-      height: '1.2em',
-      marginLeft: '-1px',
-      marginRight: '-1px',
-      pointerEvents: 'none',
-      transformOrigin: 'center bottom',
-      verticalAlign: 'text-bottom',
-      width: '0',
-    },
-    '&.cm-focused .cm-selectionBackground, .cm-selectionBackground, .cm-content ::selection': {
-      backgroundColor: selectionBackground,
-    },
-    '&.cm-focused .cm-selectionLayer .cm-selectionBackground': {
-      border: `1px solid ${selectionBorder}`,
-      borderRadius: '2px',
-    },
-    '@keyframes collabmd-remote-update-flash': {
-      '0%': {
-        backgroundColor: theme === 'dark'
-          ? 'oklch(from var(--color-primary) l c h / 0.34)'
-          : 'oklch(from var(--color-primary) l c h / 0.26)',
+  return EditorView.theme(
+    {
+      "&": {
+        backgroundColor: "var(--color-bg)",
+        color: "var(--color-text)",
       },
-      '100%': {
-        backgroundColor: theme === 'dark'
-          ? 'oklch(from var(--color-primary) l c h / 0)'
-          : 'oklch(from var(--color-primary) l c h / 0)',
+      ".cm-content": {
+        caretColor,
+        fontFamily: "var(--font-mono)",
+        padding: "16px 0",
+      },
+      ".cm-cursor, .cm-dropCursor": {
+        borderLeftColor: caretColor,
+        borderLeftWidth: "3px",
+        marginLeft: "-1px",
+      },
+      ".cm-foldPlaceholder": {
+        backgroundColor: "var(--color-surface-dynamic)",
+        border: "none",
+        color: "var(--color-text-muted)",
+      },
+      ".cm-gutters": {
+        backgroundColor: "var(--color-surface)",
+        borderRight: "1px solid var(--color-divider)",
+        color: "var(--color-text-muted)",
+        minWidth: "44px",
+      },
+      ".cm-line": {
+        padding: "0 16px",
+      },
+      ".cm-activeLine": {
+        backgroundColor: activeLineBackground,
+        boxShadow: `inset 3px 0 0 ${activeLineAccent}`,
+      },
+      ".cm-activeLineGutter": {
+        backgroundColor: activeLineBackground,
+        boxShadow: `inset 3px 0 0 ${activeLineAccent}`,
+        color: "var(--color-text-muted)",
+      },
+      ".cm-matchingBracket": {
+        borderRadius: "2px",
+        color: "inherit",
+      },
+      ".cm-matchingBracket.cm-matchingBracket-paired": {
+        backgroundColor: bracketPairBackground,
+        outline: `1px solid ${bracketPairOutline}`,
+      },
+      ".cm-nonmatchingBracket": {
+        backgroundColor: nonmatchingBracketBackground,
+        outline: `1px solid ${nonmatchingBracketOutline}`,
+        borderRadius: "2px",
+      },
+      ".cm-selectionMatch": {
+        backgroundColor: "var(--color-primary-highlight)",
+      },
+      ".cm-remoteUpdateFlash": {
+        animation: "collabmd-remote-update-flash 1.35s ease-out",
+        backgroundColor:
+          theme === "dark"
+            ? "oklch(from var(--color-primary) l c h / 0.22)"
+            : "oklch(from var(--color-primary) l c h / 0.16)",
+        borderRadius: "3px",
+        boxShadow: `0 0 0 1px ${
+          theme === "dark"
+            ? "oklch(from var(--color-primary) calc(l + 0.05) c h / 0.26)"
+            : "oklch(from var(--color-primary) calc(l - 0.04) c h / 0.2)"
+        }`,
+      },
+      ".cm-remoteUpdateCaretWidget": {
+        animation: "collabmd-remote-update-caret 1s ease-out",
+        backgroundColor: "transparent",
+        borderLeft: `2px solid ${
+          theme === "dark"
+            ? "color-mix(in oklab, var(--color-primary) 78%, white)"
+            : "color-mix(in oklab, var(--color-primary) 84%, black)"
+        }`,
+        borderRadius: "999px",
+        boxShadow: `0 0 0 1px ${
+          theme === "dark"
+            ? "oklch(from var(--color-primary) calc(l + 0.06) c h / 0.22)"
+            : "oklch(from var(--color-primary) calc(l - 0.04) c h / 0.16)"
+        }`,
+        display: "inline-block",
+        height: "1.2em",
+        marginLeft: "-1px",
+        marginRight: "-1px",
+        pointerEvents: "none",
+        transformOrigin: "center bottom",
+        verticalAlign: "text-bottom",
+        width: "0",
+      },
+      "&.cm-focused .cm-selectionBackground, .cm-selectionBackground, .cm-content ::selection":
+        {
+          backgroundColor: selectionBackground,
+        },
+      "&.cm-focused .cm-selectionLayer .cm-selectionBackground": {
+        border: `1px solid ${selectionBorder}`,
+        borderRadius: "2px",
+      },
+      "@keyframes collabmd-remote-update-flash": {
+        "0%": {
+          backgroundColor:
+            theme === "dark"
+              ? "oklch(from var(--color-primary) l c h / 0.34)"
+              : "oklch(from var(--color-primary) l c h / 0.26)",
+        },
+        "100%": {
+          backgroundColor:
+            theme === "dark"
+              ? "oklch(from var(--color-primary) l c h / 0)"
+              : "oklch(from var(--color-primary) l c h / 0)",
+        },
+      },
+      "@keyframes collabmd-remote-update-caret": {
+        "0%": {
+          boxShadow: `0 0 0 1px ${
+            theme === "dark"
+              ? "oklch(from var(--color-primary) calc(l + 0.08) c h / 0.34)"
+              : "oklch(from var(--color-primary) calc(l - 0.04) c h / 0.24)"
+          }`,
+          opacity: "0",
+          transform: "translateY(0.2em) scaleY(0.7)",
+        },
+        "18%": {
+          opacity: "1",
+          transform: "translateY(0) scaleY(1)",
+        },
+        "72%": {
+          opacity: "1",
+          transform: "translateY(0) scaleY(1)",
+        },
+        "100%": {
+          boxShadow: `0 0 0 1px ${
+            theme === "dark"
+              ? "oklch(from var(--color-primary) calc(l + 0.08) c h / 0)"
+              : "oklch(from var(--color-primary) calc(l - 0.04) c h / 0)"
+          }`,
+          opacity: "0",
+          transform: "translateY(-0.05em) scaleY(0.9)",
+        },
       },
     },
-    '@keyframes collabmd-remote-update-caret': {
-      '0%': {
-        boxShadow: `0 0 0 1px ${theme === 'dark'
-          ? 'oklch(from var(--color-primary) calc(l + 0.08) c h / 0.34)'
-          : 'oklch(from var(--color-primary) calc(l - 0.04) c h / 0.24)'}`,
-        opacity: '0',
-        transform: 'translateY(0.2em) scaleY(0.7)',
-      },
-      '18%': {
-        opacity: '1',
-        transform: 'translateY(0) scaleY(1)',
-      },
-      '72%': {
-        opacity: '1',
-        transform: 'translateY(0) scaleY(1)',
-      },
-      '100%': {
-        boxShadow: `0 0 0 1px ${theme === 'dark'
-          ? 'oklch(from var(--color-primary) calc(l + 0.08) c h / 0)'
-          : 'oklch(from var(--color-primary) calc(l - 0.04) c h / 0)'}`,
-        opacity: '0',
-        transform: 'translateY(-0.05em) scaleY(0.9)',
-      },
-    },
-  }, { dark: theme === 'dark' });
+    { dark: theme === "dark" },
+  );
 }
 
 function createLanguageExtension(filePath) {
   if (
-    typeof filePath === 'string'
-    && (filePath.toLowerCase().endsWith('.puml') || filePath.toLowerCase().endsWith('.plantuml'))
+    typeof filePath === "string" &&
+    (filePath.toLowerCase().endsWith(".puml") ||
+      filePath.toLowerCase().endsWith(".plantuml"))
   ) {
     return plantUmlLanguage;
   }
 
-  return markdown({ base: markdownLanguage, codeLanguages: markdownCodeLanguages });
+  return markdown({
+    base: markdownLanguage,
+    codeLanguages: markdownCodeLanguages,
+  });
 }
 
 function getSelectionBounds(selection) {
   return {
-    from: Math.min(...selection.ranges.map((range) => Math.min(range.from, range.to))),
-    to: Math.max(...selection.ranges.map((range) => Math.max(range.from, range.to))),
+    from: Math.min(
+      ...selection.ranges.map((range) => Math.min(range.from, range.to)),
+    ),
+    to: Math.max(
+      ...selection.ranges.map((range) => Math.max(range.from, range.to)),
+    ),
   };
 }
 
@@ -382,12 +453,16 @@ export class EditorViewAdapter {
         indentWithTab,
       ]),
       EditorView.contentAttributes.of({
-        'aria-label': 'Markdown editor',
+        "aria-label": "Markdown editor",
       }),
       createLanguageExtension(filePath),
       this.themeCompartment.of(createEditorTheme(this.initialTheme)),
-      this.syntaxThemeCompartment.of(this.initialTheme === 'dark' ? oneDark : []),
-      this.lineWrappingCompartment.of(this.lineWrappingEnabled ? EditorView.lineWrapping : []),
+      this.syntaxThemeCompartment.of(
+        this.initialTheme === "dark" ? oneDark : [],
+      ),
+      this.lineWrappingCompartment.of(
+        this.lineWrappingEnabled ? EditorView.lineWrapping : [],
+      ),
       remoteUpdateFlashField,
       this.createUpdateListener(),
     ];
@@ -398,9 +473,15 @@ export class EditorViewAdapter {
       return extensions;
     }
 
-    extensions.splice(13, 0, Prec.highest(EditorView.domEventHandlers({
-      paste: (event) => handleImagePasteEvent(event, this.onImagePaste),
-    })));
+    extensions.splice(
+      13,
+      0,
+      Prec.highest(
+        EditorView.domEventHandlers({
+          paste: (event) => handleImagePasteEvent(event, this.onImagePaste),
+        }),
+      ),
+    );
     return extensions;
   }
 
@@ -410,7 +491,7 @@ export class EditorViewAdapter {
     }
 
     const loadingIndicator = preserveLoadingIndicator
-      ? this.editorContainer.querySelector('#editorLoading')
+      ? this.editorContainer.querySelector("#editorLoading")
       : null;
     Array.from(this.editorContainer.children).forEach((child) => {
       if (child !== loadingIndicator) {
@@ -420,21 +501,39 @@ export class EditorViewAdapter {
   }
 
   teardownEditorView({ clearContainer = false } = {}) {
-    this.editorView?.contentDOM?.removeEventListener('beforeinput', this.handleLocalInputActivity);
-    this.editorView?.contentDOM?.removeEventListener('keydown', this.handleLocalInputActivity);
-    this.editorView?.contentDOM?.removeEventListener('paste', this.handleLocalInputActivity);
-    this.editorView?.contentDOM?.removeEventListener('compositionstart', this.handleLocalInputActivity);
-    this.editorView?.scrollDOM?.removeEventListener('scroll', this.handleScroll);
+    this.editorView?.contentDOM?.removeEventListener(
+      "beforeinput",
+      this.handleLocalInputActivity,
+    );
+    this.editorView?.contentDOM?.removeEventListener(
+      "keydown",
+      this.handleLocalInputActivity,
+    );
+    this.editorView?.contentDOM?.removeEventListener(
+      "paste",
+      this.handleLocalInputActivity,
+    );
+    this.editorView?.contentDOM?.removeEventListener(
+      "compositionstart",
+      this.handleLocalInputActivity,
+    );
+    this.editorView?.scrollDOM?.removeEventListener(
+      "scroll",
+      this.handleScroll,
+    );
     this.editorView?.destroy();
     this.editorView = null;
 
     if (clearContainer && this.editorContainer) {
-      this.editorContainer.innerHTML = '';
+      this.editorContainer.innerHTML = "";
       delete this.editorContainer.dataset.editorMode;
     }
   }
 
-  mountEditor(state, { editorMode = 'collaborative', preserveScrollTop = 0 } = {}) {
+  mountEditor(
+    state,
+    { editorMode = "collaborative", preserveScrollTop = 0 } = {},
+  ) {
     this.clearEditorDom({ preserveLoadingIndicator: true });
     this.teardownEditorView();
 
@@ -444,11 +543,25 @@ export class EditorViewAdapter {
     });
 
     this.editorContainer.dataset.editorMode = editorMode;
-    this.editorView.scrollDOM.addEventListener('scroll', this.handleScroll, { passive: true });
-    this.editorView.contentDOM.addEventListener('beforeinput', this.handleLocalInputActivity);
-    this.editorView.contentDOM.addEventListener('keydown', this.handleLocalInputActivity);
-    this.editorView.contentDOM.addEventListener('paste', this.handleLocalInputActivity);
-    this.editorView.contentDOM.addEventListener('compositionstart', this.handleLocalInputActivity);
+    this.editorView.scrollDOM.addEventListener("scroll", this.handleScroll, {
+      passive: true,
+    });
+    this.editorView.contentDOM.addEventListener(
+      "beforeinput",
+      this.handleLocalInputActivity,
+    );
+    this.editorView.contentDOM.addEventListener(
+      "keydown",
+      this.handleLocalInputActivity,
+    );
+    this.editorView.contentDOM.addEventListener(
+      "paste",
+      this.handleLocalInputActivity,
+    );
+    this.editorView.contentDOM.addEventListener(
+      "compositionstart",
+      this.handleLocalInputActivity,
+    );
     this.updateCursorInfo(this.editorView.state);
     this.onSelectionChanged?.(this.editorView.state);
     this.emitViewportChange();
@@ -473,20 +586,20 @@ export class EditorViewAdapter {
     });
 
     this.mountEditor(state, {
-      editorMode: 'collaborative',
+      editorMode: "collaborative",
       preserveScrollTop,
     });
   }
 
-  initializeProvisional({ content = '', filePath }) {
+  initializeProvisional({ content = "", filePath }) {
     const preserveScrollTop = this.editorView?.scrollDOM?.scrollTop ?? 0;
     const state = EditorState.create({
-      doc: String(content ?? ''),
+      doc: String(content ?? ""),
       extensions: this.getBaseExtensions(filePath, { readOnly: true }),
     });
 
     this.mountEditor(state, {
-      editorMode: 'provisional',
+      editorMode: "provisional",
       preserveScrollTop,
     });
   }
@@ -504,7 +617,7 @@ export class EditorViewAdapter {
   }
 
   getText() {
-    return this.editorView?.state.doc.toString() ?? '';
+    return this.editorView?.state.doc.toString() ?? "";
   }
 
   getDoc() {
@@ -527,7 +640,9 @@ export class EditorViewAdapter {
     this.editorView.dispatch({
       effects: [
         this.themeCompartment.reconfigure(createEditorTheme(theme)),
-        this.syntaxThemeCompartment.reconfigure(theme === 'dark' ? oneDark : []),
+        this.syntaxThemeCompartment.reconfigure(
+          theme === "dark" ? oneDark : [],
+        ),
       ],
     });
   }
@@ -556,7 +671,10 @@ export class EditorViewAdapter {
     this.editorView?.requestMeasure();
   }
 
-  flashRemoteRange({ from = 0, to = 0 } = {}, durationMs = REMOTE_UPDATE_FLASH_DURATION_MS) {
+  flashRemoteRange(
+    { from = 0, to = 0 } = {},
+    durationMs = REMOTE_UPDATE_FLASH_DURATION_MS,
+  ) {
     const state = this.editorView?.state;
     if (!state || state.doc.length === 0) {
       return false;
@@ -576,13 +694,16 @@ export class EditorViewAdapter {
     }
 
     const rangeLength = Math.max(end - start, 0);
-    const showCaret = (
-      rangeLength <= REMOTE_UPDATE_CARET_MAX_LENGTH
-      && (Date.now() - this.lastLocalInputAt) > RECENT_LOCAL_INPUT_WINDOW_MS
-    );
+    const showCaret =
+      rangeLength <= REMOTE_UPDATE_CARET_MAX_LENGTH &&
+      Date.now() - this.lastLocalInputAt > RECENT_LOCAL_INPUT_WINDOW_MS;
 
     this.editorView.dispatch({
-      effects: addRemoteUpdateFlashEffect.of({ from: start, showCaret, to: end }),
+      effects: addRemoteUpdateFlashEffect.of({
+        from: start,
+        showCaret,
+        to: end,
+      }),
     });
 
     if (this.remoteUpdateFlashTimer) {
@@ -614,7 +735,7 @@ export class EditorViewAdapter {
     const scrollerRect = this.editorView.scrollDOM.getBoundingClientRect();
     const viewportOffset = Math.max(scrollerRect.height * viewportRatio, 8);
     const visibleBlock = this.editorView.lineBlockAtHeight(
-      (scrollerRect.top + viewportOffset) - this.editorView.documentTop,
+      scrollerRect.top + viewportOffset - this.editorView.documentTop,
     );
 
     if (!visibleBlock) {
@@ -657,7 +778,7 @@ export class EditorViewAdapter {
     if (isCollapsed) {
       const line = doc.lineAt(from);
       return {
-        anchorKind: 'line',
+        anchorKind: "line",
         anchorQuote: normalizeCommentQuote(line.text),
         endIndex: line.to,
         endLine: line.number,
@@ -672,7 +793,7 @@ export class EditorViewAdapter {
     }
 
     return {
-      anchorKind: 'text',
+      anchorKind: "text",
       anchorQuote: normalizeCommentQuote(doc.sliceString(from, to)),
       endIndex: to,
       endLine: doc.lineAt(safeTo).number,
@@ -688,8 +809,14 @@ export class EditorViewAdapter {
     }
 
     const lineCount = state.doc.lines;
-    const normalizedStart = Math.min(Math.max(Math.round(startLine ?? 1), 1), lineCount);
-    const normalizedEnd = Math.min(Math.max(Math.round(endLine ?? normalizedStart), normalizedStart), lineCount);
+    const normalizedStart = Math.min(
+      Math.max(Math.round(startLine ?? 1), 1),
+      lineCount,
+    );
+    const normalizedEnd = Math.min(
+      Math.max(Math.round(endLine ?? normalizedStart), normalizedStart),
+      lineCount,
+    );
 
     return {
       endLine: normalizedEnd,
@@ -718,21 +845,33 @@ export class EditorViewAdapter {
       return null;
     }
 
-    const kind = anchor.anchorKind || anchor.kind || 'line';
-    const startIndex = Math.min(Math.max(Math.round(anchor.startIndex ?? 0), 0), state.doc.length);
-    const endIndex = Math.min(Math.max(Math.round(anchor.endIndex ?? startIndex), startIndex), state.doc.length);
+    const kind = anchor.anchorKind || anchor.kind || "line";
+    const startIndex = Math.min(
+      Math.max(Math.round(anchor.startIndex ?? 0), 0),
+      state.doc.length,
+    );
+    const endIndex = Math.min(
+      Math.max(Math.round(anchor.endIndex ?? startIndex), startIndex),
+      state.doc.length,
+    );
 
-    if (kind === 'text' && endIndex > startIndex) {
+    if (kind === "text" && endIndex > startIndex) {
       const startCoords = editorView.coordsAtPos(startIndex);
-      const endCoords = editorView.coordsAtPos(Math.max(endIndex - 1, startIndex));
+      const endCoords = editorView.coordsAtPos(
+        Math.max(endIndex - 1, startIndex),
+      );
       if (startCoords && endCoords) {
         return {
           bottom: Math.max(startCoords.bottom, endCoords.bottom),
-          height: Math.max(startCoords.bottom, endCoords.bottom) - Math.min(startCoords.top, endCoords.top),
+          height:
+            Math.max(startCoords.bottom, endCoords.bottom) -
+            Math.min(startCoords.top, endCoords.top),
           left: Math.min(startCoords.left, endCoords.left),
           right: Math.max(startCoords.right, endCoords.right),
           top: Math.min(startCoords.top, endCoords.top),
-          width: Math.max(startCoords.right, endCoords.right) - Math.min(startCoords.left, endCoords.left),
+          width:
+            Math.max(startCoords.right, endCoords.right) -
+            Math.min(startCoords.left, endCoords.left),
         };
       }
     }
@@ -765,7 +904,10 @@ export class EditorViewAdapter {
       return null;
     }
 
-    const startIndex = Math.min(Math.max(Math.round(anchor.startIndex ?? 0), 0), state.doc.length);
+    const startIndex = Math.min(
+      Math.max(Math.round(anchor.startIndex ?? 0), 0),
+      state.doc.length,
+    );
     const startLine = state.doc.lineAt(startIndex);
     const lineBlock = editorView.lineBlockAt(startLine.from);
     const scrollerRect = editorView.scrollDOM.getBoundingClientRect();
@@ -797,8 +939,12 @@ export class EditorViewAdapter {
     );
     const line = state.doc.line(targetLineNumber);
     const lineBlock = this.editorView.lineBlockAt(line.from);
-    const maxScrollTop = Math.max(scroller.scrollHeight - scroller.clientHeight, 0);
-    const viewportOffset = viewportRatio > 0 ? scroller.clientHeight * viewportRatio : 8;
+    const maxScrollTop = Math.max(
+      scroller.scrollHeight - scroller.clientHeight,
+      0,
+    );
+    const viewportOffset =
+      viewportRatio > 0 ? scroller.clientHeight * viewportRatio : 8;
     const nextScrollTop = Math.min(
       Math.max(lineBlock.top - viewportOffset, 0),
       maxScrollTop,
@@ -808,20 +954,27 @@ export class EditorViewAdapter {
     return true;
   }
 
-  scrollToPosition(position, alignment = 'center') {
+  scrollToPosition(position, alignment = "center") {
     const state = this.editorView?.state;
     const scroller = this.editorView?.scrollDOM;
     if (!state || !scroller || !this.editorView) {
       return false;
     }
 
-    const targetPosition = Math.min(Math.max(Math.round(position), 0), state.doc.length);
+    const targetPosition = Math.min(
+      Math.max(Math.round(position), 0),
+      state.doc.length,
+    );
     const lineBlock = this.editorView.lineBlockAt(targetPosition);
-    const maxScrollTop = Math.max(scroller.scrollHeight - scroller.clientHeight, 0);
+    const maxScrollTop = Math.max(
+      scroller.scrollHeight - scroller.clientHeight,
+      0,
+    );
     let nextScrollTop = lineBlock.top;
 
-    if (alignment === 'center') {
-      nextScrollTop = lineBlock.top - ((scroller.clientHeight - lineBlock.height) / 2);
+    if (alignment === "center") {
+      nextScrollTop =
+        lineBlock.top - (scroller.clientHeight - lineBlock.height) / 2;
     }
 
     scroller.scrollTo({
@@ -861,10 +1014,12 @@ export class EditorViewAdapter {
       return false;
     }
 
-    this.editorView.dispatch(state.update(transactionSpec, {
-      scrollIntoView: true,
-      userEvent: 'input',
-    }));
+    this.editorView.dispatch(
+      state.update(transactionSpec, {
+        scrollIntoView: true,
+        userEvent: "input",
+      }),
+    );
     this.editorView.focus();
     return true;
   }
@@ -874,7 +1029,7 @@ export class EditorViewAdapter {
       return false;
     }
 
-    const insertValue = String(text ?? '');
+    const insertValue = String(text ?? "");
     const { state } = this.editorView;
     const range = state.selection.main;
     const anchor = range.from + insertValue.length;
@@ -890,7 +1045,7 @@ export class EditorViewAdapter {
         anchor,
         head: anchor,
       },
-      userEvent: 'input',
+      userEvent: "input",
     });
     this.editorView.focus();
     return true;

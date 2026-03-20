@@ -8,29 +8,29 @@ export class BrowserNotificationPort {
   }
 
   getPermission() {
-    if (typeof this.NotificationImpl !== 'function') {
-      return 'unsupported';
+    if (typeof this.NotificationImpl !== "function") {
+      return "unsupported";
     }
 
     return this.NotificationImpl.permission;
   }
 
   async requestPermission() {
-    if (typeof this.NotificationImpl !== 'function') {
-      return 'unsupported';
+    if (typeof this.NotificationImpl !== "function") {
+      return "unsupported";
     }
 
     return this.NotificationImpl.requestPermission();
   }
 
   createNotification({ body, onClick, tag, title }) {
-    if (typeof this.NotificationImpl !== 'function') {
+    if (typeof this.NotificationImpl !== "function") {
       return null;
     }
 
     const notification = new this.NotificationImpl(title, { body, tag });
-    if (typeof onClick === 'function') {
-      notification.addEventListener('click', () => {
+    if (typeof onClick === "function") {
+      notification.addEventListener("click", () => {
         this.focusWindow();
         onClick();
       });

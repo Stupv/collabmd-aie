@@ -63,20 +63,20 @@ export class WorkspaceRouteController {
     }
 
     const route = this.navigation.getHashRoute();
-    if (route.type === 'empty') {
+    if (route.type === "empty") {
       this.gitPanel.setSelection();
       this.showEmptyState();
-      this.syncMainChrome({ mode: 'empty', title: 'CollabMD' });
+      this.syncMainChrome({ mode: "empty", title: "CollabMD" });
       return;
     }
 
-    if (route.type === 'git-diff') {
-      this.setSidebarTab('git');
+    if (route.type === "git-diff") {
+      this.setSidebarTab("git");
       await this.showGitDiff(route);
       return;
     }
 
-    this.setSidebarTab('files');
+    this.setSidebarTab("files");
     await this.openFile(route.filePath);
   }
 
@@ -87,18 +87,18 @@ export class WorkspaceRouteController {
     this.setSessionLoadToken(this.getSessionLoadToken() + 1);
     this.clearInitialFileBootstrap();
     this.resetPreviewMode();
-    this.elements.outlineToggle?.classList.remove('hidden');
-    this.elements.markdownToolbar?.classList.add('hidden');
+    this.elements.outlineToggle?.classList.remove("hidden");
+    this.elements.markdownToolbar?.classList.add("hidden");
     this.setCurrentFilePath(null);
     this.lobby.setCurrentFile(null);
     this.fileExplorer.setActiveFile(null);
 
-    this.elements.emptyState?.classList.remove('hidden');
-    this.elements.editorPage?.classList.add('hidden');
-    this.elements.diffPage?.classList.add('hidden');
+    this.elements.emptyState?.classList.remove("hidden");
+    this.elements.editorPage?.classList.add("hidden");
+    this.elements.diffPage?.classList.add("hidden");
     if (this.elements.previewContent) {
-      this.elements.previewContent.innerHTML = '';
-      this.elements.previewContent.dataset.renderPhase = 'ready';
+      this.elements.previewContent.innerHTML = "";
+      this.elements.previewContent.dataset.renderPhase = "ready";
     }
     this.videoEmbed?.reconcileEmbeds(this.elements.previewContent);
     this.resetPreviewSurface();
@@ -108,7 +108,7 @@ export class WorkspaceRouteController {
     this.backlinksPanel.clear();
 
     if (this.elements.activeFileName) {
-      this.elements.activeFileName.textContent = 'CollabMD';
+      this.elements.activeFileName.textContent = "CollabMD";
     }
   }
 
@@ -123,18 +123,18 @@ export class WorkspaceRouteController {
     this.lobby.setCurrentFile(null);
     this.fileExplorer.setActiveFile(null);
 
-    this.elements.emptyState?.classList.add('hidden');
-    this.elements.editorPage?.classList.add('hidden');
-    this.elements.diffPage?.classList.remove('hidden');
+    this.elements.emptyState?.classList.add("hidden");
+    this.elements.editorPage?.classList.add("hidden");
+    this.elements.diffPage?.classList.remove("hidden");
     if (this.elements.previewContent) {
-      this.elements.previewContent.innerHTML = '';
-      this.elements.previewContent.dataset.renderPhase = 'ready';
+      this.elements.previewContent.innerHTML = "";
+      this.elements.previewContent.dataset.renderPhase = "ready";
     }
     this.videoEmbed?.reconcileEmbeds(this.elements.previewContent);
     this.resetPreviewSurface();
 
-    this.elements.outlineToggle?.classList.add('hidden');
-    this.elements.markdownToolbar?.classList.add('hidden');
+    this.elements.outlineToggle?.classList.add("hidden");
+    this.elements.markdownToolbar?.classList.add("hidden");
 
     this.renderAvatars();
     this.renderPresence();
@@ -145,7 +145,7 @@ export class WorkspaceRouteController {
     this.imageLightbox?.close?.();
     this.gitPanel.setSelection();
     this.gitDiffView.hide();
-    this.syncMainChrome({ mode: 'editor' });
+    this.syncMainChrome({ mode: "editor" });
     await this.workspaceCoordinator.openFile(filePath);
     this.setSession(this.workspaceCoordinator.getSession());
   }

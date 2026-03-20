@@ -1,7 +1,7 @@
-import { resolveApiUrl } from '../domain/runtime-paths.js';
+import { resolveApiUrl } from "../domain/runtime-paths.js";
 
 function encodeHeaderMetadata(value) {
-  return encodeURIComponent(String(value ?? ''));
+  return encodeURIComponent(String(value ?? ""));
 }
 
 async function parseApiResponse(response, fallbackError) {
@@ -18,60 +18,65 @@ async function parseApiResponse(response, fallbackError) {
 
 export class VaultApiClient {
   async readTree() {
-    const response = await fetch(resolveApiUrl('/files'));
-    return parseApiResponse(response, 'Failed to load file tree');
+    const response = await fetch(resolveApiUrl("/files"));
+    return parseApiResponse(response, "Failed to load file tree");
   }
 
   async readFile(path) {
-    const response = await fetch(resolveApiUrl(`/file?path=${encodeURIComponent(path)}`));
-    return parseApiResponse(response, 'Failed to read file');
+    const response = await fetch(
+      resolveApiUrl(`/file?path=${encodeURIComponent(path)}`),
+    );
+    return parseApiResponse(response, "Failed to read file");
   }
 
   async createFile({ content, path }) {
-    const response = await fetch(resolveApiUrl('/file'), {
+    const response = await fetch(resolveApiUrl("/file"), {
       body: JSON.stringify({ content, path }),
-      headers: { 'Content-Type': 'application/json' },
-      method: 'POST',
+      headers: { "Content-Type": "application/json" },
+      method: "POST",
     });
-    return parseApiResponse(response, 'Failed to create file');
+    return parseApiResponse(response, "Failed to create file");
   }
 
   async renameFile({ oldPath, newPath }) {
-    const response = await fetch(resolveApiUrl('/file'), {
+    const response = await fetch(resolveApiUrl("/file"), {
       body: JSON.stringify({ newPath, oldPath }),
-      headers: { 'Content-Type': 'application/json' },
-      method: 'PATCH',
+      headers: { "Content-Type": "application/json" },
+      method: "PATCH",
     });
-    return parseApiResponse(response, 'Failed to rename file');
+    return parseApiResponse(response, "Failed to rename file");
   }
 
   async deleteFile(path) {
-    const response = await fetch(resolveApiUrl(`/file?path=${encodeURIComponent(path)}`), {
-      method: 'DELETE',
-    });
-    return parseApiResponse(response, 'Failed to delete file');
+    const response = await fetch(
+      resolveApiUrl(`/file?path=${encodeURIComponent(path)}`),
+      {
+        method: "DELETE",
+      },
+    );
+    return parseApiResponse(response, "Failed to delete file");
   }
 
   async createDirectory(path) {
-    const response = await fetch(resolveApiUrl('/directory'), {
+    const response = await fetch(resolveApiUrl("/directory"), {
       body: JSON.stringify({ path }),
-      headers: { 'Content-Type': 'application/json' },
-      method: 'POST',
+      headers: { "Content-Type": "application/json" },
+      method: "POST",
     });
-    return parseApiResponse(response, 'Failed to create folder');
+    return parseApiResponse(response, "Failed to create folder");
   }
 
-  async uploadImageAttachment({ file, fileName = '', sourcePath }) {
-    const response = await fetch(resolveApiUrl('/attachments'), {
+  async uploadImageAttachment({ file, fileName = "", sourcePath }) {
+    const response = await fetch(resolveApiUrl("/attachments"), {
       body: file,
       headers: {
-        'Content-Type': file?.type || 'application/octet-stream',
-        'X-CollabMD-File-Name': encodeHeaderMetadata(fileName),
-        'X-CollabMD-Source-Path': encodeHeaderMetadata(sourcePath),
+        "Content-Type": file?.type || "application/octet-stream",
+        "X-CollabMD-File-Name": encodeHeaderMetadata(fileName),
+        "X-CollabMD-Source-Path": encodeHeaderMetadata(sourcePath),
       },
-      method: 'POST',
+      method: "POST",
     });
-    return parseApiResponse(response, 'Failed to upload image');
+    return parseApiResponse(response, "Failed to upload image");
   }
 }
 

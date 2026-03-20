@@ -1,9 +1,9 @@
-import { mkdtemp, rm, mkdir, writeFile } from 'fs/promises';
-import { join } from 'path';
-import { tmpdir } from 'os';
+import { mkdtemp, rm, mkdir, writeFile } from "fs/promises";
+import { join } from "path";
+import { tmpdir } from "os";
 
-import { loadConfig } from '../../../src/server/config/env.js';
-import { createAppServer } from '../../../src/server/create-app-server.js';
+import { loadConfig } from "../../../src/server/config/env.js";
+import { createAppServer } from "../../../src/server/create-app-server.js";
 
 async function removeTempRoot(tempRoot, attempts = 5) {
   for (let attempt = 1; attempt <= attempts; attempt += 1) {
@@ -11,7 +11,8 @@ async function removeTempRoot(tempRoot, attempts = 5) {
       await rm(tempRoot, { force: true, recursive: true });
       return;
     } catch (error) {
-      const isRetriable = error?.code === 'ENOTEMPTY' || error?.code === 'EBUSY';
+      const isRetriable =
+        error?.code === "ENOTEMPTY" || error?.code === "EBUSY";
       if (!isRetriable || attempt === attempts) {
         throw error;
       }
@@ -22,13 +23,17 @@ async function removeTempRoot(tempRoot, attempts = 5) {
 }
 
 export async function startTestServer(overrides = {}) {
-  const tempRoot = await mkdtemp(join(tmpdir(), 'collabmd-test-'));
-  const vaultDir = join(tempRoot, 'vault');
-  const host = overrides.host ?? process.env.COLLABMD_TEST_HOST ?? '127.0.0.1';
+  const tempRoot = await mkdtemp(join(tmpdir(), "collabmd-test-"));
+  const vaultDir = join(tempRoot, "vault");
+  const host = overrides.host ?? process.env.COLLABMD_TEST_HOST ?? "127.0.0.1";
   await mkdir(vaultDir, { recursive: true });
 
   // Seed a default test file
-  await writeFile(join(vaultDir, 'test.md'), '# Test\n\nHello from test vault.\n', 'utf-8');
+  await writeFile(
+    join(vaultDir, "test.md"),
+    "# Test\n\nHello from test vault.\n",
+    "utf-8",
+  );
 
   const baseConfig = loadConfig({
     auth: overrides.auth,
@@ -37,7 +42,7 @@ export async function startTestServer(overrides = {}) {
   const config = {
     ...baseConfig,
     host,
-    nodeEnv: 'test',
+    nodeEnv: "test",
     vaultDir,
     port: 0,
     wsRoomIdleGraceMs: 0,
@@ -51,7 +56,7 @@ export async function startTestServer(overrides = {}) {
   const { port } = await server.listen();
 
   return {
-    appBaseUrl: `http://${config.host}:${port}${config.basePath || ''}`,
+    appBaseUrl: `http://${config.host}:${port}${config.basePath || ""}`,
     baseUrl: `http://${config.host}:${port}`,
     close: async () => {
       await server.close();
@@ -61,17 +66,18 @@ export async function startTestServer(overrides = {}) {
     server,
     tempRoot,
     vaultDir,
-    wsUrl: (filePath) => `ws://${config.host}:${port}${config.basePath || ''}${config.wsBasePath}/${encodeURIComponent(filePath)}`,
+    wsUrl: (filePath) =>
+      `ws://${config.host}:${port}${config.basePath || ""}${config.wsBasePath}/${encodeURIComponent(filePath)}`,
   };
 }
 
-export async function waitForCondition(assertion, {
-  intervalMs = 25,
-  timeoutMs = 5000,
-} = {}) {
+export async function waitForCondition(
+  assertion,
+  { intervalMs = 25, timeoutMs = 5000 } = {},
+) {
   const startedAt = Date.now();
 
-  while ((Date.now() - startedAt) < timeoutMs) {
+  while (Date.now() - startedAt < timeoutMs) {
     const result = await assertion();
     if (result) {
       return result;

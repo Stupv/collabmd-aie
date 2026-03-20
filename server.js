@@ -1,1 +1,1 @@
-import './src/server/index.js';
+import "./src/server/index.js";

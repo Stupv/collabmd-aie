@@ -3,14 +3,10 @@ import {
   isMarkdownFilePath,
   isMermaidFilePath,
   isPlantUmlFilePath,
-} from '../../../domain/file-kind.js';
+} from "../../../domain/file-kind.js";
 
 export class VaultContentAdapter {
-  constructor({
-    invalidPathError,
-    kind,
-    matches,
-  }) {
+  constructor({ invalidPathError, kind, matches }) {
     this.invalidPathError = invalidPathError;
     this.kind = kind;
     this.matches = matches;
@@ -23,23 +19,23 @@ export class VaultContentAdapter {
 
 const adapters = [
   new VaultContentAdapter({
-    invalidPathError: 'Invalid file path',
-    kind: 'markdown',
+    invalidPathError: "Invalid file path",
+    kind: "markdown",
     matches: isMarkdownFilePath,
   }),
   new VaultContentAdapter({
-    invalidPathError: 'Invalid file path — must end in .excalidraw',
-    kind: 'excalidraw',
+    invalidPathError: "Invalid file path — must end in .excalidraw",
+    kind: "excalidraw",
     matches: isExcalidrawFilePath,
   }),
   new VaultContentAdapter({
-    invalidPathError: 'Invalid file path — must end in .mmd or .mermaid',
-    kind: 'mermaid',
+    invalidPathError: "Invalid file path — must end in .mmd or .mermaid",
+    kind: "mermaid",
     matches: isMermaidFilePath,
   }),
   new VaultContentAdapter({
-    invalidPathError: 'Invalid file path — must end in .puml or .plantuml',
-    kind: 'plantuml',
+    invalidPathError: "Invalid file path — must end in .puml or .plantuml",
+    kind: "plantuml",
     matches: isPlantUmlFilePath,
   }),
 ];

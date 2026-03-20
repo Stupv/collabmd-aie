@@ -1,14 +1,17 @@
-import * as Y from 'yjs';
-import * as awarenessProtocol from 'y-protocols/awareness';
-import * as syncProtocol from 'y-protocols/sync';
-import * as encoding from 'lib0/encoding';
-import * as decoding from 'lib0/decoding';
+import * as Y from "yjs";
+import * as awarenessProtocol from "y-protocols/awareness";
+import * as syncProtocol from "y-protocols/sync";
+import * as encoding from "lib0/encoding";
+import * as decoding from "lib0/decoding";
 
-import { MSG_AWARENESS, MSG_SYNC } from './protocol.js';
-import { CollaborationDocumentStore } from './collaboration-document-store.js';
-import { RoomClientStateStore } from './room-client-state-store.js';
-import { RoomPersistenceController } from './room-persistence-controller.js';
-import { populateCommentThreads, serializeCommentThreads } from '../../../domain/comment-threads.js';
+import { MSG_AWARENESS, MSG_SYNC } from "./protocol.js";
+import { CollaborationDocumentStore } from "./collaboration-document-store.js";
+import { RoomClientStateStore } from "./room-client-state-store.js";
+import { RoomPersistenceController } from "./room-persistence-controller.js";
+import {
+  populateCommentThreads,
+  serializeCommentThreads,
+} from "../../../domain/comment-threads.js";
 import {
   isExcalidrawRoomDocStructured,
   migrateLegacyExcalidrawRoomData,
@@ -16,9 +19,12 @@ import {
   replaceExcalidrawRoomScene,
   serializeExcalidrawRoomScene,
   tryParseExcalidrawSceneJson,
-} from '../../../domain/excalidraw-room-codec.js';
-import { normalizeWorkspaceEvent } from '../../../domain/workspace-change.js';
-import { WORKSPACE_EVENT_MAX_MESSAGES, WORKSPACE_ROOM_NAME } from '../../../domain/workspace-room.js';
+} from "../../../domain/excalidraw-room-codec.js";
+import { normalizeWorkspaceEvent } from "../../../domain/workspace-change.js";
+import {
+  WORKSPACE_EVENT_MAX_MESSAGES,
+  WORKSPACE_ROOM_NAME,
+} from "../../../domain/workspace-room.js";
 
 function closeSlowClient(ws, clientState, { maxBufferedAmountBytes, name }) {
   if (!clientState || clientState.backpressureCloseIssued) {
@@ -31,7 +37,7 @@ function closeSlowClient(ws, clientState, { maxBufferedAmountBytes, name }) {
   );
 
   try {
-    ws.close(1013, 'Client too slow');
+    ws.close(1013, "Client too slow");
   } catch {
     try {
       ws.terminate?.();
@@ -57,11 +63,17 @@ function sendMessage(ws, payload, { maxBufferedAmountBytes, name }) {
 
   ws.send(payload, (error) => {
     if (error) {
-      console.error(`[room:${name}] Failed to send websocket frame:`, error.message);
+      console.error(
+        `[room:${name}] Failed to send websocket frame:`,
+        error.message,
+      );
     }
   });
 
-  if (bufferedAmountBeforeSend > 0 && ws.bufferedAmount > maxBufferedAmountBytes) {
+  if (
+    bufferedAmountBeforeSend > 0 &&
+    ws.bufferedAmount > maxBufferedAmountBytes
+  ) {
     return closeSlowClient(ws, clientState, { maxBufferedAmountBytes, name });
   }
 
@@ -85,7 +97,7 @@ function readAwarenessEntries(update) {
 }
 
 function isExcalidrawRoom(name) {
-  return typeof name === 'string' && name.endsWith('.excalidraw');
+  return typeof name === "string" && name.endsWith(".excalidraw");
 }
 
 function isWorkspaceRoom(name) {
@@ -93,24 +105,27 @@ function isWorkspaceRoom(name) {
 }
 
 function computeTextReplacement(currentContent, nextContent) {
-  const currentText = String(currentContent ?? '');
-  const nextText = String(nextContent ?? '');
+  const currentText = String(currentContent ?? "");
+  const nextText = String(nextContent ?? "");
   if (currentText === nextText) {
     return null;
   }
 
   let prefixLength = 0;
   const maxPrefix = Math.min(currentText.length, nextText.length);
-  while (prefixLength < maxPrefix && currentText[prefixLength] === nextText[prefixLength]) {
+  while (
+    prefixLength < maxPrefix &&
+    currentText[prefixLength] === nextText[prefixLength]
+  ) {
     prefixLength += 1;
   }
 
   let currentSuffixLength = currentText.length;
   let nextSuffixLength = nextText.length;
   while (
-    currentSuffixLength > prefixLength
-    && nextSuffixLength > prefixLength
-    && currentText[currentSuffixLength - 1] === nextText[nextSuffixLength - 1]
+    currentSuffixLength > prefixLength &&
+    nextSuffixLength > prefixLength &&
+    currentText[currentSuffixLength - 1] === nextText[nextSuffixLength - 1]
   ) {
     currentSuffixLength -= 1;
     nextSuffixLength -= 1;
@@ -137,11 +152,13 @@ export class CollaborationRoom {
     this.name = name;
     this.idleGraceMs = idleGraceMs;
     this.maxBufferedAmountBytes = maxBufferedAmountBytes;
-    this.documentStore = documentStore ?? new CollaborationDocumentStore({
-      backlinkIndex,
-      name,
-      vaultFileStore,
-    });
+    this.documentStore =
+      documentStore ??
+      new CollaborationDocumentStore({
+        backlinkIndex,
+        name,
+        vaultFileStore,
+      });
     this.getHydrateDelayMs = getHydrateDelayMs;
     this.onEmpty = onEmpty;
     this.doc = new Y.Doc({ gc: true });
@@ -182,11 +199,14 @@ export class CollaborationRoom {
     if (!this.hydratePromise) {
       this.hydratePromise = (async () => {
         const startedAt = Date.now();
-        let hydrateSource = 'empty';
+        let hydrateSource = "empty";
         let snapshotExists = false;
         let snapshotValid = false;
         let commentThreadCount = 0;
-        const hydrateDelayMs = Math.max(0, Number(this.getHydrateDelayMs?.() || 0));
+        const hydrateDelayMs = Math.max(
+          0,
+          Number(this.getHydrateDelayMs?.() || 0),
+        );
 
         try {
           if (hydrateDelayMs > 0) {
@@ -201,21 +221,27 @@ export class CollaborationRoom {
                 if (isExcalidrawRoom(this.name)) {
                   const validationDoc = new Y.Doc({ gc: true });
                   try {
-                    Y.applyUpdate(validationDoc, snapshot, 'hydrate');
+                    Y.applyUpdate(validationDoc, snapshot, "hydrate");
                     if (!this.ensureStructuredExcalidrawState(validationDoc)) {
-                      throw new Error('snapshot did not contain a valid structured Excalidraw scene');
+                      throw new Error(
+                        "snapshot did not contain a valid structured Excalidraw scene",
+                      );
                     }
 
-                    Y.applyUpdate(this.doc, Y.encodeStateAsUpdate(validationDoc), 'hydrate');
+                    Y.applyUpdate(
+                      this.doc,
+                      Y.encodeStateAsUpdate(validationDoc),
+                      "hydrate",
+                    );
                   } finally {
                     validationDoc.destroy();
                   }
                 } else {
-                  Y.applyUpdate(this.doc, snapshot, 'hydrate');
+                  Y.applyUpdate(this.doc, snapshot, "hydrate");
                 }
 
                 snapshotValid = true;
-                hydrateSource = 'snapshot';
+                hydrateSource = "snapshot";
                 this.hydrated = true;
                 return;
               } catch (error) {
@@ -232,9 +258,9 @@ export class CollaborationRoom {
             ]);
             commentThreadCount = commentThreads.length;
             if (content !== null || commentThreads.length > 0) {
-              hydrateSource = 'content';
-              const ytext = this.doc.getText('codemirror');
-              const comments = this.doc.getArray('comments');
+              hydrateSource = "content";
+              const ytext = this.doc.getText("codemirror");
+              const comments = this.doc.getArray("comments");
               this.doc.transact(() => {
                 if (isExcalidrawRoom(this.name)) {
                   const parsedScene = tryParseExcalidrawSceneJson(content);
@@ -247,11 +273,15 @@ export class CollaborationRoom {
                   ytext.insert(0, content);
                 }
                 populateCommentThreads(comments, commentThreads);
-              }, 'hydrate');
+              }, "hydrate");
 
-              void this.documentStore.writeSnapshot(Y.encodeStateAsUpdate(this.doc)).catch((error) => {
-                console.error(`[room:${this.name}] Failed to prime collaboration snapshot: ${error.message}`);
-              });
+              void this.documentStore
+                .writeSnapshot(Y.encodeStateAsUpdate(this.doc))
+                .catch((error) => {
+                  console.error(
+                    `[room:${this.name}] Failed to prime collaboration snapshot: ${error.message}`,
+                  );
+                });
             }
           }
 
@@ -273,7 +303,9 @@ export class CollaborationRoom {
         }
       })().catch((error) => {
         this.hydratePromise = null;
-        console.error(`[room:${this.name}] Failed to hydrate from disk: ${error.message}`);
+        console.error(
+          `[room:${this.name}] Failed to hydrate from disk: ${error.message}`,
+        );
         throw error;
       });
     }
@@ -282,10 +314,10 @@ export class CollaborationRoom {
   }
 
   registerDocListeners() {
-    this.doc.on('update', (update, origin) => {
+    this.doc.on("update", (update, origin) => {
       this.cachedInitialSyncMessage = null;
 
-      if (origin !== 'hydrate' && origin !== 'workspace-reconcile') {
+      if (origin !== "hydrate" && origin !== "workspace-reconcile") {
         this.schedulePersist();
       }
 
@@ -294,10 +326,13 @@ export class CollaborationRoom {
       syncProtocol.writeUpdate(encoder, update);
       const message = encoding.toUint8Array(encoder);
 
-      this.broadcastToClients(message, { excludeClient: origin, failureLabel: 'sync update' });
+      this.broadcastToClients(message, {
+        excludeClient: origin,
+        failureLabel: "sync update",
+      });
     });
 
-    this.awareness.on('update', ({ added, updated, removed }) => {
+    this.awareness.on("update", ({ added, updated, removed }) => {
       const changedClientIds = added.concat(updated, removed);
 
       if (changedClientIds.length === 0) {
@@ -308,11 +343,14 @@ export class CollaborationRoom {
       encoding.writeVarUint(encoder, MSG_AWARENESS);
       encoding.writeVarUint8Array(
         encoder,
-        awarenessProtocol.encodeAwarenessUpdate(this.awareness, changedClientIds),
+        awarenessProtocol.encodeAwarenessUpdate(
+          this.awareness,
+          changedClientIds,
+        ),
       );
       const message = encoding.toUint8Array(encoder);
 
-      this.broadcastToClients(message, { failureLabel: 'awareness update' });
+      this.broadcastToClients(message, { failureLabel: "awareness update" });
     });
   }
 
@@ -334,7 +372,10 @@ export class CollaborationRoom {
     this.clientStates.unregister(ws);
   }
 
-  broadcastToClients(message, { excludeClient = null, failureLabel = 'frame' } = {}) {
+  broadcastToClients(
+    message,
+    { excludeClient = null, failureLabel = "frame" } = {},
+  ) {
     for (const client of this.clients) {
       if (client === excludeClient) {
         continue;
@@ -343,7 +384,10 @@ export class CollaborationRoom {
       try {
         sendMessage.call(this, client, message, this);
       } catch (error) {
-        console.error(`[room:${this.name}] Failed to broadcast ${failureLabel}:`, error.message);
+        console.error(
+          `[room:${this.name}] Failed to broadcast ${failureLabel}:`,
+          error.message,
+        );
       }
     }
   }
@@ -355,7 +399,10 @@ export class CollaborationRoom {
 
     this.persistence.schedulePersist(async () => {
       this.persist().catch((error) => {
-        console.error(`[room:${this.name}] Failed to persist document:`, error.message);
+        console.error(
+          `[room:${this.name}] Failed to persist document:`,
+          error.message,
+        );
       });
     });
   }
@@ -374,10 +421,14 @@ export class CollaborationRoom {
 
       const content = this.getPersistedContent();
       if (content === null) {
-        console.warn(`[room:${this.name}] Skipping persist because the Excalidraw scene is invalid`);
+        console.warn(
+          `[room:${this.name}] Skipping persist because the Excalidraw scene is invalid`,
+        );
         return;
       }
-      const commentThreads = serializeCommentThreads(this.doc.getArray('comments'));
+      const commentThreads = serializeCommentThreads(
+        this.doc.getArray("comments"),
+      );
       await this.documentStore.persistState({
         commentThreads,
         content,
@@ -395,7 +446,11 @@ export class CollaborationRoom {
   }
 
   async reloadFromDisk() {
-    if (!this.documentStore?.hasPersistence() || this.deleted || this.destroyed) {
+    if (
+      !this.documentStore?.hasPersistence() ||
+      this.deleted ||
+      this.destroyed
+    ) {
       return false;
     }
 
@@ -415,19 +470,19 @@ export class CollaborationRoom {
     });
   }
 
-  async applyExternalContent(content, {
-    commentThreads = [],
-    replaceCommentThreads = false,
-  } = {}) {
+  async applyExternalContent(
+    content,
+    { commentThreads = [], replaceCommentThreads = false } = {},
+  ) {
     if (this.deleted || this.destroyed) {
-      return { ok: false, reason: 'room-unavailable' };
+      return { ok: false, reason: "room-unavailable" };
     }
 
-    const comments = this.doc.getArray('comments');
+    const comments = this.doc.getArray("comments");
     if (isExcalidrawRoom(this.name)) {
       const parsedExcalidrawScene = tryParseExcalidrawSceneJson(content);
       if (!parsedExcalidrawScene) {
-        return { ok: false, reason: 'invalid-excalidraw' };
+        return { ok: false, reason: "invalid-excalidraw" };
       }
 
       this.doc.transact(() => {
@@ -438,12 +493,12 @@ export class CollaborationRoom {
           }
           populateCommentThreads(comments, commentThreads);
         }
-      }, 'workspace-reconcile');
+      }, "workspace-reconcile");
 
       return { ok: true, highlightRange: null };
     }
 
-    const ytext = this.doc.getText('codemirror');
+    const ytext = this.doc.getText("codemirror");
     const replacement = computeTextReplacement(ytext.toString(), content);
     if (!replacement && !replaceCommentThreads) {
       return { highlightRange: null, ok: true, skipped: true };
@@ -462,14 +517,14 @@ export class CollaborationRoom {
         }
         populateCommentThreads(comments, commentThreads);
       }
-    }, 'workspace-reconcile');
+    }, "workspace-reconcile");
 
     return {
       highlightRange: replacement
         ? {
-          from: replacement.start,
-          to: replacement.start + replacement.insertText.length,
-        }
+            from: replacement.start,
+            to: replacement.start + replacement.insertText.length,
+          }
         : null,
       ok: true,
     };
@@ -521,7 +576,9 @@ export class CollaborationRoom {
   sendInitialSync(ws) {
     this.debugMetrics.initialSyncCount += 1;
     this.debugMetrics.lastInitialSyncAt = Date.now();
-    console.info(`[perf][room:${this.name}] send-initial-sync count=${this.debugMetrics.initialSyncCount}`);
+    console.info(
+      `[perf][room:${this.name}] send-initial-sync count=${this.debugMetrics.initialSyncCount}`,
+    );
     return sendMessage.call(this, ws, this.getInitialSyncMessage(), this);
   }
 
@@ -542,7 +599,10 @@ export class CollaborationRoom {
       encoding.writeVarUint(awarenessEncoder, MSG_AWARENESS);
       encoding.writeVarUint8Array(
         awarenessEncoder,
-        awarenessProtocol.encodeAwarenessUpdate(this.awareness, Array.from(awarenessStates.keys())),
+        awarenessProtocol.encodeAwarenessUpdate(
+          this.awareness,
+          Array.from(awarenessStates.keys()),
+        ),
       );
       sendMessage.call(this, ws, encoding.toUint8Array(awarenessEncoder), this);
     }
@@ -557,7 +617,11 @@ export class CollaborationRoom {
 
     const clientState = this.getClientState(ws);
     if (clientState?.controlledClientIds.size) {
-      awarenessProtocol.removeAwarenessStates(this.awareness, Array.from(clientState.controlledClientIds), ws);
+      awarenessProtocol.removeAwarenessStates(
+        this.awareness,
+        Array.from(clientState.controlledClientIds),
+        ws,
+      );
       clientState.controlledClientIds.clear();
     }
 
@@ -586,7 +650,7 @@ export class CollaborationRoom {
 
     for (const client of this.clients) {
       try {
-        client.close(1001, 'Room reset');
+        client.close(1001, "Room reset");
       } catch {
         try {
           client.terminate?.();
@@ -605,7 +669,10 @@ export class CollaborationRoom {
     return this.persistence.finalizeIfIdle({
       isIdle: () => this.clients.size === 0,
       onPersistError: (error) => {
-        console.error(`[room:${this.name}] Failed to persist final room state:`, error.message);
+        console.error(
+          `[room:${this.name}] Failed to persist final room state:`,
+          error.message,
+        );
       },
     });
   }
@@ -615,8 +682,8 @@ export class CollaborationRoom {
       return;
     }
 
-    const historyEntries = this.doc.getArray('excalidraw-history');
-    const historyState = this.doc.getMap('excalidraw-history-state');
+    const historyEntries = this.doc.getArray("excalidraw-history");
+    const historyState = this.doc.getMap("excalidraw-history-state");
     const hasHistoryEntries = historyEntries.length > 0;
     const hasHistoryState = historyState.size > 0;
 
@@ -632,7 +699,7 @@ export class CollaborationRoom {
       Array.from(historyState.keys()).forEach((key) => {
         historyState.delete(key);
       });
-    }, 'excalidraw-history-reset');
+    }, "excalidraw-history-reset");
   }
 
   ensureStructuredExcalidrawState(doc = this.doc) {
@@ -651,7 +718,7 @@ export class CollaborationRoom {
 
     doc.transact(() => {
       migrateLegacyExcalidrawRoomData(doc, legacyScene);
-    }, 'hydrate');
+    }, "hydrate");
     return true;
   }
 
@@ -661,7 +728,7 @@ export class CollaborationRoom {
     }
 
     if (!isExcalidrawRoom(this.name)) {
-      return this.doc.getText('codemirror').toString();
+      return this.doc.getText("codemirror").toString();
     }
 
     if (isExcalidrawRoomDocStructured(this.doc)) {
@@ -717,23 +784,30 @@ export class CollaborationRoom {
         }
 
         default:
-          console.warn(`[room:${this.name}] Unsupported message type: ${messageType}`);
+          console.warn(
+            `[room:${this.name}] Unsupported message type: ${messageType}`,
+          );
       }
     } catch (error) {
-      console.error(`[room:${this.name}] Failed to handle message:`, error.message);
+      console.error(
+        `[room:${this.name}] Failed to handle message:`,
+        error.message,
+      );
     }
   }
 
-  replaceWorkspaceEntries(entries = new Map(), {
-    generatedAt = Date.now(),
-  } = {}) {
+  replaceWorkspaceEntries(
+    entries = new Map(),
+    { generatedAt = Date.now() } = {},
+  ) {
     if (!isWorkspaceRoom(this.name)) {
       return false;
     }
 
-    const normalizedEntries = entries instanceof Map ? entries : new Map(entries);
-    const entriesMap = this.doc.getMap('entries');
-    const metaMap = this.doc.getMap('meta');
+    const normalizedEntries =
+      entries instanceof Map ? entries : new Map(entries);
+    const entriesMap = this.doc.getMap("entries");
+    const metaMap = this.doc.getMap("meta");
 
     this.doc.transact(() => {
       Array.from(entriesMap.keys()).forEach((key) => {
@@ -746,31 +820,32 @@ export class CollaborationRoom {
         entriesMap.set(pathValue, entry);
       });
 
-      metaMap.set('lastSnapshotAt', generatedAt);
-      metaMap.set('revision', Number(metaMap.get('revision') || 0) + 1);
-    }, 'workspace-room-entries');
+      metaMap.set("lastSnapshotAt", generatedAt);
+      metaMap.set("revision", Number(metaMap.get("revision") || 0) + 1);
+    }, "workspace-room-entries");
 
     return true;
   }
 
-  applyWorkspaceEntryPatch({
-    deletes = [],
-    upserts = new Map(),
-  } = {}, {
-    generatedAt = Date.now(),
-  } = {}) {
+  applyWorkspaceEntryPatch(
+    { deletes = [], upserts = new Map() } = {},
+    { generatedAt = Date.now() } = {},
+  ) {
     if (!isWorkspaceRoom(this.name)) {
       return false;
     }
 
-    const normalizedUpserts = upserts instanceof Map ? upserts : new Map(upserts);
-    const normalizedDeletes = Array.from(new Set((deletes ?? []).filter(Boolean)));
+    const normalizedUpserts =
+      upserts instanceof Map ? upserts : new Map(upserts);
+    const normalizedDeletes = Array.from(
+      new Set((deletes ?? []).filter(Boolean)),
+    );
     if (normalizedUpserts.size === 0 && normalizedDeletes.length === 0) {
       return false;
     }
 
-    const entriesMap = this.doc.getMap('entries');
-    const metaMap = this.doc.getMap('meta');
+    const entriesMap = this.doc.getMap("entries");
+    const metaMap = this.doc.getMap("meta");
 
     this.doc.transact(() => {
       normalizedDeletes.forEach((pathValue) => {
@@ -781,9 +856,9 @@ export class CollaborationRoom {
         entriesMap.set(pathValue, entry);
       });
 
-      metaMap.set('lastSnapshotAt', generatedAt);
-      metaMap.set('revision', Number(metaMap.get('revision') || 0) + 1);
-    }, 'workspace-room-entry-patch');
+      metaMap.set("lastSnapshotAt", generatedAt);
+      metaMap.set("revision", Number(metaMap.get("revision") || 0) + 1);
+    }, "workspace-room-entry-patch");
 
     return true;
   }
@@ -798,17 +873,17 @@ export class CollaborationRoom {
       return null;
     }
 
-    const events = this.doc.getArray('events');
-    const metaMap = this.doc.getMap('meta');
+    const events = this.doc.getArray("events");
+    const metaMap = this.doc.getMap("meta");
     this.doc.transact(() => {
       events.push([normalizedEvent]);
       const overflow = events.length - WORKSPACE_EVENT_MAX_MESSAGES;
       if (overflow > 0) {
         events.delete(0, overflow);
       }
-      metaMap.set('lastEventAt', normalizedEvent.createdAt);
-      metaMap.set('revision', Number(metaMap.get('revision') || 0) + 1);
-    }, 'workspace-room-event');
+      metaMap.set("lastEventAt", normalizedEvent.createdAt);
+      metaMap.set("revision", Number(metaMap.get("revision") || 0) + 1);
+    }, "workspace-room-event");
 
     return normalizedEvent;
   }

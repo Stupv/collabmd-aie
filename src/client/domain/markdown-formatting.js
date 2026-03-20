@@ -1,19 +1,19 @@
 const INLINE_PLACEHOLDERS = Object.freeze({
-  bold: 'bold text',
-  code: 'code',
-  italic: 'emphasis',
-  strikethrough: 'struck text',
+  bold: "bold text",
+  code: "code",
+  italic: "emphasis",
+  strikethrough: "struck text",
 });
 
-const LINK_LABEL_PLACEHOLDER = 'link text';
-const LINK_URL_PLACEHOLDER = 'https://';
-const IMAGE_ALT_PLACEHOLDER = 'alt text';
-const IMAGE_URL_PLACEHOLDER = 'https://';
-const VIDEO_LABEL_PLACEHOLDER = 'Video';
-const VIDEO_URL_PLACEHOLDER = 'https://';
-const CODE_BLOCK_PLACEHOLDER = 'code';
-const TABLE_HEADERS = Object.freeze(['Column 1', 'Column 2']);
-const TABLE_CELL_PLACEHOLDER = 'Value';
+const LINK_LABEL_PLACEHOLDER = "link text";
+const LINK_URL_PLACEHOLDER = "https://";
+const IMAGE_ALT_PLACEHOLDER = "alt text";
+const IMAGE_URL_PLACEHOLDER = "https://";
+const VIDEO_LABEL_PLACEHOLDER = "Video";
+const VIDEO_URL_PLACEHOLDER = "https://";
+const CODE_BLOCK_PLACEHOLDER = "code";
+const TABLE_HEADERS = Object.freeze(["Column 1", "Column 2"]);
+const TABLE_CELL_PLACEHOLDER = "Value";
 
 function normalizeRange(range, textLength) {
   const from = Math.max(0, Math.min(range.from, range.to, textLength));
@@ -22,7 +22,7 @@ function normalizeRange(range, textLength) {
 }
 
 function isLineStart(text, position) {
-  return position === 0 || text[position - 1] === '\n';
+  return position === 0 || text[position - 1] === "\n";
 }
 
 function findLineStart(text, position) {
@@ -30,12 +30,12 @@ function findLineStart(text, position) {
     return 0;
   }
 
-  const index = text.lastIndexOf('\n', position - 1);
+  const index = text.lastIndexOf("\n", position - 1);
   return index < 0 ? 0 : index + 1;
 }
 
 function findLineEnd(text, position) {
-  const index = text.indexOf('\n', position);
+  const index = text.indexOf("\n", position);
   return index < 0 ? text.length : index;
 }
 
@@ -177,9 +177,11 @@ function formatVideo(text, range) {
 function prefixSelectedLines(text, range, prefixFactory, matcher) {
   const lineRange = getLineSelection(text, range);
   const block = text.slice(lineRange.from, lineRange.to);
-  const lines = block.split('\n');
+  const lines = block.split("\n");
   const matchesPrefix = (line) => matcher.test(line);
-  const shouldUnprefix = lines.every((line) => line.trim().length === 0 || matchesPrefix(line));
+  const shouldUnprefix = lines.every(
+    (line) => line.trim().length === 0 || matchesPrefix(line),
+  );
   let visibleLineIndex = 0;
 
   const nextLines = lines.map((line) => {
@@ -188,7 +190,7 @@ function prefixSelectedLines(text, range, prefixFactory, matcher) {
     }
 
     if (shouldUnprefix) {
-      return matchesPrefix(line) ? line.replace(matcher, '') : line;
+      return matchesPrefix(line) ? line.replace(matcher, "") : line;
     }
 
     const prefix = prefixFactory(visibleLineIndex);
@@ -199,33 +201,40 @@ function prefixSelectedLines(text, range, prefixFactory, matcher) {
   return {
     anchor: lineRange.from,
     from: lineRange.from,
-    head: lineRange.from + nextLines.join('\n').length,
-    insert: nextLines.join('\n'),
+    head: lineRange.from + nextLines.join("\n").length,
+    insert: nextLines.join("\n"),
     to: lineRange.to,
   };
 }
 
 function formatHeading(text, range) {
-  return prefixSelectedLines(text, range, () => '## ', /^#{1,6}\s+/);
+  return prefixSelectedLines(text, range, () => "## ", /^#{1,6}\s+/);
 }
 
 function formatBulletList(text, range) {
-  return prefixSelectedLines(text, range, () => '- ', /^[-*+]\s+/);
+  return prefixSelectedLines(text, range, () => "- ", /^[-*+]\s+/);
 }
 
 function formatQuote(text, range) {
-  return prefixSelectedLines(text, range, () => '> ', /^>\s+/);
+  return prefixSelectedLines(text, range, () => "> ", /^>\s+/);
 }
 
 function formatTaskList(text, range) {
-  return prefixSelectedLines(text, range, () => '- [ ] ', /^-\s\[(?: |x|X)\]\s+/);
+  return prefixSelectedLines(
+    text,
+    range,
+    () => "- [ ] ",
+    /^-\s\[(?: |x|X)\]\s+/,
+  );
 }
 
 function formatNumberedList(text, range) {
   const lineRange = getLineSelection(text, range);
   const block = text.slice(lineRange.from, lineRange.to);
-  const lines = block.split('\n');
-  const shouldUnprefix = lines.every((line) => line.trim().length === 0 || /^\d+\.\s+/.test(line));
+  const lines = block.split("\n");
+  const shouldUnprefix = lines.every(
+    (line) => line.trim().length === 0 || /^\d+\.\s+/.test(line),
+  );
   let counter = 1;
 
   const nextLines = lines.map((line) => {
@@ -234,7 +243,7 @@ function formatNumberedList(text, range) {
     }
 
     if (shouldUnprefix) {
-      return line.replace(/^\d+\.\s+/, '');
+      return line.replace(/^\d+\.\s+/, "");
     }
 
     const nextLine = `${counter}. ${line}`;
@@ -245,14 +254,14 @@ function formatNumberedList(text, range) {
   return {
     anchor: lineRange.from,
     from: lineRange.from,
-    head: lineRange.from + nextLines.join('\n').length,
-    insert: nextLines.join('\n'),
+    head: lineRange.from + nextLines.join("\n").length,
+    insert: nextLines.join("\n"),
     to: lineRange.to,
   };
 }
 
 function unwrapCodeFence(block) {
-  const normalized = block.replace(/\r\n/g, '\n');
+  const normalized = block.replace(/\r\n/g, "\n");
   const match = normalized.match(/^```[^\n]*\n([\s\S]*?)\n```$/);
   if (!match) {
     return null;
@@ -293,11 +302,17 @@ function formatCodeBlock(text, range) {
   };
 }
 
-function insertBlock(text, range, block, selectionStartOffset, selectionLength = 0) {
-  const needsLeadingBreak = range.from > 0 && text[range.from - 1] !== '\n';
-  const needsTrailingBreak = range.to < text.length && text[range.to] !== '\n';
-  const prefix = needsLeadingBreak ? '\n' : '';
-  const suffix = needsTrailingBreak ? '\n' : '';
+function insertBlock(
+  text,
+  range,
+  block,
+  selectionStartOffset,
+  selectionLength = 0,
+) {
+  const needsLeadingBreak = range.from > 0 && text[range.from - 1] !== "\n";
+  const needsTrailingBreak = range.to < text.length && text[range.to] !== "\n";
+  const prefix = needsLeadingBreak ? "\n" : "";
+  const suffix = needsTrailingBreak ? "\n" : "";
   const insert = `${prefix}${block}${suffix}`;
   const anchor = range.from + prefix.length + selectionStartOffset;
 
@@ -310,13 +325,13 @@ function insertBlock(text, range, block, selectionStartOffset, selectionLength =
   };
 }
 
-function createTableTemplate(selectedText = '') {
+function createTableTemplate(selectedText = "") {
   const firstCell = selectedText.trim() || TABLE_CELL_PLACEHOLDER;
   return [
-    `| ${TABLE_HEADERS.join(' | ')} |`,
-    '| --- | --- |',
+    `| ${TABLE_HEADERS.join(" | ")} |`,
+    "| --- | --- |",
     `| ${firstCell} | ${TABLE_CELL_PLACEHOLDER} |`,
-  ].join('\n');
+  ].join("\n");
 }
 
 function formatTable(text, range) {
@@ -326,43 +341,47 @@ function formatTable(text, range) {
 }
 
 function formatHorizontalRule(text, range) {
-  return insertBlock(text, range, '---', 4, 0);
+  return insertBlock(text, range, "---", 4, 0);
 }
 
-export function createMarkdownToolbarEdit(documentText, selectionRange, action) {
-  const text = String(documentText ?? '');
+export function createMarkdownToolbarEdit(
+  documentText,
+  selectionRange,
+  action,
+) {
+  const text = String(documentText ?? "");
   const range = normalizeRange(selectionRange, text.length);
 
   switch (action) {
-    case 'bold':
-      return wrapInline(text, range, '**', INLINE_PLACEHOLDERS.bold);
-    case 'italic':
-      return wrapInline(text, range, '_', INLINE_PLACEHOLDERS.italic);
-    case 'strikethrough':
-      return wrapInline(text, range, '~~', INLINE_PLACEHOLDERS.strikethrough);
-    case 'code':
-      return wrapInline(text, range, '`', INLINE_PLACEHOLDERS.code);
-    case 'link':
+    case "bold":
+      return wrapInline(text, range, "**", INLINE_PLACEHOLDERS.bold);
+    case "italic":
+      return wrapInline(text, range, "_", INLINE_PLACEHOLDERS.italic);
+    case "strikethrough":
+      return wrapInline(text, range, "~~", INLINE_PLACEHOLDERS.strikethrough);
+    case "code":
+      return wrapInline(text, range, "`", INLINE_PLACEHOLDERS.code);
+    case "link":
       return formatLink(text, range);
-    case 'image':
+    case "image":
       return formatImage(text, range);
-    case 'video':
+    case "video":
       return formatVideo(text, range);
-    case 'heading':
+    case "heading":
       return formatHeading(text, range);
-    case 'quote':
+    case "quote":
       return formatQuote(text, range);
-    case 'bullet-list':
+    case "bullet-list":
       return formatBulletList(text, range);
-    case 'numbered-list':
+    case "numbered-list":
       return formatNumberedList(text, range);
-    case 'task-list':
+    case "task-list":
       return formatTaskList(text, range);
-    case 'code-block':
+    case "code-block":
       return formatCodeBlock(text, range);
-    case 'table':
+    case "table":
       return formatTable(text, range);
-    case 'horizontal-rule':
+    case "horizontal-rule":
       return formatHorizontalRule(text, range);
     default:
       return null;

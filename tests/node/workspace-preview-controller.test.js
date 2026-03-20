@@ -1,11 +1,15 @@
-import test from 'node:test';
-import assert from 'node:assert/strict';
+import test from "node:test";
+import assert from "node:assert/strict";
 
-import { WorkspacePreviewController } from '../../src/client/application/workspace-preview-controller.js';
+import { WorkspacePreviewController } from "../../src/client/application/workspace-preview-controller.js";
 
 function createController(overrides = {}) {
-  const getSession = overrides.getSession
-    ?? (() => (Object.hasOwn(overrides, 'session') ? overrides.session : { getText: () => 'graph TD\nA-->B' }));
+  const getSession =
+    overrides.getSession ??
+    (() =>
+      Object.hasOwn(overrides, "session")
+        ? overrides.session
+        : { getText: () => "graph TD\nA-->B" });
 
   return new WorkspacePreviewController({
     backlinksPanel: { clear() {}, ...(overrides.backlinksPanel || {}) },
@@ -14,15 +18,22 @@ function createController(overrides = {}) {
       outlineToggle: { classList: { toggle() {} } },
       previewContent: { classList: { add() {}, remove() {}, toggle() {} } },
     },
-    excalidrawEmbed: { setHydrationPaused() {}, ...(overrides.excalidrawEmbed || {}) },
+    excalidrawEmbed: {
+      setHydrationPaused() {},
+      ...(overrides.excalidrawEmbed || {}),
+    },
     getDisplayName: (filePath) => filePath,
     getSession,
-    isExcalidrawFile: (filePath) => filePath?.endsWith('.excalidraw'),
-    isImageFile: (filePath) => filePath?.endsWith('.png'),
-    isMermaidFile: (filePath) => filePath?.endsWith('.mmd'),
-    isPlantUmlFile: (filePath) => filePath?.endsWith('.puml'),
+    isExcalidrawFile: (filePath) => filePath?.endsWith(".excalidraw"),
+    isImageFile: (filePath) => filePath?.endsWith(".png"),
+    isMermaidFile: (filePath) => filePath?.endsWith(".mmd"),
+    isPlantUmlFile: (filePath) => filePath?.endsWith(".puml"),
     layoutController: { setView() {}, ...(overrides.layoutController || {}) },
-    outlineController: { close() {}, scheduleActiveHeadingUpdate() {}, ...(overrides.outlineController || {}) },
+    outlineController: {
+      close() {},
+      scheduleActiveHeadingUpdate() {},
+      ...(overrides.outlineController || {}),
+    },
     previewRenderer: {
       scheduleActiveMermaidRefit() {},
       scheduleActivePlantUmlRefit() {},
@@ -30,40 +41,41 @@ function createController(overrides = {}) {
       ...(overrides.previewRenderer || {}),
     },
     schedulePreviewLayoutSync: () => {},
-    scrollSyncController: { invalidatePreviewBlocks() {}, warmPreviewBlocks() {}, ...(overrides.scrollSyncController || {}) },
+    scrollSyncController: {
+      invalidatePreviewBlocks() {},
+      warmPreviewBlocks() {},
+      ...(overrides.scrollSyncController || {}),
+    },
   });
 }
 
-test('WorkspacePreviewController wraps Mermaid and PlantUML file content for preview rendering', () => {
+test("WorkspacePreviewController wraps Mermaid and PlantUML file content for preview rendering", () => {
   const controller = createController({
-    session: { getText: () => 'graph TD\nA-->B' },
+    session: { getText: () => "graph TD\nA-->B" },
   });
 
   assert.equal(
-    controller.getPreviewSource('diagram.mmd'),
-    '```mermaid\ngraph TD\nA-->B\n```',
+    controller.getPreviewSource("diagram.mmd"),
+    "```mermaid\ngraph TD\nA-->B\n```",
   );
   assert.equal(
-    controller.getPreviewSource('diagram.puml'),
-    '```plantuml\ngraph TD\nA-->B\n```',
+    controller.getPreviewSource("diagram.puml"),
+    "```plantuml\ngraph TD\nA-->B\n```",
   );
-  assert.equal(
-    controller.getPreviewSource('README.md'),
-    'graph TD\nA-->B',
-  );
+  assert.equal(controller.getPreviewSource("README.md"), "graph TD\nA-->B");
 });
 
-test('WorkspacePreviewController pauses preview hydration during editor scroll activity', () => {
+test("WorkspacePreviewController pauses preview hydration during editor scroll activity", () => {
   const events = [];
   const controller = createController({
     excalidrawEmbed: {
       setHydrationPaused(value) {
-        events.push(['embed', value]);
+        events.push(["embed", value]);
       },
     },
     previewRenderer: {
       setHydrationPaused(value) {
-        events.push(['preview', value]);
+        events.push(["preview", value]);
       },
     },
   });
@@ -91,81 +103,81 @@ test('WorkspacePreviewController pauses preview hydration during editor scroll a
   assert.equal(pendingPreviewLayoutSync, true);
   assert.equal(previewLayoutSyncTimer, null);
   assert.deepEqual(events, [
-    ['preview', true],
-    ['embed', true],
+    ["preview", true],
+    ["embed", true],
   ]);
 });
 
-test('WorkspacePreviewController forces Excalidraw files into preview without overwriting layout preference', () => {
+test("WorkspacePreviewController forces Excalidraw files into preview without overwriting layout preference", () => {
   const events = [];
   const controller = createController({
     layoutController: {
       setView(view, options) {
-        events.push(['set-view', view, options]);
+        events.push(["set-view", view, options]);
       },
     },
     outlineController: {
       close() {
-        events.push(['outline-close']);
+        events.push(["outline-close"]);
       },
     },
     backlinksPanel: {
       clear() {
-        events.push(['backlinks-clear']);
+        events.push(["backlinks-clear"]);
       },
     },
   });
 
-  controller.syncFileChrome('diagram.excalidraw');
+  controller.syncFileChrome("diagram.excalidraw");
 
   assert.deepEqual(events, [
-    ['set-view', 'preview', { persist: false }],
-    ['outline-close'],
-    ['backlinks-clear'],
+    ["set-view", "preview", { persist: false }],
+    ["outline-close"],
+    ["backlinks-clear"],
   ]);
 });
 
-test('WorkspacePreviewController forces image attachments into preview without overwriting layout preference', () => {
+test("WorkspacePreviewController forces image attachments into preview without overwriting layout preference", () => {
   const events = [];
   const controller = createController({
     layoutController: {
       setView(view, options) {
-        events.push(['set-view', view, options]);
+        events.push(["set-view", view, options]);
       },
     },
     outlineController: {
       close() {
-        events.push(['outline-close']);
+        events.push(["outline-close"]);
       },
     },
     backlinksPanel: {
       clear() {
-        events.push(['backlinks-clear']);
+        events.push(["backlinks-clear"]);
       },
     },
   });
 
-  controller.syncFileChrome('README.assets/diagram.png');
+  controller.syncFileChrome("README.assets/diagram.png");
 
   assert.deepEqual(events, [
-    ['set-view', 'preview', { persist: false }],
-    ['outline-close'],
-    ['backlinks-clear'],
+    ["set-view", "preview", { persist: false }],
+    ["outline-close"],
+    ["backlinks-clear"],
   ]);
 });
 
-test('WorkspacePreviewController still syncs Excalidraw preview layout without an editor session', async () => {
+test("WorkspacePreviewController still syncs Excalidraw preview layout without an editor session", async () => {
   const events = [];
   const previewContent = {
     classList: {
       add() {},
       contains(token) {
-        return token === 'is-excalidraw-file-preview';
+        return token === "is-excalidraw-file-preview";
       },
       remove() {},
       toggle() {},
     },
-    dataset: { renderPhase: 'ready' },
+    dataset: { renderPhase: "ready" },
   };
   const controller = createController({
     elements: {
@@ -175,15 +187,15 @@ test('WorkspacePreviewController still syncs Excalidraw preview layout without a
     },
     excalidrawEmbed: {
       syncLayout() {
-        events.push('sync-layout');
+        events.push("sync-layout");
       },
     },
     scrollSyncController: {
       invalidatePreviewBlocks() {
-        events.push('invalidate-preview');
+        events.push("invalidate-preview");
       },
       warmPreviewBlocks() {
-        events.push('warm-preview');
+        events.push("warm-preview");
       },
     },
     session: null,
@@ -200,5 +212,5 @@ test('WorkspacePreviewController still syncs Excalidraw preview layout without a
     setTimeout(resolve, 0);
   });
 
-  assert.deepEqual(events, ['sync-layout']);
+  assert.deepEqual(events, ["sync-layout"]);
 });

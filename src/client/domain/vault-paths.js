@@ -2,22 +2,22 @@ import {
   isMermaidFilePath,
   isPlantUmlFilePath,
   stripVaultFileExtension,
-} from '../../domain/file-kind.js';
+} from "../../domain/file-kind.js";
 
 export function normalizeVaultPathInput(value) {
-  const segments = String(value ?? '')
+  const segments = String(value ?? "")
     .trim()
-    .replace(/\\/g, '/')
-    .replace(/^\/+/u, '')
-    .split('/')
+    .replace(/\\/g, "/")
+    .replace(/^\/+/u, "")
+    .split("/")
     .map((segment) => segment.trim())
     .filter(Boolean);
 
-  if (segments.some((segment) => segment === '.' || segment === '..')) {
-    return '';
+  if (segments.some((segment) => segment === "." || segment === "..")) {
+    return "";
   }
 
-  return segments.join('/');
+  return segments.join("/");
 }
 
 export function composeVaultChildPath(parentDir, childPath) {
@@ -42,7 +42,12 @@ export function ensureVaultExtension(pathValue, extension) {
 }
 
 export function createMarkdownStarter(filePath) {
-  const title = stripVaultFileExtension(String(filePath ?? '').split('/').pop() || '') || 'Untitled';
+  const title =
+    stripVaultFileExtension(
+      String(filePath ?? "")
+        .split("/")
+        .pop() || "",
+    ) || "Untitled";
   return `# ${title}\n\n`;
 }
 
@@ -53,12 +58,12 @@ export function createMermaidStarter(filePath) {
     : `${normalizedPath}.mmd`;
   return {
     content: [
-      'flowchart TD',
-      '  A[Start] --> B{Decide}',
-      '  B -->|Yes| C[Ship it]',
-      '  B -->|No| D[Revise]',
-      '',
-    ].join('\n'),
+      "flowchart TD",
+      "  A[Start] --> B{Decide}",
+      "  B -->|Yes| C[Ship it]",
+      "  B -->|No| D[Revise]",
+      "",
+    ].join("\n"),
     path: nextPath,
   };
 }
@@ -69,12 +74,7 @@ export function createPlantUmlStarter(filePath) {
     ? normalizedPath
     : `${normalizedPath}.puml`;
   return {
-    content: [
-      '@startuml',
-      'Alice -> Bob: Hello',
-      '@enduml',
-      '',
-    ].join('\n'),
+    content: ["@startuml", "Alice -> Bob: Hello", "@enduml", ""].join("\n"),
     path: nextPath,
   };
 }

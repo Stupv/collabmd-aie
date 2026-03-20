@@ -1,7 +1,7 @@
-import test from 'node:test';
-import assert from 'node:assert/strict';
+import test from "node:test";
+import assert from "node:assert/strict";
 
-import { PreviewRenderExecutor } from '../../src/client/application/preview-render-executor.js';
+import { PreviewRenderExecutor } from "../../src/client/application/preview-render-executor.js";
 
 function createFakeWorker() {
   const listeners = new Map();
@@ -24,7 +24,7 @@ function createFakeWorker() {
   };
 }
 
-test('PreviewRenderExecutor falls back to direct compilation when no worker is available', async () => {
+test("PreviewRenderExecutor falls back to direct compilation when no worker is available", async () => {
   const executor = new PreviewRenderExecutor({
     compilePreviewDocumentLoader: async () => ({
       compilePreviewDocument({ fileList, markdownText }) {
@@ -35,40 +35,40 @@ test('PreviewRenderExecutor falls back to direct compilation when no worker is a
       },
     }),
     createWorkerFn: () => {
-      throw new Error('worker unavailable');
+      throw new Error("worker unavailable");
     },
-    getFileList: () => ['README.md'],
-    getSourceFilePath: () => 'README.md',
+    getFileList: () => ["README.md"],
+    getSourceFilePath: () => "README.md",
   });
 
-  const result = await executor.compile('Hello', 3);
+  const result = await executor.compile("Hello", 3);
 
   assert.deepEqual(result, {
-    html: '<p>Hello</p>',
+    html: "<p>Hello</p>",
     stats: { fileCount: 1 },
   });
 });
 
-test('PreviewRenderExecutor compiles through the worker when available', async () => {
+test("PreviewRenderExecutor compiles through the worker when available", async () => {
   const worker = createFakeWorker();
   const executor = new PreviewRenderExecutor({
     createWorkerFn: () => worker,
-    getFileList: () => ['notes/today.md'],
+    getFileList: () => ["notes/today.md"],
   });
 
-  const resultPromise = executor.compile('# Today', 7);
+  const resultPromise = executor.compile("# Today", 7);
 
   assert.deepEqual(worker.lastMessage, {
-    attachmentApiPath: '/api/attachment',
-    fileList: ['notes/today.md'],
-    markdownText: '# Today',
+    attachmentApiPath: "/api/attachment",
+    fileList: ["notes/today.md"],
+    markdownText: "# Today",
     renderVersion: 7,
-    sourceFilePath: '',
+    sourceFilePath: "",
   });
 
-  worker.dispatch('message', {
+  worker.dispatch("message", {
     data: {
-      html: '<h1>Today</h1>',
+      html: "<h1>Today</h1>",
       renderVersion: 7,
       stats: { headings: 1 },
     },
@@ -76,12 +76,12 @@ test('PreviewRenderExecutor compiles through the worker when available', async (
 
   const result = await resultPromise;
   assert.deepEqual(result, {
-    html: '<h1>Today</h1>',
+    html: "<h1>Today</h1>",
     stats: { headings: 1 },
   });
 });
 
-test('PreviewRenderExecutor schedules worker prewarm and tears it down on destroy', () => {
+test("PreviewRenderExecutor schedules worker prewarm and tears it down on destroy", () => {
   const idleRequests = [];
   const idleCancels = [];
   const worker = createFakeWorker();
@@ -95,7 +95,10 @@ test('PreviewRenderExecutor schedules worker prewarm and tears it down on destro
   });
 
   executor.schedulePrewarm({ timeout: 25 });
-  assert.deepEqual(idleRequests.map(({ timeout }) => timeout), [25]);
+  assert.deepEqual(
+    idleRequests.map(({ timeout }) => timeout),
+    [25],
+  );
 
   idleRequests[0].callback();
   assert.equal(worker.terminated, undefined);

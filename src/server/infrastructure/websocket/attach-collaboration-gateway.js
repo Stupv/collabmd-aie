@@ -1,27 +1,29 @@
-import { WebSocketServer } from 'ws';
+import { WebSocketServer } from "ws";
 
-import { ClientSocketSession } from './client-socket-session.js';
+import { ClientSocketSession } from "./client-socket-session.js";
 
-function rejectUpgrade(socket, statusCode, statusMessage, {
-  body = '',
-  headers = {},
-} = {}) {
+function rejectUpgrade(
+  socket,
+  statusCode,
+  statusMessage,
+  { body = "", headers = {} } = {},
+) {
   const headerLines = Object.entries(headers)
     .map(([key, value]) => `${key}: ${value}`)
-    .join('\r\n');
-  const responseBody = String(body ?? '');
+    .join("\r\n");
+  const responseBody = String(body ?? "");
   const contentLengthHeader = responseBody
-    ? `Content-Length: ${Buffer.byteLength(responseBody, 'utf8')}\r\n`
-    : '';
+    ? `Content-Length: ${Buffer.byteLength(responseBody, "utf8")}\r\n`
+    : "";
   socket.write(
-    `HTTP/1.1 ${statusCode} ${statusMessage}\r\n${headerLines}${headerLines ? '\r\n' : ''}${contentLengthHeader}\r\n${responseBody}`,
+    `HTTP/1.1 ${statusCode} ${statusMessage}\r\n${headerLines}${headerLines ? "\r\n" : ""}${contentLengthHeader}\r\n${responseBody}`,
   );
   socket.destroy();
 }
 
 function extractRoomName(pathname, wsBasePath) {
   const roomSegment = pathname.slice(wsBasePath.length + 1);
-  return decodeURIComponent(roomSegment || 'default');
+  return decodeURIComponent(roomSegment || "default");
 }
 
 function stripBasePath(pathname, basePath) {
@@ -30,11 +32,11 @@ function stripBasePath(pathname, basePath) {
   }
 
   if (pathname === basePath) {
-    return '/';
+    return "/";
   }
 
   if (pathname.startsWith(`${basePath}/`)) {
-    return pathname.slice(basePath.length) || '/';
+    return pathname.slice(basePath.length) || "/";
   }
 
   return pathname;
@@ -42,13 +44,13 @@ function stripBasePath(pathname, basePath) {
 
 function createRequestUrlWithPathname(requestUrl, pathname) {
   const nextUrl = new URL(requestUrl.toString());
-  nextUrl.pathname = pathname || '/';
+  nextUrl.pathname = pathname || "/";
   return nextUrl;
 }
 
 export function attachCollaborationGateway({
   authService,
-  basePath = '',
+  basePath = "",
   heartbeatIntervalMs,
   httpServer,
   maxPayload,
@@ -94,14 +96,17 @@ export function attachCollaborationGateway({
   }, heartbeatIntervalMs);
   heartbeatTimer.unref?.();
 
-  websocketServer.on('connection', (ws, req, requestUrl) => {
+  websocketServer.on("connection", (ws, req, requestUrl) => {
     const roomName = extractRoomName(requestUrl.pathname, wsBasePath);
     const room = roomRegistry.getOrCreate(roomName);
     const session = new ClientSocketSession({
       onDisconnected: (disconnectedRoomName) => {
         socketSessions.delete(ws);
-        const remaining = roomRegistry.rooms.get(disconnectedRoomName)?.clients.size ?? 0;
-        console.log(`[ws] "${disconnectedRoomName}" disconnected (${remaining} active client(s))`);
+        const remaining =
+          roomRegistry.rooms.get(disconnectedRoomName)?.clients.size ?? 0;
+        console.log(
+          `[ws] "${disconnectedRoomName}" disconnected (${remaining} active client(s))`,
+        );
       },
       onFailed: () => {
         socketSessions.delete(ws);
@@ -114,33 +119,42 @@ export function attachCollaborationGateway({
     void session.initialize();
   });
 
-  httpServer.on('upgrade', (req, socket, head) => {
+  httpServer.on("upgrade", (req, socket, head) => {
     if (isShuttingDown) {
-      rejectUpgrade(socket, 503, 'Server Shutting Down');
+      rejectUpgrade(socket, 503, "Server Shutting Down");
       return;
     }
 
-    const originalRequestUrl = new URL(req.url || '/', `http://${req.headers.host || 'localhost'}`);
+    const originalRequestUrl = new URL(
+      req.url || "/",
+      `http://${req.headers.host || "localhost"}`,
+    );
     const requestUrl = createRequestUrlWithPathname(
       originalRequestUrl,
       stripBasePath(originalRequestUrl.pathname, basePath),
     );
     const matchesRealtimeRoute =
-      requestUrl.pathname === wsBasePath || requestUrl.pathname.startsWith(`${wsBasePath}/`);
+      requestUrl.pathname === wsBasePath ||
+      requestUrl.pathname.startsWith(`${wsBasePath}/`);
 
     if (!matchesRealtimeRoute || requestUrl.pathname === wsBasePath) {
-      rejectUpgrade(socket, 404, 'Not Found');
+      rejectUpgrade(socket, 404, "Not Found");
       return;
     }
 
     const authResult = authService.authorizeWebSocketRequest(req, requestUrl);
     if (!authResult.ok) {
-      rejectUpgrade(socket, authResult.statusCode, authResult.statusMessage, authResult);
+      rejectUpgrade(
+        socket,
+        authResult.statusCode,
+        authResult.statusMessage,
+        authResult,
+      );
       return;
     }
 
     websocketServer.handleUpgrade(req, socket, head, (ws) => {
-      websocketServer.emit('connection', ws, req, requestUrl);
+      websocketServer.emit("connection", ws, req, requestUrl);
     });
   });
 
@@ -177,7 +191,7 @@ export function attachCollaborationGateway({
 
       websocketServer.clients.forEach((client) => {
         try {
-          client.close(1001, 'Server shutting down');
+          client.close(1001, "Server shutting down");
         } catch {
           // Ignore close errors during shutdown.
         }

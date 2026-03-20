@@ -1,5 +1,5 @@
-import { Doc } from 'yjs';
-import { WebsocketProvider } from 'y-websocket';
+import { Doc } from "yjs";
+import { WebsocketProvider } from "y-websocket";
 import {
   EXCALIDRAW_APP_STATE_KEY,
   EXCALIDRAW_ELEMENTS_KEY,
@@ -11,20 +11,20 @@ import {
   isExcalidrawRoomDocStructured,
   readLegacyExcalidrawRoomScene,
   replaceExcalidrawRoomScene,
-} from '../../domain/excalidraw-room-codec.js';
+} from "../../domain/excalidraw-room-codec.js";
 
 import {
   buildCollaboratorsMap,
   mergeAwarenessUserPatch,
-} from '../domain/excalidraw-collaboration.js';
+} from "../domain/excalidraw-collaboration.js";
 import {
   buildLiveCollaborationScene,
   createEmptyScene,
   parseSceneJson,
   tryParseSceneJson,
-} from '../domain/excalidraw-scene.js';
-import { resolveWsBaseUrl } from '../domain/runtime-paths.js';
-import { stopReconnectOnControlledClose } from './yjs-provider-reset-guard.js';
+} from "../domain/excalidraw-scene.js";
+import { resolveWsBaseUrl } from "../domain/runtime-paths.js";
+import { stopReconnectOnControlledClose } from "./yjs-provider-reset-guard.js";
 
 const DEFAULT_EMPTY_SCENE_GUARD_MS = 250;
 const DEFAULT_SAVE_THROTTLE_MS = 48;
@@ -35,7 +35,7 @@ export class ExcalidrawRoomClient {
     cancelAnimationFrameFn = (frameId) => cancelAnimationFrame(frameId),
     clearTimeoutFn = (timeoutId) => clearTimeout(timeoutId),
     emptySceneGuardMs = DEFAULT_EMPTY_SCENE_GUARD_MS,
-    filePath = '',
+    filePath = "",
     now = () => Date.now(),
     onCollaboratorsChange = () => {},
     onRemoteSceneJson = () => {},
@@ -45,7 +45,8 @@ export class ExcalidrawRoomClient {
     setTimeoutFn = (callback, delay) => window.setTimeout(callback, delay),
     syncTimeoutMs = DEFAULT_SYNC_TIMEOUT_MS,
     vaultClient,
-    websocketProviderFactory = (wsUrl, path, ydoc, options) => new WebsocketProvider(wsUrl, path, ydoc, options),
+    websocketProviderFactory = (wsUrl, path, ydoc, options) =>
+      new WebsocketProvider(wsUrl, path, ydoc, options),
     ydocFactory = () => new Doc(),
   }) {
     this.cancelAnimationFrameFn = cancelAnimationFrameFn;
@@ -72,7 +73,7 @@ export class ExcalidrawRoomClient {
     this.awareness = null;
     this.localUser = null;
     this.handleProviderSync = null;
-    this.lastSceneJson = '';
+    this.lastSceneJson = "";
     this.sceneSyncTimer = null;
     this.lastSceneSyncAt = 0;
     this.pendingSceneSyncPayload = null;
@@ -80,8 +81,8 @@ export class ExcalidrawRoomClient {
     this.pendingPointerPayload = null;
     this.viewportAwarenessFrame = 0;
     this.pendingViewportPayload = null;
-    this.lastViewportSignature = '';
-    this.lastSelectedIdsSignature = '';
+    this.lastViewportSignature = "";
+    this.lastSelectedIdsSignature = "";
     this.pendingEmptySceneCandidate = null;
     this.canWriteToRoom = false;
     this.waitingForAuthoritativeSync = false;
@@ -142,11 +143,14 @@ export class ExcalidrawRoomClient {
   }
 
   endApplyingSharedSnapshot() {
-    this.applyingSharedSnapshotDepth = Math.max(0, this.applyingSharedSnapshotDepth - 1);
+    this.applyingSharedSnapshotDepth = Math.max(
+      0,
+      this.applyingSharedSnapshotDepth - 1,
+    );
   }
 
   subscribeHistoryState(listener) {
-    if (typeof listener === 'function') {
+    if (typeof listener === "function") {
       listener(this.getHistoryState());
     }
 
@@ -160,7 +164,7 @@ export class ExcalidrawRoomClient {
     });
 
     if (this.awareness) {
-      this.awareness.setLocalStateField('user', this.localUser);
+      this.awareness.setLocalStateField("user", this.localUser);
     }
 
     this.handleAwarenessChange();
@@ -181,19 +185,24 @@ export class ExcalidrawRoomClient {
     this.roomElements = this.ydoc.getMap(EXCALIDRAW_ELEMENTS_KEY);
     this.roomFiles = this.ydoc.getMap(EXCALIDRAW_FILES_KEY);
     this.roomAppState = this.ydoc.getMap(EXCALIDRAW_APP_STATE_KEY);
-    this.provider = this.websocketProviderFactory(this.resolveWsBaseUrlFn(), this.filePath, this.ydoc, {
-      disableBc: true,
-      maxBackoffTime: 5000,
-    });
+    this.provider = this.websocketProviderFactory(
+      this.resolveWsBaseUrlFn(),
+      this.filePath,
+      this.ydoc,
+      {
+        disableBc: true,
+        maxBackoffTime: 5000,
+      },
+    );
     stopReconnectOnControlledClose(this.provider);
 
     this.awareness = this.provider.awareness;
     if (this.localUser) {
-      this.awareness.setLocalStateField('user', this.localUser);
+      this.awareness.setLocalStateField("user", this.localUser);
     }
-    this.awareness.setLocalStateField('pointerButton', 'up');
-    this.awareness.setLocalStateField('selectedElementIds', {});
-    this.awareness.on('change', this.handleAwarenessChange);
+    this.awareness.setLocalStateField("pointerButton", "up");
+    this.awareness.setLocalStateField("selectedElementIds", {});
+    this.awareness.on("change", this.handleAwarenessChange);
 
     this.handleProviderSync = (isSynced) => {
       if (!isSynced) {
@@ -203,9 +212,12 @@ export class ExcalidrawRoomClient {
       this.unlockRoomWrites();
       this.handleStructuredSceneUpdate();
     };
-    this.provider.on('sync', this.handleProviderSync);
+    this.provider.on("sync", this.handleProviderSync);
 
-    const didInitialSyncFinish = await this.waitForSync(this.provider, this.syncTimeoutMs);
+    const didInitialSyncFinish = await this.waitForSync(
+      this.provider,
+      this.syncTimeoutMs,
+    );
 
     let initialJson = this.getStructuredSceneJson();
     let usedApiFallback = false;
@@ -227,10 +239,14 @@ export class ExcalidrawRoomClient {
     this.waitingForAuthoritativeSync = usedApiFallback && !didInitialSyncFinish;
     this.canWriteToRoom = !this.waitingForAuthoritativeSync;
     this.lastSceneJson = JSON.stringify(parseSceneJson(initialJson));
-    if (!usedApiFallback && this.canWriteToRoom && !isExcalidrawRoomDocStructured(this.ydoc)) {
+    if (
+      !usedApiFallback &&
+      this.canWriteToRoom &&
+      !isExcalidrawRoomDocStructured(this.ydoc)
+    ) {
       this.ydoc.transact(() => {
         this.replaceStructuredSceneWithinTransaction(this.lastSceneJson);
-      }, 'excalidraw-legacy-migrate');
+      }, "excalidraw-legacy-migrate");
     }
     this.roomMeta.observe(this.handleStructuredSceneUpdate);
     this.roomElements.observeDeep(this.handleStructuredSceneUpdate);
@@ -238,7 +254,7 @@ export class ExcalidrawRoomClient {
     this.roomAppState.observe(this.handleStructuredSceneUpdate);
     if (usedApiFallback && this.canWriteToRoom) {
       this.commitSceneJson(this.lastSceneJson, {
-        origin: 'excalidraw-api-fallback',
+        origin: "excalidraw-api-fallback",
       });
     }
     this.handleStructuredSceneUpdate();
@@ -258,10 +274,10 @@ export class ExcalidrawRoomClient {
     } catch (readError) {
       if (readError?.status !== 404 || !createIfMissing) {
         if (readError?.status === 404) {
-          throw new Error(readError.message || 'Excalidraw file not found');
+          throw new Error(readError.message || "Excalidraw file not found");
         }
 
-        throw new Error(readError?.message || 'Failed to load Excalidraw file');
+        throw new Error(readError?.message || "Failed to load Excalidraw file");
       }
     }
 
@@ -278,11 +294,16 @@ export class ExcalidrawRoomClient {
           const existingData = await this.vaultClient.readFile(this.filePath);
           return parseSceneJson(existingData.content);
         } catch (conflictReadError) {
-          throw new Error(conflictReadError?.message || 'Failed to load existing Excalidraw file after create conflict');
+          throw new Error(
+            conflictReadError?.message ||
+              "Failed to load existing Excalidraw file after create conflict",
+          );
         }
       }
 
-      throw new Error(createError?.message || 'Failed to create Excalidraw file');
+      throw new Error(
+        createError?.message || "Failed to create Excalidraw file",
+      );
     }
   }
 
@@ -301,7 +322,7 @@ export class ExcalidrawRoomClient {
 
         settled = true;
         this.clearTimeoutFn(timer);
-        providerInstance.off('sync', handleSync);
+        providerInstance.off("sync", handleSync);
         resolve(true);
       };
 
@@ -311,11 +332,11 @@ export class ExcalidrawRoomClient {
         }
 
         settled = true;
-        providerInstance.off('sync', handleSync);
+        providerInstance.off("sync", handleSync);
         resolve(false);
       }, timeoutMs);
 
-      providerInstance.on('sync', handleSync);
+      providerInstance.on("sync", handleSync);
     });
   }
 
@@ -324,7 +345,7 @@ export class ExcalidrawRoomClient {
     this.canWriteToRoom = true;
     if (!this.getStructuredSceneJson() && this.lastSceneJson) {
       this.commitSceneJson(this.lastSceneJson, {
-        origin: 'excalidraw-authoritative-seed',
+        origin: "excalidraw-authoritative-seed",
       });
     }
 
@@ -335,7 +356,7 @@ export class ExcalidrawRoomClient {
 
   getStructuredSceneJson() {
     if (!this.ydoc) {
-      return '';
+      return "";
     }
 
     if (isExcalidrawRoomDocStructured(this.ydoc)) {
@@ -343,7 +364,7 @@ export class ExcalidrawRoomClient {
     }
 
     const legacyScene = readLegacyExcalidrawRoomScene(this.ydoc);
-    return legacyScene ? JSON.stringify(legacyScene) : '';
+    return legacyScene ? JSON.stringify(legacyScene) : "";
   }
 
   replaceStructuredSceneWithinTransaction(nextJson) {
@@ -401,7 +422,7 @@ export class ExcalidrawRoomClient {
     if (json !== this.lastSceneJson) {
       this.lastSceneSyncAt = this.now();
       this.commitSceneJson(json, {
-        origin: 'excalidraw-local-change',
+        origin: "excalidraw-local-change",
       });
     }
 
@@ -438,23 +459,32 @@ export class ExcalidrawRoomClient {
       return false;
     }
 
-    const previousScene = parseSceneJson(this.lastSceneJson || this.getStructuredSceneJson());
+    const previousScene = parseSceneJson(
+      this.lastSceneJson || this.getStructuredSceneJson(),
+    );
     if (previousScene.elements.length === 0) {
       this.pendingEmptySceneCandidate = null;
       return false;
     }
 
     const now = this.now();
-    if (!this.pendingEmptySceneCandidate || this.pendingEmptySceneCandidate.previousSceneJson !== this.lastSceneJson) {
+    if (
+      !this.pendingEmptySceneCandidate ||
+      this.pendingEmptySceneCandidate.previousSceneJson !== this.lastSceneJson
+    ) {
       this.pendingEmptySceneCandidate = {
         firstSeenAt: now,
         previousSceneJson: this.lastSceneJson,
       };
-      console.warn(`[excalidraw:${this.filePath}] Delaying suspicious empty scene commit during active collaboration`);
+      console.warn(
+        `[excalidraw:${this.filePath}] Delaying suspicious empty scene commit during active collaboration`,
+      );
       return true;
     }
 
-    return (now - this.pendingEmptySceneCandidate.firstSeenAt) < this.emptySceneGuardMs;
+    return (
+      now - this.pendingEmptySceneCandidate.firstSeenAt < this.emptySceneGuardMs
+    );
   }
 
   scheduleDelayedEmptySceneCommit() {
@@ -462,7 +492,8 @@ export class ExcalidrawRoomClient {
       return;
     }
 
-    const firstSeenAt = this.pendingEmptySceneCandidate?.firstSeenAt ?? this.now();
+    const firstSeenAt =
+      this.pendingEmptySceneCandidate?.firstSeenAt ?? this.now();
     const elapsed = this.now() - firstSeenAt;
     const delay = Math.max(0, this.emptySceneGuardMs - elapsed);
     this.sceneSyncTimer = this.setTimeoutFn(() => {
@@ -478,20 +509,31 @@ export class ExcalidrawRoomClient {
       return;
     }
 
-    this.awareness.setLocalStateField('pointer', this.pendingPointerPayload.pointer);
-    this.awareness.setLocalStateField('pointerButton', this.pendingPointerPayload.button);
+    this.awareness.setLocalStateField(
+      "pointer",
+      this.pendingPointerPayload.pointer,
+    );
+    this.awareness.setLocalStateField(
+      "pointerButton",
+      this.pendingPointerPayload.button,
+    );
     this.pendingPointerPayload = null;
   }
 
   normalizeViewportAwareness(viewport) {
-    if (!viewport || typeof viewport !== 'object') {
+    if (!viewport || typeof viewport !== "object") {
       return null;
     }
 
     const scrollX = Number(viewport.scrollX);
     const scrollY = Number(viewport.scrollY);
     const zoom = Number(viewport.zoom);
-    if (!Number.isFinite(scrollX) || !Number.isFinite(scrollY) || !Number.isFinite(zoom) || zoom <= 0) {
+    if (
+      !Number.isFinite(scrollX) ||
+      !Number.isFinite(scrollY) ||
+      !Number.isFinite(zoom) ||
+      zoom <= 0
+    ) {
       return null;
     }
 
@@ -508,11 +550,11 @@ export class ExcalidrawRoomClient {
     }
 
     this.pendingPointerPayload = {
-      button: payload.button === 'down' ? 'down' : 'up',
+      button: payload.button === "down" ? "down" : "up",
       pointer: {
         x: payload.pointer.x,
         y: payload.pointer.y,
-        tool: payload.pointer.tool === 'laser' ? 'laser' : 'pointer',
+        tool: payload.pointer.tool === "laser" ? "laser" : "pointer",
       },
     };
 
@@ -520,7 +562,9 @@ export class ExcalidrawRoomClient {
       return;
     }
 
-    this.pointerAwarenessFrame = this.requestAnimationFrameFn(() => this.flushPointerAwarenessPayload());
+    this.pointerAwarenessFrame = this.requestAnimationFrameFn(() =>
+      this.flushPointerAwarenessPayload(),
+    );
   }
 
   flushViewportAwarenessPayload() {
@@ -530,7 +574,7 @@ export class ExcalidrawRoomClient {
       return;
     }
 
-    this.awareness.setLocalStateField('viewport', this.pendingViewportPayload);
+    this.awareness.setLocalStateField("viewport", this.pendingViewportPayload);
     this.pendingViewportPayload = null;
   }
 
@@ -556,7 +600,9 @@ export class ExcalidrawRoomClient {
       return;
     }
 
-    this.viewportAwarenessFrame = this.requestAnimationFrameFn(() => this.flushViewportAwarenessPayload());
+    this.viewportAwarenessFrame = this.requestAnimationFrameFn(() =>
+      this.flushViewportAwarenessPayload(),
+    );
   }
 
   syncLocalSelectionAwareness(appState) {
@@ -565,18 +611,16 @@ export class ExcalidrawRoomClient {
     }
 
     const selected = appState?.selectedElementIds || {};
-    const signature = Object.keys(selected).sort().join(',');
+    const signature = Object.keys(selected).sort().join(",");
     if (signature === this.lastSelectedIdsSignature) {
       return;
     }
 
     this.lastSelectedIdsSignature = signature;
-    this.awareness.setLocalStateField('selectedElementIds', selected);
+    this.awareness.setLocalStateField("selectedElementIds", selected);
   }
 
-  commitSceneJson(nextJson, {
-    origin = 'excalidraw-room-write',
-  } = {}) {
+  commitSceneJson(nextJson, { origin = "excalidraw-room-write" } = {}) {
     const normalizedJson = JSON.stringify(parseSceneJson(nextJson));
     if (!this.ydoc) {
       const didChange = normalizedJson !== this.lastSceneJson;
@@ -585,7 +629,10 @@ export class ExcalidrawRoomClient {
     }
 
     const roomSceneJson = this.getStructuredSceneJson();
-    if (normalizedJson === roomSceneJson && normalizedJson === this.lastSceneJson) {
+    if (
+      normalizedJson === roomSceneJson &&
+      normalizedJson === this.lastSceneJson
+    ) {
       return false;
     }
 
@@ -614,8 +661,8 @@ export class ExcalidrawRoomClient {
     }
     this.viewportAwarenessFrame = 0;
     this.pendingViewportPayload = null;
-    this.lastViewportSignature = '';
-    this.lastSelectedIdsSignature = '';
+    this.lastViewportSignature = "";
+    this.lastSelectedIdsSignature = "";
     this.pendingEmptySceneCandidate = null;
 
     this.roomMeta?.unobserve(this.handleStructuredSceneUpdate);
@@ -624,13 +671,13 @@ export class ExcalidrawRoomClient {
     this.roomAppState?.unobserve(this.handleStructuredSceneUpdate);
 
     if (this.awareness) {
-      this.awareness.off('change', this.handleAwarenessChange);
+      this.awareness.off("change", this.handleAwarenessChange);
       this.awareness.setLocalState(null);
     }
     this.awareness = null;
 
     if (this.provider && this.handleProviderSync) {
-      this.provider.off('sync', this.handleProviderSync);
+      this.provider.off("sync", this.handleProviderSync);
     }
     this.handleProviderSync = null;
     this.provider?.disconnect();

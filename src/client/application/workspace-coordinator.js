@@ -1,5 +1,5 @@
-import { FileOpenLifecycle } from './file-open-lifecycle.js';
-import { WorkspaceChromeController } from './workspace-chrome-controller.js';
+import { FileOpenLifecycle } from "./file-open-lifecycle.js";
+import { WorkspaceChromeController } from "./workspace-chrome-controller.js";
 
 const BOOTSTRAP_RENDER_DELAY_MS = 150;
 
@@ -136,7 +136,7 @@ export class WorkspaceCoordinator {
 
   reportFileOpenMetric(name, loadToken, data = {}) {
     this.onFileOpenMetric?.(name, {
-      filePath: this.stateStore.get('currentFilePath'),
+      filePath: this.stateStore.get("currentFilePath"),
       loadToken,
       ...data,
     });
@@ -159,7 +159,10 @@ export class WorkspaceCoordinator {
     const isMermaid = this.isMermaidFile(filePath);
     const isPlantUml = this.isPlantUmlFile(filePath);
 
-    if (filePath === this.stateStore.get('currentFilePath') && (this.session || isExcalidraw || isImage)) {
+    if (
+      filePath === this.stateStore.get("currentFilePath") &&
+      (this.session || isExcalidraw || isImage)
+    ) {
       this.onUpdateActiveFile(filePath);
       this.onUpdateLobbyCurrentFile(filePath);
       return;
@@ -172,12 +175,12 @@ export class WorkspaceCoordinator {
     const chromeState = this.chromeController.prepareForFileOpen(filePath, {
       resetConnectionState: !isExcalidraw && !isImage,
     });
-    this.reportFileOpenMetric('open_started', loadToken, { filePath });
+    this.reportFileOpenMetric("open_started", loadToken, { filePath });
 
     if (isExcalidraw || isImage) {
       this.onSessionAssigned?.(null);
 
-      if (loadToken !== this.stateStore.get('sessionLoadToken')) {
+      if (loadToken !== this.stateStore.get("sessionLoadToken")) {
         return;
       }
 
@@ -225,7 +228,10 @@ export class WorkspaceCoordinator {
       let liveSyncComplete = false;
 
       const readySession = async (reason) => {
-        if (fileOpenReady || loadToken !== this.stateStore.get('sessionLoadToken')) {
+        if (
+          fileOpenReady ||
+          loadToken !== this.stateStore.get("sessionLoadToken")
+        ) {
           return;
         }
 
@@ -233,11 +239,14 @@ export class WorkspaceCoordinator {
         this.lifecycle.attachSessionScroller(session);
         session.applyTheme(this.getTheme());
         this.chromeController.markFileOpenReady(session);
-        this.reportFileOpenMetric('editor_ready', loadToken, { reason });
+        this.reportFileOpenMetric("editor_ready", loadToken, { reason });
         session.requestMeasure();
         await this.waitForNextPaint();
 
-        if (fileOpenFinalized || loadToken !== this.stateStore.get('sessionLoadToken')) {
+        if (
+          fileOpenFinalized ||
+          loadToken !== this.stateStore.get("sessionLoadToken")
+        ) {
           return;
         }
 
@@ -252,33 +261,41 @@ export class WorkspaceCoordinator {
 
       const bootstrapPromise = this.loadBootstrapContent
         ? (async () => {
-          this.reportFileOpenMetric('bootstrap_fetch_started', loadToken);
-          try {
-            const content = await this.loadBootstrapContent(filePath);
-            this.reportFileOpenMetric('bootstrap_fetch_completed', loadToken, {
-              found: content !== null,
-            });
-            return content;
-          } catch (error) {
-            this.reportFileOpenMetric('bootstrap_fetch_completed', loadToken, {
-              error: error.message,
-              found: false,
-            });
-            return null;
-          }
-        })()
+            this.reportFileOpenMetric("bootstrap_fetch_started", loadToken);
+            try {
+              const content = await this.loadBootstrapContent(filePath);
+              this.reportFileOpenMetric(
+                "bootstrap_fetch_completed",
+                loadToken,
+                {
+                  found: content !== null,
+                },
+              );
+              return content;
+            } catch (error) {
+              this.reportFileOpenMetric(
+                "bootstrap_fetch_completed",
+                loadToken,
+                {
+                  error: error.message,
+                  found: false,
+                },
+              );
+              return null;
+            }
+          })()
         : Promise.resolve(null);
 
       const initializePromise = session.initialize(filePath);
       const liveSyncPromise = (async () => {
         await initializePromise;
 
-        if (loadToken !== this.stateStore.get('sessionLoadToken')) {
+        if (loadToken !== this.stateStore.get("sessionLoadToken")) {
           return false;
         }
 
         await session.waitForInitialSync(null);
-        if (loadToken !== this.stateStore.get('sessionLoadToken')) {
+        if (loadToken !== this.stateStore.get("sessionLoadToken")) {
           return false;
         }
 
@@ -286,10 +303,10 @@ export class WorkspaceCoordinator {
         session.activateCollaborativeView?.();
         this.lifecycle.attachSessionScroller(session);
         session.applyTheme(this.getTheme());
-        this.reportFileOpenMetric('initial_sync_complete', loadToken);
+        this.reportFileOpenMetric("initial_sync_complete", loadToken);
         session.ensureInitialContent?.();
         if (!fileOpenReady) {
-          await readySession('live-sync');
+          await readySession("live-sync");
         } else {
           session.requestMeasure();
         }
@@ -299,30 +316,35 @@ export class WorkspaceCoordinator {
       const bootstrapVisibilityPromise = (async () => {
         const bootstrapContent = await bootstrapPromise;
         if (
-          bootstrapContent === null
-          || liveSyncComplete
-          || fileOpenReady
-          || loadToken !== this.stateStore.get('sessionLoadToken')
+          bootstrapContent === null ||
+          liveSyncComplete ||
+          fileOpenReady ||
+          loadToken !== this.stateStore.get("sessionLoadToken")
         ) {
           return false;
         }
 
         const elapsedMs = performance.now() - openStartedAt;
-        const remainingDelayMs = Math.max(0, BOOTSTRAP_RENDER_DELAY_MS - elapsedMs);
+        const remainingDelayMs = Math.max(
+          0,
+          BOOTSTRAP_RENDER_DELAY_MS - elapsedMs,
+        );
         if (remainingDelayMs > 0) {
           const winner = await Promise.race([
-            liveSyncPromise.then((didSync) => (didSync ? 'live-sync' : 'stale')),
-            delay(remainingDelayMs).then(() => 'timeout'),
+            liveSyncPromise.then((didSync) =>
+              didSync ? "live-sync" : "stale",
+            ),
+            delay(remainingDelayMs).then(() => "timeout"),
           ]);
-          if (winner === 'live-sync') {
+          if (winner === "live-sync") {
             return false;
           }
         }
 
         if (
-          liveSyncComplete
-          || fileOpenReady
-          || loadToken !== this.stateStore.get('sessionLoadToken')
+          liveSyncComplete ||
+          fileOpenReady ||
+          loadToken !== this.stateStore.get("sessionLoadToken")
         ) {
           return false;
         }
@@ -335,38 +357,38 @@ export class WorkspaceCoordinator {
           return false;
         }
 
-        this.reportFileOpenMetric('bootstrap_shown', loadToken);
-        await readySession('bootstrap');
+        this.reportFileOpenMetric("bootstrap_shown", loadToken);
+        await readySession("bootstrap");
         return true;
       })();
 
       await initializePromise;
 
-      if (loadToken !== this.stateStore.get('sessionLoadToken')) {
+      if (loadToken !== this.stateStore.get("sessionLoadToken")) {
         session.destroy();
         return;
       }
 
       await Promise.all([liveSyncPromise, bootstrapVisibilityPromise]);
 
-      if (loadToken !== this.stateStore.get('sessionLoadToken')) {
+      if (loadToken !== this.stateStore.get("sessionLoadToken")) {
         session.destroy();
         return;
       }
 
       if (!fileOpenReady) {
         session.ensureInitialContent?.();
-        await readySession('post-initialize');
+        await readySession("post-initialize");
       }
     } catch (error) {
-      console.error('[app] Failed to initialize editor:', error);
+      console.error("[app] Failed to initialize editor:", error);
       session.destroy();
       this.lifecycle.clearSessionScroller();
       if (this.session === session) {
         this.session = null;
       }
 
-      if (loadToken !== this.stateStore.get('sessionLoadToken')) {
+      if (loadToken !== this.stateStore.get("sessionLoadToken")) {
         return;
       }
 

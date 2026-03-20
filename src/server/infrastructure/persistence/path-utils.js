@@ -1,20 +1,31 @@
-import { isAbsolute, normalize, relative, resolve } from 'path';
+import { isAbsolute, normalize, relative, resolve } from "path";
 
-import { isVaultFilePath } from '../../../domain/file-kind.js';
+import { isVaultFilePath } from "../../../domain/file-kind.js";
 
-export const IGNORED_DIRECTORIES = new Set(['.git', '.obsidian', '.trash', 'node_modules', '.DS_Store']);
-export const VAULT_FILE_PATH_REQUIREMENT = '.md, .excalidraw, .mmd, .mermaid, .puml, .plantuml, .png, .jpg, .jpeg, .webp, .gif, or .svg';
+export const IGNORED_DIRECTORIES = new Set([
+  ".git",
+  ".obsidian",
+  ".trash",
+  "node_modules",
+  ".DS_Store",
+]);
+export const VAULT_FILE_PATH_REQUIREMENT =
+  ".md, .excalidraw, .mmd, .mermaid, .puml, .plantuml, .png, .jpg, .jpeg, .webp, .gif, or .svg";
 export const INVALID_VAULT_FILE_PATH_ERROR = `Invalid file path — must end in ${VAULT_FILE_PATH_REQUIREMENT}`;
-export const INVALID_DIRECTORY_PATH_ERROR = 'Invalid directory path';
+export const INVALID_DIRECTORY_PATH_ERROR = "Invalid directory path";
 
 export function isIgnoredVaultEntry(name) {
-  return IGNORED_DIRECTORIES.has(name) || name.startsWith('.');
+  return IGNORED_DIRECTORIES.has(name) || name.startsWith(".");
 }
 
 function normalizeRequestedPath(requestedPath) {
-  const normalized = normalize(String(requestedPath ?? '').trim().replace(/\\/g, '/'));
-  if (!normalized || normalized === '.') {
-    return '';
+  const normalized = normalize(
+    String(requestedPath ?? "")
+      .trim()
+      .replace(/\\/g, "/"),
+  );
+  if (!normalized || normalized === ".") {
+    return "";
   }
 
   return normalized;
@@ -30,9 +41,9 @@ export function sanitizeVaultPath(vaultDir, requestedPath) {
   const relativePath = relative(vaultDir, absolute);
 
   if (
-    relativePath.startsWith('..')
-    || relativePath === '..'
-    || isAbsolute(relativePath)
+    relativePath.startsWith("..") ||
+    relativePath === ".." ||
+    isAbsolute(relativePath)
   ) {
     return null;
   }
@@ -63,7 +74,7 @@ export function resolveVaultRenamePaths(vaultDir, oldPath, newPath) {
   const absoluteNew = sanitizeVaultPath(vaultDir, newPath);
 
   if (!absoluteOld || !absoluteNew) {
-    return { absoluteNew: null, absoluteOld: null, error: 'Invalid file path' };
+    return { absoluteNew: null, absoluteOld: null, error: "Invalid file path" };
   }
 
   if (!isVaultFilePath(absoluteOld)) {

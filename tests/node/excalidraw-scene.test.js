@@ -1,5 +1,5 @@
-import test from 'node:test';
-import assert from 'node:assert/strict';
+import test from "node:test";
+import assert from "node:assert/strict";
 
 import {
   buildStoredScene,
@@ -8,48 +8,54 @@ import {
   normalizeUserName,
   parseSceneJson,
   sceneToInitialData,
-} from '../../src/client/domain/excalidraw-scene.js';
+} from "../../src/client/domain/excalidraw-scene.js";
 
-test('normalizeUserName trims whitespace and caps the visible length', () => {
-  assert.equal(normalizeUserName('  Andes   Setiawan  '), 'Andes Setiawan');
-  assert.equal(normalizeUserName('x'.repeat(40)).length, 24);
-  assert.equal(normalizeUserName('   '), null);
+test("normalizeUserName trims whitespace and caps the visible length", () => {
+  assert.equal(normalizeUserName("  Andes   Setiawan  "), "Andes Setiawan");
+  assert.equal(normalizeUserName("x".repeat(40)).length, 24);
+  assert.equal(normalizeUserName("   "), null);
 });
 
-test('parseSceneJson and normalizeScene fall back to an empty scene shape', () => {
-  assert.deepEqual(parseSceneJson('not-json'), createEmptyScene());
-  assert.deepEqual(normalizeScene({ elements: 'bad', files: null }), createEmptyScene());
+test("parseSceneJson and normalizeScene fall back to an empty scene shape", () => {
+  assert.deepEqual(parseSceneJson("not-json"), createEmptyScene());
+  assert.deepEqual(
+    normalizeScene({ elements: "bad", files: null }),
+    createEmptyScene(),
+  );
 });
 
-test('sceneToInitialData and buildStoredScene preserve supported excalidraw fields', () => {
+test("sceneToInitialData and buildStoredScene preserve supported excalidraw fields", () => {
   const scene = normalizeScene({
-    appState: { gridSize: 16, viewBackgroundColor: '#123456' },
+    appState: { gridSize: 16, viewBackgroundColor: "#123456" },
     elements: [
-      { id: 'a', isDeleted: false },
-      { id: 'b', isDeleted: true },
+      { id: "a", isDeleted: false },
+      { id: "b", isDeleted: true },
     ],
-    files: { fileA: { mimeType: 'image/png' } },
+    files: { fileA: { mimeType: "image/png" } },
   });
 
-  assert.deepEqual(sceneToInitialData(scene, { theme: 'light' }), {
+  assert.deepEqual(sceneToInitialData(scene, { theme: "light" }), {
     appState: {
       gridSize: 16,
-      theme: 'light',
-      viewBackgroundColor: '#123456',
+      theme: "light",
+      viewBackgroundColor: "#123456",
     },
     elements: scene.elements,
     files: scene.files,
   });
 
-  assert.deepEqual(buildStoredScene(scene.elements, scene.appState, scene.files), {
-    appState: {
-      gridSize: 16,
-      viewBackgroundColor: '#123456',
+  assert.deepEqual(
+    buildStoredScene(scene.elements, scene.appState, scene.files),
+    {
+      appState: {
+        gridSize: 16,
+        viewBackgroundColor: "#123456",
+      },
+      elements: [{ id: "a", isDeleted: false }],
+      files: { fileA: { mimeType: "image/png" } },
+      source: "collabmd",
+      type: "excalidraw",
+      version: 2,
     },
-    elements: [{ id: 'a', isDeleted: false }],
-    files: { fileA: { mimeType: 'image/png' } },
-    source: 'collabmd',
-    type: 'excalidraw',
-    version: 2,
-  });
+  );
 });

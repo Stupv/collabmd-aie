@@ -1,0 +1,705 @@
+{
+  "metadata": {
+    "run_id": "run-002",
+    "project_name": "collabmd",
+    "project_path": "/projects/external/collabmd",
+    "started_at": "2026-03-20T10:16:05.017479Z",
+    "completed_at": "2026-03-20T10:20:52.643720Z",
+    "status": "completed",
+    "stages_completed": ["measure", "understand", "discover"],
+    "llm_calls": [
+      {
+        "model": "claude-haiku-4-5-20251001",
+        "stage": "1a_metric_parser",
+        "input_tokens": 3443,
+        "output_tokens": 2729,
+        "cost_usd": 0.023812,
+        "duration_seconds": 23.58
+      },
+      {
+        "model": "claude-sonnet-4-6",
+        "stage": "1b_dependency_mapper",
+        "input_tokens": 4,
+        "output_tokens": 2214,
+        "cost_usd": 0.095513,
+        "duration_seconds": 55.34
+      },
+      {
+        "model": "claude-sonnet-4-6",
+        "stage": "1c_doc_understanding",
+        "input_tokens": 4,
+        "output_tokens": 2580,
+        "cost_usd": 0.124786,
+        "duration_seconds": 72.43
+      },
+      {
+        "model": "claude-sonnet-4-6",
+        "stage": "2a_code_sweep",
+        "input_tokens": 4,
+        "output_tokens": 2835,
+        "cost_usd": 0.141421,
+        "duration_seconds": 71.72
+      },
+      {
+        "model": "claude-sonnet-4-6",
+        "stage": "2b_feature_sweep",
+        "input_tokens": 4,
+        "output_tokens": 2223,
+        "cost_usd": 0.109495,
+        "duration_seconds": 57.66
+      }
+    ],
+    "total_cost_usd": 0.495027,
+    "total_duration_seconds": 287.626241,
+    "aie_version": "0.1.0",
+    "run_type": "single",
+    "reconciliation_method": "none"
+  },
+  "metrics_before": {
+    "project_name": "collabmd",
+    "project_path": "/projects/external/collabmd",
+    "metrics": {
+      "eslint_violations": {
+        "metric_id": "eslint_violations",
+        "value": 1.0,
+        "unit": "count",
+        "raw_output": "[{\"filePath\":\"/projects/external/collabmd/bin/collabmd.js\",\"messages\":[],\"suppressedMessages\":[],\"errorCount\":0,\"fatalErrorCount\":0,\"warningCount\":0,\"fixableErrorCount\":0,\"fixableWarningCount\":0,\"usedDeprecatedRules\":[]},{\"filePath\":\"/projects/external/collabmd/eslint.config.js\",\"messages\":[],\"suppressedMessages\":[],\"errorCount\":0,\"fatalErrorCount\":0,\"warningCount\":0,\"fixableErrorCount\":0,\"fixableWarningCount\":0,\"usedDeprecatedRules\":[]},{\"filePath\":\"/projects/external/collabmd/playwright.config.js\",\"messages\":[],\"suppressedMessages\":[],\"errorCount\":0,\"fatalErrorCount\":0,\"warningCount\":0,\"fixableErrorCount\":0,\"fixableWarningCount\":0,\"usedDeprecatedRules\":[]},{\"filePath\":\"/projects/external/collabmd/scripts/build-client.mjs\",\"messages\":[],\"suppressedMessages\":[],\"errorCount\":0,\"fatalErrorCount\":0,\"warningCount\":0,\"fixableErrorCount\":0,\"fixableWarningCount\":0,\"usedDeprecatedRules\":[]},{\"filePath\":\"/projects/external/collabmd/scripts/capture-readme-assets.mjs\",\"messages\":[],\"suppressedMessages\":[],\"errorCount\":0,\"fatalErrorCount\":0,\"warningCount\":0,\"fixableErrorCount\":0,\"fixableWarningCount\":0,\"usedDeprecatedRules\":[]},{\"filePath\":\"/projects/external/collabmd/scripts/cloudflare-tunnel.mjs\",\"messages\":[],\"suppressedMessages\":[],\"errorCount\":0,\"fatalErrorCount\":0,\"warningCount\":0,\"fixableErrorCount\":0,\"fixableWarningCount\":0,\"usedDeprecatedRules\":[]},{\"filePath\":\"/projects/external/collabmd/scripts/local-plantuml-compose.mjs\",\"messages\":[],\"suppressedMessages\":[],\"errorCount\":0,\"fatalErrorCount\":0,\"warningCount\":0,\"fixableErrorCount\":0,\"fixableWarningCount\":0,\"usedDeprecatedRules\":[]},{\"filePath\":\"/projects/external/collabmd/scripts/render-homebrew-formula.mjs\",\"messages\":[],\"suppressedMessages\":[],\"errorCount\":0,\"fatalErrorCount\":0,\"warningCount\":0,\"fixableErrorCount\":0,\"fixableWarningCount\":0,\"usedDeprecatedRules\":[]},{\"filePath\":\"/projects/external/collabmd/server.js\",\"messages\":[],\"suppressedMessages\":[],\"errorCount\":0,\"fatalErrorCount\":0,\"warningCount\":0,\"fixableErrorCount\":0,\"fixableWarningCount\":0,\"usedDeprecatedRules\":[]},{\"filePath\":\"/projects/external/collabmd/src/client/application/app-shell-elements.js\",\"messages\":[],\"suppressedMessages\":[],\"errorCount\":0,\"fatalErrorCount\":0,\"warningCount\":0,\"fixableErrorCount\":0,\"fixableWarningCount\":0,\"usedDeprecatedRules\":[]},{\"filePath\":\"/projects/external/collabmd/src/client/application/app-shell/chat-feature.js\",\"messages\":[],\"suppressedMessages\":[],\"errorCount\":0,\"fatalErrorCount\":0,\"warningCount\":0,\"fixableErrorCount\":0,\"fixableWarningCount\":0,\"usedDeprecatedRules\":[]},{\"filePath\":\"/projects/external/collabmd/src/client/application/app-shell/comments-feature.js\",\"messages\":[],\"suppressedMessages\":[],\"errorCount\":0,\"fatalErrorCount\":0,\"warningCount\":0,\"fixableErrorCount\":0,\"fixableWarningCount\":0,\"usedDeprecatedRules\":[]},{\"filePath\":\"/projects/external/collabmd/src/client/application/app-shell/git-feature.js\",\"messages\":[],\"suppressedMessages\":[],\"errorCount\":0,\"fatalErrorCount\":0,\"warningCount\":0,\"fixableErrorCount\":0,\"fixableWarningCount\":0,\"usedDeprecatedRules\":[]},{\"filePath\":\"/projects/external/collabmd/src/client/application/app-shell/presence-feature.js\",\"messages\":[],\"suppressedMessages\":[],\"errorCount\":0,\"fatalErrorCount\":0,\"warningCount\":0,\"fixableErrorCount\":0,\"fixableWarningCount\":0,\"usedDeprecatedRules\":[]},{\"filePath\":\"/projects/external/collabmd/src/client/application/app-shell/ui-feature.js\",\"messages\":[],\"suppressedMessages\":[],\"errorCount\":0,\"fatalErrorCount\":0,\"warningCount\":0,\"fixableErrorCount\":0,\"fixableWarningCount\":0,\"usedDeprecatedRules\":[]},{\"filePath\":\"/projects/external/collabmd/src/client/application/app-shell/workspace-feature.js\",\"messages\":[],\"suppressedMessages\":[],\"errorCount\":0,\"fatalErrorCount\":0,\"warningCount\":0,\"fixableErrorCount\":0,\"fixableWarningCount\":0,\"usedDeprecatedRules\":[]},{\"filePath\":\"/projects/external/collabmd/src/client/application/diagram-preview-hydrator.js\",\"messages\":[],\"suppressedMessages\":[],\"errorCount\":0,\"fatalErrorCount\":0,\"warningCount\":0,\"fixableErrorCount\":0,\"fixableWarningCount\":0,\"usedDeprecatedRules\":[]},{\"filePath\":\"/projects/external/collabmd/src/client/application/file-open-lifecycle.js\",\"messages\":[],\"suppressedMessages\":[],\"errorCount\":0,\"fatalErrorCount\":0,\"warningCount\":0,\"fixableErrorCount\":0,\"fixableWarningCount\":0,\"usedDeprecatedRules\":[]},{\"filePath\":\"/projects/external/collabmd/src/client/application/mermaid-preview-hydrator.js\",\"messages\":[],\"suppressedMessages\":[],\"errorCount\":0,\"fatalErrorCount\":0,\"warningCount\":0,\"fixableErrorCount\":0,\"fixableWarningCount\":0,\"usedDeprecatedRules\":[]},{\"filePath\":\"/projects/external/collabmd/src/client/application/plantuml-preview-hydrator.js\",\"messages\":[],\"suppressedMessages\":[],\"errorCount\":0,\"fatalErrorCount\":0,\"warningCount\":0,\"fixableErrorCount\":0,\"fixableWarningCount\":0,\"usedDeprecatedRules\":[]},{\"filePath\":\"/projects/external/collabmd/src/client/application/preview-diagram-utils.js\",\"messages\":[],\"suppressedMessages\":[],\"errorCount\":0,\"fatalErrorCount\":0,\"warningCount\":0,\"fixableErrorCount\":0,\"fixableWarningCount\":0,\"usedDeprecatedRules\":[]},{\"filePath\":\"/projects/external/collabmd/src/client/application/preview-render-compiler.js\",\"messages\":[],\"suppressedMessages\":[],\"errorCount\":0,\"fatalErrorCount\":0,\"warningCount\":0,\"fixableErrorCount\":0,\"fixableWarningCount\":0,\"usedDeprecatedRules\":[]},{\"filePath\":\"/projects/external/collabmd/src/client/application/preview-render-executor.js\",\"messages\":[],\"suppressedMessages\":[],\"errorCount\":0,\"fatalErrorCount\":0,\"warningCount\":0,\"fixableErrorCount\":0,\"fixableWarningCount\":0,\"usedDeprecatedRules\":[]},{\"filePath\":\"/projects/external/collabmd/src/client/application/preview-render-profile.js\",\"messages\":[],\"suppressedMessages\":[],\"errorCount\":0,\"fatalErrorCount\":0,\"warningCount\":0,\"fixableErrorCount\":0,\"fixableWarningCount\":0,\"usedDeprecatedRules\":[]},{\"filePath\":\"/projects/external/collabmd/src/client/application/preview-render-scheduler.js\",\"messages\":[],\"suppressedMessages\":[],\"errorCount\":0,\"fatalErrorCount\":0,\"warningCount\":0,\"fixableErrorCount\":0,\"fixableWarningCount\":0,\"usedDeprecatedRules\":[]},{\"filePath\":\"/projects/external/collabmd/src/client/application/preview-render-worker.js\",\"messages\":[],\"suppressedMessages\":[],\"errorCount\":0,\"fatalErrorCount\":0,\"warningCount\":0,\"fixableErrorCount\":0,\"fixableWarningCount\":0,\"usedDeprecatedRules\":[]},{\"filePath\":\"/projects/external/collabmd/src/client/application/preview-renderer.js\",\"messages\":[],\"suppressedMessages\":[],\"errorCount\":0,\"fatalErrorCount\":0,\"warningCount\":0,\"fixableErrorCount\":0,\"fixableWarningCount\":0,\"usedDeprecatedRules\":[]},{\"filePath\":\"/projects/external/collabmd/src/client/application/wiki-link-file-controller.js\",\"messages\":[],\"suppressedMessages\":[],\"errorCount\":0,\"fatalErrorCount\":0,\"warningCount\":0,\"fixableErrorCount\":0,\"fixableWarningCount\":0,\"usedDeprecatedRules\":[]},{\"filePath\":\"/projects/external/collabmd/src/client/application/workspace-chrome-controller.js\",\"messages\":[],\"suppressedMessages\":[],\"errorCount\":0,\"fatalErrorCount\":0,\"warningCount\":0,\"fixableErrorCount\":0,\"fixableWarningCount\":0,\"usedDeprecatedRules\":[]},{\"filePath\":\"/projects/external/collabmd/src/client/application/workspace-coordinator.js\",\"messages\":[],\"suppressedMessages\":[],\"errorCount\":0,\"fatalErrorCount\":0,\"warningCount\":0,\"fixableErrorCount\":0,\"fixableWarningCount\":0,\"usedDeprecatedRules\":[]},{\"filePath\":\"/projects/external/collabmd/src/client/application/workspace-preview-controller.js\",\"messages\":[],\"suppressedMessages\":[],\"errorCount\":0,\"fatalErrorCount\":0,\"warningCount\":0,\"fixableErrorCount\":0,\"fixableWarningCount\":0,\"usedDeprecatedRules\":[]},{\"filePath\":\"/projects/external/collabmd/src/client/application/workspace-route-controller.js\",\"messages\":[],\"suppressedMessages\":[],\"errorCount\":0,\"fatalErrorCount\":0,\"warningCount\":0,\"fixableErrorCount\":0,\"fixableWarningCount\":0,\"usedDeprecatedRules\":[]},{\"filePath\":\"/projects/external/collabmd/src/client/application/workspace-state-store.js\",\"messages\":[],\"suppressedMessages\":[],\"errorCount\":0,\"fatalErrorCount\":0,\"warningCount\":0,\"fixableErrorCount\":0,\"fixableWarningCount\":0,\"usedDeprecatedRules\":[]},{\"filePath\":\"/projects/external/collabmd/src/client/bootstrap/collabmd-app-shell.js\",\"messages\":[],\"suppressedMessages\":[],\"errorCount\":0,\"fatalErrorCount\":0,\"warningCount\":0,\"fixableErrorCount\":0,\"fixableWarningCount\":0,\"usedDeprecatedRules\":[]},{\"filePath\":\"/projects/external/collabmd/src/client/domain/diagram-action-icons.js\",\"messages\":[],\"suppressedMessages\":[],\"errorCount\":0,\"fatalErrorCount\":0,\"warningCount\":0,\"fixableErrorCount\":0,\"fixableWarningCount\":0,\"usedDeprecatedRules\":[]},{\"filePath\":\"/projects/external/collabmd/src/client/domain/excalidraw-collaboration.js\",\"messages\":[],\"suppressedMessages\":[],\"errorCount\":0,\"fatalErrorCount\":0,\"warningCount\":0,\"fixableErrorCount\":0,\"fixableWarningCount\":0,\"usedDeprecatedRules\":[]},{\"filePath\":\"/projects/external/collabmd/src/client/domain/excalidraw-scene.js\",\"messages\":[],\"suppressedMessages\":[],\"errorCount\":0,\"fatalErrorCount\":0,\"warningCount\":0,\"fixableErrorCount\":0,\"fixableWarningCount\":0,\"usedDeprecatedRules\":[]},{\"filePath\":\"/projects/external/collabmd/src/client/domain/markdown-formatting.js\",\"messages\":[],\"suppressedMessages\":[],\"errorCount\":0,\"fatalErrorCount\":0,\"warningCount\":0,\"fixableErrorCount\":0,\"fixableWarningCount\":0,\"usedDeprecatedRules\":[]},{\"filePath\":\"/projects/external/collabmd/src/client/domain/plantuml-language.js\",\"messages\":[],\"suppressedMessages\":[],\"errorCount\":0,\"fatalErrorCount\":0,\"warningCount\":0,\"fixableErrorCount\":0,\"fixableWarningCount\":0,\"usedDeprecatedRules\":[]},{\"filePath\":\"/projects/external/collabmd/src/client/domain/room.js\",\"messages\":[],\"suppressedMessages\":[],\"errorCount\":0,\"fatalErrorCount\":0,\"warningCount\":0,\"fixableErrorCount\":0,\"fixableWarningCount\":0,\"usedDeprecatedRules\":[]},{\"filePath\":\"/projects/external/collabmd/src/client/domain/runtime-paths.js\",\"messages\":[],\"suppressedMessages\":[],\"errorCount\":0,\"fatalErrorC\n... [truncated, 71073 chars total]",
+        "details": {
+          "by_rule": {
+            "unknown": 1
+          },
+          "by_severity": {
+            "warning": 1
+          },
+          "by_file": {
+            "/projects/external/collabmd/src/client/excalidraw-editor.js": 1
+          }
+        },
+        "collected_at": "2026-03-20T10:16:11.817192Z",
+        "duration_seconds": 6.8
+      },
+      "prettier_violations": {
+        "metric_id": "prettier_violations",
+        "value": 129.0,
+        "unit": "count",
+        "raw_output": "Checking formatting...\n",
+        "details": {
+          "unformatted_files": [
+            "src/client/application/app-shell-elements.js",
+            "src/client/application/app-shell/chat-feature.js",
+            "src/client/application/app-shell/comments-feature.js",
+            "src/client/application/app-shell/git-feature.js",
+            "src/client/application/app-shell/presence-feature.js",
+            "src/client/application/app-shell/ui-feature.js",
+            "src/client/application/app-shell/workspace-feature.js",
+            "src/client/application/diagram-preview-hydrator.js",
+            "src/client/application/mermaid-preview-hydrator.js",
+            "src/client/application/plantuml-preview-hydrator.js",
+            "src/client/application/preview-diagram-utils.js",
+            "src/client/application/preview-render-compiler.js",
+            "src/client/application/preview-render-executor.js",
+            "src/client/application/preview-render-profile.js",
+            "src/client/application/preview-render-scheduler.js",
+            "src/client/application/preview-render-worker.js",
+            "src/client/application/preview-renderer.js",
+            "src/client/application/wiki-link-file-controller.js",
+            "src/client/application/workspace-chrome-controller.js",
+            "src/client/application/workspace-coordinator.js",
+            "src/client/application/workspace-preview-controller.js",
+            "src/client/application/workspace-route-controller.js",
+            "src/client/application/workspace-state-store.js",
+            "src/client/bootstrap/collabmd-app-shell.js",
+            "src/client/domain/diagram-action-icons.js",
+            "src/client/domain/excalidraw-collaboration.js",
+            "src/client/domain/excalidraw-scene.js",
+            "src/client/domain/markdown-formatting.js",
+            "src/client/domain/plantuml-language.js",
+            "src/client/domain/room.js",
+            "src/client/domain/runtime-paths.js",
+            "src/client/domain/vault-api-client.js",
+            "src/client/domain/vault-paths.js",
+            "src/client/domain/vault-utils.js",
+            "src/client/domain/wiki-link-completions.js",
+            "src/client/excalidraw-editor.js",
+            "src/client/excalidraw-mermaid-stub.js",
+            "src/client/infrastructure/auth-client.js",
+            "src/client/infrastructure/browser-navigation-port.js",
+            "src/client/infrastructure/browser-notification-port.js",
+            "src/client/infrastructure/browser-preferences-port.js",
+            "src/client/infrastructure/comment-thread-store.js",
+            "src/client/infrastructure/editor-collaboration-client.js",
+            "src/client/infrastructure/editor-paste-utils.js",
+            "src/client/infrastructure/editor-session.js",
+            "src/client/infrastructure/editor-view-adapter.js",
+            "src/client/infrastructure/excalidraw-room-client.js",
+            "src/client/infrastructure/lobby-presence.js",
+            "src/client/infrastructure/runtime-config.js",
+            "src/client/infrastructure/tab-activity-lock.js",
+            "src/client/infrastructure/vault-api-client.js",
+            "src/client/infrastructure/workspace-sync-client.js",
+            "src/client/infrastructure/yjs-provider-reset-guard.js",
+            "src/client/main.js",
+            "src/client/mermaid-runtime.js",
+            "src/client/presentation/backlinks-panel.js",
+            "src/client/presentation/comment-markdown-renderer.js",
+            "src/client/presentation/comment-ui-controller.js",
+            "src/client/presentation/comments-panel.js",
+            "src/client/presentation/excalidraw-embed-controller.js",
+            "src/client/presentation/file-action-controller.js",
+            "src/client/presentation/file-explorer-controller.js",
+            "src/client/presentation/file-explorer-view.js",
+            "src/client/presentation/file-tree-state.js",
+            "src/client/presentation/git-diff-view-controller.js",
+            "src/client/presentation/git-panel-controller.js",
+            "src/client/presentation/image-lightbox-controller.js",
+            "src/client/presentation/layout-controller.js",
+            "src/client/presentation/outline-controller.js",
+            "src/client/presentation/quick-switcher-controller.js",
+            "src/client/presentation/scroll-sync-controller.js",
+            "src/client/presentation/theme-controller.js",
+            "src/client/presentation/toast-controller.js",
+            "src/client/presentation/video-embed-controller.js",
+            "src/client/styles/base.css",
+            "src/client/styles/style.css",
+            "src/domain/comment-threads.js",
+            "src/domain/excalidraw-room-codec.js",
+            "src/domain/file-kind.js",
+            "src/domain/wiki-link-resolver.js",
+            "src/domain/workspace-change.js",
+            "src/domain/workspace-room.js",
+            "src/server/auth/create-auth-service.js",
+            "src/server/auth/session-cookie.js",
+            "src/server/config/env.js",
+            "src/server/create-app-server.js",
+            "src/server/domain/backlink-index.js",
+            "src/server/domain/collaboration/collaboration-document-store.js",
+            "src/server/domain/collaboration/collaboration-room.js",
+            "src/server/domain/collaboration/room-persistence-controller.js",
+            "src/server/domain/collaboration/room-registry.js",
+            "src/server/domain/git-service.js",
+            "src/server/domain/plantuml-encoder.js",
+            "src/server/domain/plantuml-renderer.js",
+            "src/server/index.js",
+            "src/server/infrastructure/git/command-runner.js",
+            "src/server/infrastructure/git/concurrency.js",
+            "src/server/infrastructure/git/diff-service.js",
+            "src/server/infrastructure/git/git-service.js",
+            "src/server/infrastructure/git/parsers.js",
+            "src/server/infrastructure/git/path-utils.js",
+            "src/server/infrastructure/git/responses.js",
+            "src/server/infrastructure/git/status-service.js",
+            "src/server/infrastructure/git/untracked-files.js",
+            "src/server/infrastructure/http/create-auth-api-handler.js",
+            "src/server/infrastructure/http/create-esm-proxy-handler.js",
+            "src/server/infrastructure/http/create-git-api-command-handler.js",
+            "src/server/infrastructure/http/create-git-api-handler.js",
+            "src/server/infrastructure/http/create-git-api-query-handler.js",
+            "src/server/infrastructure/http/create-plantuml-api-handler.js",
+            "src/server/infrastructure/http/create-request-handler.js",
+            "src/server/infrastructure/http/create-static-handler.js",
+            "src/server/infrastructure/http/create-vault-api-command-handler.js",
+            "src/server/infrastructure/http/create-vault-api-handler.js",
+            "src/server/infrastructure/http/create-vault-api-query-handler.js",
+            "src/server/infrastructure/http/http-response.js",
+            "src/server/infrastructure/http/request-body.js",
+            "src/server/infrastructure/persistence/path-utils.js",
+            "src/server/infrastructure/persistence/pull-backup-store.js",
+            "src/server/infrastructure/persistence/sidecar-store.js",
+            "src/server/infrastructure/persistence/vault-content-adapter.js",
+            "src/server/infrastructure/persistence/vault-file-store.js",
+            "src/server/infrastructure/plantuml/plantuml-renderer.js",
+            "src/server/infrastructure/websocket/attach-collaboration-gateway.js",
+            "src/server/infrastructure/websocket/client-socket-session.js",
+            "src/server/infrastructure/workspace/file-system-sync-service.js",
+            "src/server/infrastructure/workspace/workspace-mutation-coordinator.js",
+            "src/server/startup/git-remote-bootstrap.js",
+            "Code style issues found in 128 files. Run Prettier with --write to fix."
+          ]
+        },
+        "collected_at": "2026-03-20T10:16:11.849399Z",
+        "duration_seconds": 6.83
+      },
+      "dockerfile_issues": {
+        "metric_id": "dockerfile_issues",
+        "value": 1.0,
+        "unit": "count",
+        "raw_output": "[{\"code\":\"DL3018\",\"column\":1,\"file\":\"Dockerfile\",\"level\":\"warning\",\"line\":20,\"message\":\"Pin versions in apk add. Instead of `apk add <package>` use `apk add <package>=<version>`\"}]",
+        "details": {
+          "by_level": {
+            "warning": 1
+          },
+          "by_code": {
+            "DL3018": 1
+          },
+          "total": 1
+        },
+        "collected_at": "2026-03-20T10:16:05.086358Z",
+        "duration_seconds": 0.07
+      },
+      "secrets_detected": {
+        "metric_id": "secrets_detected",
+        "value": 5.0,
+        "unit": "count",
+        "raw_output": "{\n  \"version\": \"1.5.0\",\n  \"plugins_used\": [\n    {\n      \"name\": \"ArtifactoryDetector\"\n    },\n    {\n      \"name\": \"AWSKeyDetector\"\n    },\n    {\n      \"name\": \"AzureStorageKeyDetector\"\n    },\n    {\n      \"name\": \"Base64HighEntropyString\",\n      \"limit\": 4.5\n    },\n    {\n      \"name\": \"BasicAuthDetector\"\n    },\n    {\n      \"name\": \"CloudantDetector\"\n    },\n    {\n      \"name\": \"DiscordBotTokenDetector\"\n    },\n    {\n      \"name\": \"GitHubTokenDetector\"\n    },\n    {\n      \"name\": \"GitLabTokenDetector\"\n    },\n    {\n      \"name\": \"HexHighEntropyString\",\n      \"limit\": 3.0\n    },\n    {\n      \"name\": \"IbmCloudIamDetector\"\n    },\n    {\n      \"name\": \"IbmCosHmacDetector\"\n    },\n    {\n      \"name\": \"IPPublicDetector\"\n    },\n    {\n      \"name\": \"JwtTokenDetector\"\n    },\n    {\n      \"name\": \"KeywordDetector\",\n      \"keyword_exclude\": \"\"\n    },\n    {\n      \"name\": \"MailchimpDetector\"\n    },\n    {\n      \"name\": \"NpmDetector\"\n    },\n    {\n      \"name\": \"OpenAIDetector\"\n    },\n    {\n      \"name\": \"PrivateKeyDetector\"\n    },\n    {\n      \"name\": \"PypiTokenDetector\"\n    },\n    {\n      \"name\": \"SendGridDetector\"\n    },\n    {\n      \"name\": \"SlackDetector\"\n    },\n    {\n      \"name\": \"SoftlayerDetector\"\n    },\n    {\n      \"name\": \"SquareOAuthDetector\"\n    },\n    {\n      \"name\": \"StripeDetector\"\n    },\n    {\n      \"name\": \"TelegramBotTokenDetector\"\n    },\n    {\n      \"name\": \"TwilioKeyDetector\"\n    }\n  ],\n  \"filters_used\": [\n    {\n      \"path\": \"detect_secrets.filters.allowlist.is_line_allowlisted\"\n    },\n    {\n      \"path\": \"detect_secrets.filters.common.is_ignored_due_to_verification_policies\",\n      \"min_level\": 2\n    },\n    {\n      \"path\": \"detect_secrets.filters.heuristic.is_indirect_reference\"\n    },\n    {\n      \"path\": \"detect_secrets.filters.heuristic.is_likely_id_string\"\n    },\n    {\n      \"path\": \"detect_secrets.filters.heuristic.is_lock_file\"\n    },\n    {\n      \"path\": \"detect_secrets.filters.heuristic.is_not_alphanumeric_string\"\n    },\n    {\n      \"path\": \"detect_secrets.filters.heuristic.is_potential_uuid\"\n    },\n    {\n      \"path\": \"detect_secrets.filters.heuristic.is_prefixed_with_dollar_sign\"\n    },\n    {\n      \"path\": \"detect_secrets.filters.heuristic.is_sequential_string\"\n    },\n    {\n      \"path\": \"detect_secrets.filters.heuristic.is_swagger_file\"\n    },\n    {\n      \"path\": \"detect_secrets.filters.heuristic.is_templated_secret\"\n    }\n  ],\n  \"results\": {\n    \"src/client/infrastructure/auth-client.js\": [\n      {\n        \"type\": \"Secret Keyword\",\n        \"filename\": \"src/client/infrastructure/auth-client.js\",\n        \"hashed_secret\": \"8be3c943b1609fffbfc51aad666d0a04adf83c9d\",\n        \"is_verified\": false,\n        \"line_number\": 7\n      }\n    ],\n    \"src/server/auth/create-auth-service.js\": [\n      {\n        \"type\": \"Secret Keyword\",\n        \"filename\": \"src/server/auth/create-auth-service.js\",\n        \"hashed_secret\": \"5baa61e4c9b93f3f0682250b6cf8331b7ee68fd8\",\n        \"is_verified\": false,\n        \"line_number\": 8\n      },\n      {\n        \"type\": \"Base64 High Entropy String\",\n        \"filename\": \"src/server/auth/create-auth-service.js\",\n        \"hashed_secret\": \"8f617a83a2f4b3fa3aa116b1a4fa819531e20c72\",\n        \"is_verified\": false,\n        \"line_number\": 21\n      },\n      {\n        \"type\": \"Secret Keyword\",\n        \"filename\": \"src/server/auth/create-auth-service.js\",\n        \"hashed_secret\": \"e316d061640d7f24635624ea3c205ecafe138cfb\",\n        \"is_verified\": false,\n        \"line_number\": 208\n      },\n      {\n        \"type\": \"Secret Keyword\",\n        \"filename\": \"src/server/auth/create-auth-service.js\",\n        \"hashed_secret\": \"ecb252044b5ea0f679ee78ec1a12904739e2904d\",\n        \"is_verified\": false,\n        \"line_number\": 247\n      }\n    ]\n  },\n  \"generated_at\": \"2026-03-20T10:16:08Z\"\n}\n",
+        "details": {
+          "files_with_secrets": 2,
+          "total": 5,
+          "by_type": {
+            "Secret Keyword": 4,
+            "Base64 High Entropy String": 1
+          }
+        },
+        "collected_at": "2026-03-20T10:16:08.542675Z",
+        "duration_seconds": 3.52
+      }
+    },
+    "collected_at": "2026-03-20T10:16:05.019186Z",
+    "total_duration_seconds": 6.83,
+    "errors": {}
+  },
+  "understanding": {
+    "metric_analyses": [
+      {
+        "metric_id": "eslint_violations",
+        "measures": "Count of JavaScript/TypeScript code style and quality issues detected by ESLint, including potential bugs, code inconsistencies, and rule violations",
+        "computation_method": "Command-line tool (eslint) with JSON format parser to extract violation count from output",
+        "influencing_factors": [
+          {
+            "factor": "Code quality and style adherence",
+            "direction": "decreases",
+            "magnitude": "high"
+          },
+          {
+            "factor": "ESLint configuration strictness",
+            "direction": "increases",
+            "magnitude": "high"
+          },
+          {
+            "factor": "Total codebase size",
+            "direction": "increases",
+            "magnitude": "medium"
+          },
+          {
+            "factor": "Developer experience and best practices",
+            "direction": "decreases",
+            "magnitude": "medium"
+          },
+          {
+            "factor": "ESLint rule updates or additions",
+            "direction": "increases",
+            "magnitude": "medium"
+          },
+          {
+            "factor": "Pre-commit hooks enforcement",
+            "direction": "decreases",
+            "magnitude": "medium"
+          }
+        ],
+        "theoretical_bounds": {
+          "floor": 0.0,
+          "ceiling": 100000.0,
+          "unit": "count"
+        },
+        "data_freshness": "Real-time (updates on each code commit or manual scan)"
+      },
+      {
+        "metric_id": "prettier_violations",
+        "measures": "Count of source files in src/ directory that do not conform to Prettier code formatting standards",
+        "computation_method": "Command-line tool (prettier) with check mode and parser to count files failing format validation",
+        "influencing_factors": [
+          {
+            "factor": "Prettier formatter execution before commit",
+            "direction": "decreases",
+            "magnitude": "high"
+          },
+          {
+            "factor": "IDE auto-formatting integration",
+            "direction": "decreases",
+            "magnitude": "medium"
+          },
+          {
+            "factor": "Team formatting discipline",
+            "direction": "decreases",
+            "magnitude": "medium"
+          },
+          {
+            "factor": "Prettier configuration changes",
+            "direction": "increases",
+            "magnitude": "medium"
+          },
+          {
+            "factor": "Pre-commit hook enforcement",
+            "direction": "decreases",
+            "magnitude": "high"
+          },
+          {
+            "factor": "Number of files in src/ directory",
+            "direction": "increases",
+            "magnitude": "low"
+          }
+        ],
+        "theoretical_bounds": {
+          "floor": 0.0,
+          "ceiling": 10000.0,
+          "unit": "count"
+        },
+        "data_freshness": "Real-time (updates on each file modification)"
+      },
+      {
+        "metric_id": "dockerfile_issues",
+        "measures": "Count of Docker best practice violations and security/efficiency issues detected by Hadolint in the Dockerfile",
+        "computation_method": "Command-line tool (hadolint) with JSON format parser to extract issue count from single Dockerfile",
+        "influencing_factors": [
+          {
+            "factor": "Docker best practices adoption",
+            "direction": "decreases",
+            "magnitude": "high"
+          },
+          {
+            "factor": "Hadolint rule set strictness",
+            "direction": "increases",
+            "magnitude": "high"
+          },
+          {
+            "factor": "Base image version updates",
+            "direction": "increases",
+            "magnitude": "medium"
+          },
+          {
+            "factor": "Dockerfile complexity and multi-stage builds",
+            "direction": "increases",
+            "magnitude": "medium"
+          },
+          {
+            "factor": "Security vulnerability awareness",
+            "direction": "decreases",
+            "magnitude": "medium"
+          },
+          {
+            "factor": "CI/CD Dockerfile validation integration",
+            "direction": "decreases",
+            "magnitude": "medium"
+          }
+        ],
+        "theoretical_bounds": {
+          "floor": 0.0,
+          "ceiling": 500.0,
+          "unit": "count"
+        },
+        "data_freshness": "Real-time (updates when Dockerfile is modified)"
+      },
+      {
+        "metric_id": "secrets_detected",
+        "measures": "Count of hardcoded secrets, API keys, credentials, and other sensitive information detected in source code by the detect-secrets tool",
+        "computation_method": "Command-line tool (detect-secrets) with JSON format parser to extract count of detected secrets in src/ directory",
+        "influencing_factors": [
+          {
+            "factor": "Secrets management practices (env vars, vaults)",
+            "direction": "decreases",
+            "magnitude": "high"
+          },
+          {
+            "factor": "Detect-secrets detection rule sensitivity",
+            "direction": "increases",
+            "magnitude": "medium"
+          },
+          {
+            "factor": "Total lines of code in src/",
+            "direction": "increases",
+            "magnitude": "medium"
+          },
+          {
+            "factor": "Secrets rotation and cleanup",
+            "direction": "decreases",
+            "magnitude": "high"
+          },
+          {
+            "factor": "Pre-commit hook with secret scanning",
+            "direction": "decreases",
+            "magnitude": "high"
+          },
+          {
+            "factor": "Developer security awareness training",
+            "direction": "decreases",
+            "magnitude": "medium"
+          },
+          {
+            "factor": "Integration with credential stores",
+            "direction": "decreases",
+            "magnitude": "medium"
+          }
+        ],
+        "theoretical_bounds": {
+          "floor": 0.0,
+          "ceiling": 50000.0,
+          "unit": "count"
+        },
+        "data_freshness": "Real-time (updates when secrets are added or removed from code)"
+      }
+    ],
+    "dependency_map": {
+      "dependencies": [
+        {
+          "source_metric": "prettier_violations",
+          "target_metric": "eslint_violations",
+          "relationship": "causal",
+          "confidence": "inferred",
+          "explanation": "JavaScript projects commonly configure eslint-plugin-prettier, which surfaces Prettier formatting failures directly as ESLint rule violations. This means a portion of eslint_violations is a strict superset of prettier_violations. Running 'prettier --write src/' will mechanically eliminate those ESLint violations with zero manual effort, making prettier_violations the highest-leverage fix target for reducing eslint_violations count."
+        },
+        {
+          "source_metric": "eslint_violations",
+          "target_metric": "secrets_detected",
+          "relationship": "correlated",
+          "confidence": "speculative",
+          "explanation": "High ESLint violation counts suggest enforcement tooling is not running consistently in the developer workflow (pre-commit hooks, CI gates, editor integration). The same enforcement gap that allows lint violations to accumulate also creates the conditions under which secrets get committed — both symptoms point to weak pre-commit or CI quality gates rather than a direct causal link."
+        },
+        {
+          "source_metric": "dockerfile_issues",
+          "target_metric": "secrets_detected",
+          "relationship": "correlated",
+          "confidence": "speculative",
+          "explanation": "Hadolint violations and detect-secrets hits are independent in mechanism but correlated as security hygiene indicators. Dockerfile issues frequently include hardcoded ENV credentials or insecure ARG usage (e.g., ARG API_KEY), which can overlap with secrets detected in the broader src/ scan if build-time secrets leak into image layers or are mirrored in application config files."
+        },
+        {
+          "source_metric": "prettier_violations",
+          "target_metric": "eslint_violations",
+          "relationship": "correlated",
+          "confidence": "inferred",
+          "explanation": "Beyond the plugin overlap, both metrics reflect whether developers are running automated formatters and linters locally. A codebase with many unformatted files (prettier_violations) reliably predicts a codebase where linting is also skipped. Improving the shared enforcement mechanism (pre-commit hook, CI step) drives both metrics down together."
+        }
+      ],
+      "critical_path": [
+        "secrets_detected",
+        "dockerfile_issues",
+        "prettier_violations",
+        "eslint_violations"
+      ],
+      "risk_clusters": [
+        {
+          "metrics": ["secrets_detected", "dockerfile_issues"],
+          "risk": "Security exposure: secrets_detected represents immediate credential/key compromise risk in the src/ tree, while dockerfile_issues may include ENV/ARG credential leaks that bake secrets into image layers. Both can result in secret exfiltration from a pushed Docker image or repository. These must be addressed before any public release or image push. Fix by auditing detect-secrets output for true positives, rotating any confirmed credentials, and resolving Hadolint DL3025/SC2148-class ENV secret patterns in the Dockerfile."
+        },
+        {
+          "metrics": ["prettier_violations", "eslint_violations"],
+          "risk": "Developer workflow enforcement gap: The co-occurrence of formatting and linting violations indicates pre-commit hooks or CI quality gates are absent or non-blocking. This cluster compounds over time — each merged PR that bypasses checks raises both counters and increases cognitive load for reviewers. The root fix is a single shared enforcement step (e.g., lint-staged + husky, or a mandatory CI check) that addresses both metrics simultaneously. Fixing prettier_violations first yields the fastest reduction in eslint_violations due to eslint-plugin-prettier overlap, with no logic changes required."
+        }
+      ]
+    },
+    "doc_understanding": {
+      "application_purpose": "CollabMD is a realtime collaborative Markdown editor that turns an existing local folder, Obsidian-style vault, or git-backed docs repository into a browser-accessible collaborative workspace — without migrating files. It exists to enable multi-user editing, commenting, and presence on plain-file workspaces while keeping the filesystem as the authoritative source of truth.",
+      "target_users": [
+        "Technical writers and documentation authors collaborating on Markdown-heavy knowledge bases",
+        "Software engineers reviewing RFCs, architecture notes, and runbooks in real time",
+        "Obsidian users who want to share vaults with collaborators who do not use Obsidian",
+        "Remote teams needing shared access to diagram-heavy workspaces (Mermaid, PlantUML, Excalidraw)",
+        "DevOps / platform engineers deploying a self-hosted collaborative docs tool via Docker or Coolify",
+        "Individual knowledge workers wanting quick browser access to their local notes"
+      ],
+      "key_workflows": [
+        "Launching a local collaborative session against an existing vault folder",
+        "Sharing a session publicly via Cloudflare Quick Tunnel with password auth",
+        "Authenticating collaborators with Google OIDC on a stable public domain",
+        "Real-time co-editing of Markdown, Mermaid, PlantUML, and Excalidraw files with Yjs sync",
+        "Adding and resolving source-anchored comment threads on lines or text selections",
+        "Syncing external filesystem changes (e.g. from Obsidian or git pulls) back into live rooms",
+        "Bootstrapping a Docker deployment from a private git repository over SSH",
+        "Running a local PlantUML server via bundled docker-compose",
+        "Navigating large vaults with wiki-links, backlinks, quick switcher, and outline panel",
+        "Following a collaborator's cursor in real time via presence and follow mode"
+      ],
+      "known_limitations": [
+        "Single-instance deployment only: collaboration room state is in-process and cannot be shared across replicas, preventing horizontal scaling",
+        "OIDC authentication supports Google only — no other providers (GitHub, Microsoft, etc.)",
+        "Source-anchored comments are not supported for .excalidraw files",
+        "Windows is supported only via WSL2, not native Windows execution",
+        "OIDC is incompatible with ephemeral Cloudflare Quick Tunnel URLs — requires a stable PUBLIC_BASE_URL",
+        "Auto-generated tunnel passwords are rotated on every restart, breaking existing shared links",
+        "Git bootstrap skips syncing if the checkout is dirty on startup — no merge or conflict resolution is performed",
+        "Video embed preview is limited to public YouTube URLs and direct public HTTPS .mp4/.webm/.ogg files — no support for private or authenticated video sources",
+        "PlantUML rendering requires either an external server or the bundled docker-compose setup; it is not bundled natively",
+        "Requires Node.js 24 specifically for npx and source installs"
+      ],
+      "improvement_opportunities": [
+        "Source-anchored comments are unsupported for Excalidraw files: implement comment anchoring for .excalidraw by attaching threads to element IDs or canvas coordinates rather than text positions, since the current line-based anchoring model does not apply.",
+        "OIDC is Google-only: add support for at least GitHub OAuth and Microsoft Entra ID (Azure AD) as additional providers, given that many engineering teams use those identity platforms and are likely CollabMD's core users.",
+        "Single-instance collaboration state prevents horizontal scaling: document a Redis or external Yjs persistence adapter path, or add a `--state-backend redis` option so teams can run multiple replicas behind a load balancer.",
+        "Dirty-checkout git bootstrap silently skips sync: add a startup warning message and a `--git-force-sync` flag that stashes or resets local changes and fast-forwards, so operators are not surprised by stale vault content after a container restart.",
+        "Password rotation on every restart breaks shared tunnel links: add a `--session-secret` / `SESSION_SECRET` environment variable so the signed session secret and generated password can be stable across restarts without requiring `--auth-password` to be set manually.",
+        "No bulk file export: there is no documented API endpoint or CLI flag to export the full vault (or a subset) as a zip archive, PDF bundle, or static HTML site — adding a `collabmd export` subcommand or a `/api/export` endpoint would make sharing read-only snapshots practical.",
+        "Error messages for misconfigured OIDC are not described: document (and improve) the error surface when `PUBLIC_BASE_URL`, `AUTH_OIDC_CLIENT_ID`, or `AUTH_OIDC_CLIENT_SECRET` are missing or wrong, including a startup validation step that fails fast with a remediation hint rather than a runtime auth error.",
+        "No multi-vault or multi-directory support: a single CollabMD process serves exactly one directory; teams managing multiple vaults must run multiple instances on different ports. Adding a `--vault` flag that can be repeated, or a workspace-switcher UI, would address this.",
+        "Video embed support is limited to public sources: add support for authenticated or self-hosted video URLs (e.g. presigned S3 URLs, local file:// references within the vault) so teams can embed private screencasts or demo recordings in docs.",
+        "Native Windows support is absent: WSL2 is the only documented path, which creates friction for Windows-primary teams. Adding a native Windows execution path (either via a prebuilt `.exe` or documented PowerShell workarounds) would expand the addressable audience.",
+        "No documented health-check or readiness endpoint: Docker deployments (especially in Coolify) need a `/healthz` or `/readyz` HTTP endpoint to confirm the server and vault watcher are operational, rather than relying on port availability alone.",
+        "Collaboration room state loss on restart is undocumented: if the process restarts mid-session, in-flight Yjs state that has not been flushed to disk is lost. The docs should warn about this and ideally add a configurable Yjs persistence layer (e.g. y-leveldb) to survive restarts."
+      ]
+    }
+  },
+  "discovery": {
+    "proposals": [
+      {
+        "id": "P-001",
+        "title": "Run Prettier auto-format to eliminate all 129 formatting violations",
+        "target_metric": "prettier_violations",
+        "target_outcome": null,
+        "category": "fix_lint",
+        "impact_estimate": {
+          "direction": "improve",
+          "magnitude": "high",
+          "confidence": 0.95
+        },
+        "effort": "trivial",
+        "risk": "safe",
+        "description": "There are 129 Prettier formatting violations across the codebase. Running `npx prettier --write .` (or the project's equivalent prettier invocation) will mechanically reformat all files to match the configured style, bringing prettier_violations to 0. Because the metric dependency graph notes that prettier_violations causally drives eslint_violations (via eslint-plugin-prettier), this single command is likely to eliminate the 1 remaining ESLint violation as well. No logic changes are involved — this is a pure formatting pass.",
+        "affected_files": [
+          "src/server/config/env.js",
+          "src/server/auth/create-auth-service.js",
+          "src/client/application/workspace-coordinator.js",
+          "src/client/infrastructure/editor-collaboration-client.js",
+          "src/client/presentation/file-explorer-controller.js"
+        ],
+        "affected_symbols": [],
+        "acceptance_criteria": [
+          "`npx prettier --check .` exits with code 0 and reports no unformatted files",
+          "`npx eslint .` reports 0 violations (confirming the causal prettier → eslint link is resolved)",
+          "All existing tests continue to pass after the formatting-only change"
+        ],
+        "touches_security": false,
+        "discovered_by": [],
+        "consensus_level": null
+      },
+      {
+        "id": "P-002",
+        "title": "Pin apk package version in Dockerfile to resolve DL3018 Hadolint warning",
+        "target_metric": "dockerfile_issues",
+        "target_outcome": null,
+        "category": "fix_lint",
+        "impact_estimate": {
+          "direction": "improve",
+          "magnitude": "low",
+          "confidence": 0.95
+        },
+        "effort": "trivial",
+        "risk": "safe",
+        "description": "Hadolint reports DL3018 on Dockerfile line 20: an `apk add <package>` call without a pinned version. This makes Docker image builds non-reproducible — a future Alpine package update could silently change the image's behaviour. Fix by appending `=<version>` to the package name on that line. The version to pin can be found by running `docker run --rm alpine:<base-tag> apk info -e <package>` or inspecting the Alpine package index. If the Dockerfile installs multiple packages on that line, all should be pinned.",
+        "affected_files": ["Dockerfile"],
+        "affected_symbols": [],
+        "acceptance_criteria": [
+          "`hadolint Dockerfile` reports 0 warnings or errors",
+          "`docker build .` completes successfully with the pinned version",
+          "dockerfile_issues metric drops to 0"
+        ],
+        "touches_security": false,
+        "discovered_by": [],
+        "consensus_level": null
+      },
+      {
+        "id": "F-001",
+        "title": "Add SESSION_SECRET env var for stable tunnel passwords across restarts",
+        "target_metric": null,
+        "target_outcome": "Operators sharing a Cloudflare Quick Tunnel link no longer have the link broken on every container restart, because the auto-generated password and signed session key are stable when SESSION_SECRET is set",
+        "category": "feature_addition",
+        "impact_estimate": {
+          "direction": "improve",
+          "magnitude": "high",
+          "confidence": 0.85
+        },
+        "effort": "small",
+        "risk": "safe",
+        "description": "Currently the server generates a fresh random password and session-signing secret on every startup, which invalidates all existing browser sessions and rotates the tunnel password that was shared with collaborators. Adding a SESSION_SECRET environment variable (read in env.js and consumed by session-cookie.js and the password-generation logic) lets operators pin both values: if SESSION_SECRET is set, the auto-generated tunnel password is derived deterministically from it (e.g. HKDF or a simple HMAC truncation) rather than from crypto.randomBytes, and the Express/cookie session uses it as the signing key. When SESSION_SECRET is absent, existing random behaviour is preserved. No new npm dependencies are required — Node's built-in crypto module already provides HMAC.",
+        "affected_files": [
+          "src/server/config/env.js",
+          "src/server/auth/session-cookie.js",
+          "src/server/index.js"
+        ],
+        "affected_symbols": [
+          "session-cookie.js (session secret initialisation)",
+          "env.js (SESSION_SECRET parsing)",
+          "index.js (tunnel password generation)"
+        ],
+        "acceptance_criteria": [
+          "When SESSION_SECRET is absent, server behaviour is unchanged (random password and session key on each start)",
+          "When SESSION_SECRET is set, the auto-generated tunnel password is identical across two independent restarts with the same secret",
+          "When SESSION_SECRET is set, an authenticated browser session established before a restart is still valid after the restart",
+          "SESSION_SECRET is documented in README / env reference alongside AUTH_PASSWORD",
+          "Setting SESSION_SECRET does not prevent AUTH_PASSWORD from being used as the explicit password override"
+        ],
+        "touches_security": true,
+        "discovered_by": [],
+        "consensus_level": null
+      },
+      {
+        "id": "F-002",
+        "title": "Add /healthz HTTP readiness endpoint for Docker and Coolify deployments",
+        "target_metric": null,
+        "target_outcome": "Docker health checks and Coolify deployment probes can confirm CollabMD is fully initialised (server listening + vault watcher running) without relying solely on TCP port availability, reducing false-healthy signals after container start",
+        "category": "feature_addition",
+        "impact_estimate": {
+          "direction": "improve",
+          "magnitude": "medium",
+          "confidence": 0.9
+        },
+        "effort": "trivial",
+        "risk": "safe",
+        "description": "Docker and Coolify deployments currently have no structured readiness signal. Port 3000 becomes available as soon as Express binds, but the vault filesystem watcher may not yet be ready. A lightweight GET /healthz route added to create-app-server.js can return 200 {status:'ok'} once a shared readiness flag (set in server/index.js after the watcher is initialised) is true, and 503 {status:'starting'} before that. The Dockerfile HEALTHCHECK line can reference this endpoint. No new dependencies are required — the route uses the existing Express instance.",
+        "affected_files": [
+          "src/server/create-app-server.js",
+          "src/server/index.js",
+          "Dockerfile"
+        ],
+        "affected_symbols": [
+          "createAppServer (route registration)",
+          "index.js (server startup sequence, readiness flag)"
+        ],
+        "acceptance_criteria": [
+          "GET /healthz returns HTTP 200 with JSON {status:'ok'} once the vault watcher is initialised",
+          "GET /healthz returns HTTP 503 with JSON {status:'starting'} during the window between Express bind and watcher ready",
+          "The endpoint requires no authentication — it must be reachable before login",
+          "Dockerfile includes a HEALTHCHECK instruction referencing /healthz with a reasonable start-period (e.g. 10s) and interval (e.g. 15s)",
+          "Endpoint is documented in the deployment / Docker section of the README"
+        ],
+        "touches_security": false,
+        "discovered_by": [],
+        "consensus_level": null
+      }
+    ],
+    "validated_count": 4,
+    "discarded_count": 1,
+    "ranking": {
+      "ranked_proposals": [
+        {
+          "proposal_id": "P-001",
+          "priority_score": 36.0,
+          "rank": 1,
+          "rationale": "impact=high effort=trivial risk=safe"
+        },
+        {
+          "proposal_id": "F-001",
+          "priority_score": 27.0,
+          "rank": 2,
+          "rationale": "impact=high effort=small risk=safe"
+        },
+        {
+          "proposal_id": "F-002",
+          "priority_score": 24.0,
+          "rank": 3,
+          "rationale": "impact=medium effort=trivial risk=safe"
+        },
+        {
+          "proposal_id": "P-002",
+          "priority_score": 12.0,
+          "rank": 4,
+          "rationale": "impact=low effort=trivial risk=safe"
+        }
+      ],
+      "duplicates_removed": [],
+      "batch_groups": []
+    }
+  },
+  "formulation": null,
+  "execution": null,
+  "metrics_after": null,
+  "validation": null,
+  "review": null,
+  "scope": null
+}

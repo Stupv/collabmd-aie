@@ -1,7 +1,7 @@
-import test from 'node:test';
-import assert from 'node:assert/strict';
+import test from "node:test";
+import assert from "node:assert/strict";
 
-import { BacklinksPanel } from '../../src/client/presentation/backlinks-panel.js';
+import { BacklinksPanel } from "../../src/client/presentation/backlinks-panel.js";
 
 class FakeClassList {
   constructor() {
@@ -21,7 +21,11 @@ class FakeClassList {
   }
 
   set(value) {
-    this.tokens = new Set(String(value || '').split(/\s+/).filter(Boolean));
+    this.tokens = new Set(
+      String(value || "")
+        .split(/\s+/)
+        .filter(Boolean),
+    );
   }
 
   toggle(token, force) {
@@ -58,16 +62,16 @@ class FakeFragment {
 }
 
 class FakeElement {
-  constructor(tagName = 'div') {
+  constructor(tagName = "div") {
     this.tagName = tagName.toUpperCase();
     this.children = [];
     this.parentElement = null;
     this.listeners = new Map();
     this.attributes = new Map();
     this.classList = new FakeClassList();
-    this._textContent = '';
-    this._innerHTML = '';
-    this.type = '';
+    this._textContent = "";
+    this._innerHTML = "";
+    this.type = "";
   }
 
   set className(value) {
@@ -75,7 +79,7 @@ class FakeElement {
   }
 
   get className() {
-    return [...this.classList.tokens].join(' ');
+    return [...this.classList.tokens].join(" ");
   }
 
   set innerHTML(value) {
@@ -94,7 +98,7 @@ class FakeElement {
 
   get textContent() {
     if (this.children.length > 0) {
-      return this.children.map((child) => child.textContent).join('');
+      return this.children.map((child) => child.textContent).join("");
     }
 
     return this._textContent;
@@ -102,7 +106,9 @@ class FakeElement {
 
   appendChild(child) {
     if (child?.isFragment) {
-      child.children.forEach((fragmentChild) => this.appendChild(fragmentChild));
+      child.children.forEach((fragmentChild) =>
+        this.appendChild(fragmentChild),
+      );
       return child;
     }
 
@@ -119,17 +125,19 @@ class FakeElement {
 
   trigger(type, event = {}) {
     const handlers = this.listeners.get(type) ?? [];
-    handlers.forEach((handler) => handler({
-      currentTarget: this,
-      preventDefault() {},
-      stopPropagation() {},
-      target: this,
-      ...event,
-    }));
+    handlers.forEach((handler) =>
+      handler({
+        currentTarget: this,
+        preventDefault() {},
+        stopPropagation() {},
+        target: this,
+        ...event,
+      }),
+    );
   }
 
   click() {
-    this.trigger('click');
+    this.trigger("click");
   }
 
   contains(node) {
@@ -145,7 +153,7 @@ class FakeElement {
 
   querySelector(selector) {
     const match = (element) => {
-      if (selector.startsWith('.')) {
+      if (selector.startsWith(".")) {
         return element.classList.contains(selector.slice(1));
       }
 
@@ -174,7 +182,10 @@ class FakeElement {
     const stack = [...this.children];
     while (stack.length > 0) {
       const current = stack.shift();
-      if (selector.startsWith('.') && current.classList.contains(selector.slice(1))) {
+      if (
+        selector.startsWith(".") &&
+        current.classList.contains(selector.slice(1))
+      ) {
         matches.push(current);
       }
       stack.unshift(...current.children);
@@ -192,7 +203,7 @@ class FakeElement {
 
   toggleAttribute(name, force) {
     if (force) {
-      this.attributes.set(name, '');
+      this.attributes.set(name, "");
       return true;
     }
 
@@ -202,26 +213,28 @@ class FakeElement {
 }
 
 function createPanelStructure({ includeDockWrapper = false } = {}) {
-  const root = includeDockWrapper ? new FakeElement('div') : new FakeElement('div');
-  const panel = new FakeElement('div');
-  panel.className = 'backlinks-panel';
+  const root = includeDockWrapper
+    ? new FakeElement("div")
+    : new FakeElement("div");
+  const panel = new FakeElement("div");
+  panel.className = "backlinks-panel";
 
   if (includeDockWrapper) {
-    panel.setAttribute('data-backlinks-variant', 'dock');
+    panel.setAttribute("data-backlinks-variant", "dock");
     root.appendChild(panel);
   }
 
   const target = includeDockWrapper ? panel : root;
-  const header = new FakeElement('div');
-  header.className = 'backlinks-header';
-  const toggle = new FakeElement('span');
-  toggle.className = 'backlinks-toggle';
-  const count = new FakeElement('span');
-  count.className = 'backlinks-count';
-  const body = new FakeElement('div');
-  body.className = 'backlinks-body';
-  const list = new FakeElement('div');
-  list.className = 'backlinks-list';
+  const header = new FakeElement("div");
+  header.className = "backlinks-header";
+  const toggle = new FakeElement("span");
+  toggle.className = "backlinks-toggle";
+  const count = new FakeElement("span");
+  count.className = "backlinks-count";
+  const body = new FakeElement("div");
+  body.className = "backlinks-body";
+  const list = new FakeElement("div");
+  list.className = "backlinks-list";
 
   header.appendChild(toggle);
   header.appendChild(count);
@@ -261,7 +274,7 @@ function installDocumentStub(t) {
   globalThis.window = {
     __COLLABMD_CONFIG__: {},
     location: {
-      origin: 'http://localhost',
+      origin: "http://localhost",
     },
   };
 
@@ -282,8 +295,8 @@ function installFetchStub(t, responses) {
   const originalFetch = globalThis.fetch;
   globalThis.fetch = async (url) => ({
     async json() {
-      const requestUrl = new URL(url, 'http://localhost');
-      const filePath = requestUrl.searchParams.get('file') ?? '';
+      const requestUrl = new URL(url, "http://localhost");
+      const filePath = requestUrl.searchParams.get("file") ?? "";
       return {
         backlinks: responses[filePath] ?? [],
       };
@@ -316,85 +329,90 @@ function createBacklinksPanel(t, responses, { onFileSelect } = {}) {
   };
 }
 
-test('BacklinksPanel hides linked mentions when there is no current file or no backlinks', async (t) => {
+test("BacklinksPanel hides linked mentions when there is no current file or no backlinks", async (t) => {
   const { dock, inline, panel } = createBacklinksPanel(t, {
-    'empty.md': [],
+    "empty.md": [],
   });
 
   panel.clear();
-  assert.equal(dock.root.classList.contains('hidden'), true);
-  assert.equal(inline.root.classList.contains('hidden'), true);
+  assert.equal(dock.root.classList.contains("hidden"), true);
+  assert.equal(inline.root.classList.contains("hidden"), true);
 
-  await panel.load('empty.md');
+  await panel.load("empty.md");
 
-  assert.equal(dock.root.classList.contains('hidden'), true);
-  assert.equal(inline.root.classList.contains('hidden'), true);
-  assert.equal(dock.toggle.textContent, 'Linked Mentions');
-  assert.equal(inline.toggle.textContent, 'Linked Mentions');
+  assert.equal(dock.root.classList.contains("hidden"), true);
+  assert.equal(inline.root.classList.contains("hidden"), true);
+  assert.equal(dock.toggle.textContent, "Linked Mentions");
+  assert.equal(inline.toggle.textContent, "Linked Mentions");
 });
 
-test('BacklinksPanel renders the mention count and collapses again when the file changes', async (t) => {
+test("BacklinksPanel renders the mention count and collapses again when the file changes", async (t) => {
   const { dock, inline, panel } = createBacklinksPanel(t, {
-    'projects/collabmd.md': [
-      { file: 'README.md', contexts: ['- [[projects/collabmd]]'] },
-      { file: 'daily/2026-03-05.md', contexts: ['- [ ] Review the [[projects/collabmd]] vault feature'] },
+    "projects/collabmd.md": [
+      { file: "README.md", contexts: ["- [[projects/collabmd]]"] },
+      {
+        file: "daily/2026-03-05.md",
+        contexts: ["- [ ] Review the [[projects/collabmd]] vault feature"],
+      },
     ],
-    'showcase.md': [
-      { file: 'README.md', contexts: ['- [[showcase]]'] },
-    ],
+    "showcase.md": [{ file: "README.md", contexts: ["- [[showcase]]"] }],
   });
 
-  await panel.load('projects/collabmd.md');
+  await panel.load("projects/collabmd.md");
 
-  assert.equal(dock.root.classList.contains('hidden'), false);
-  assert.equal(inline.root.classList.contains('hidden'), false);
-  assert.equal(dock.toggle.textContent, 'Linked Mentions');
-  assert.equal(inline.toggle.textContent, 'Linked Mentions');
-  assert.equal(dock.count.textContent, '2');
-  assert.equal(inline.count.textContent, '2');
-  assert.equal(dock.list.querySelectorAll('.backlink-item').length, 2);
-  assert.equal(inline.list.querySelectorAll('.backlink-item').length, 2);
+  assert.equal(dock.root.classList.contains("hidden"), false);
+  assert.equal(inline.root.classList.contains("hidden"), false);
+  assert.equal(dock.toggle.textContent, "Linked Mentions");
+  assert.equal(inline.toggle.textContent, "Linked Mentions");
+  assert.equal(dock.count.textContent, "2");
+  assert.equal(inline.count.textContent, "2");
+  assert.equal(dock.list.querySelectorAll(".backlink-item").length, 2);
+  assert.equal(inline.list.querySelectorAll(".backlink-item").length, 2);
 
   dock.header.click();
-  assert.equal(dock.panel.classList.contains('expanded'), true);
-  assert.equal(inline.panel.classList.contains('expanded'), true);
+  assert.equal(dock.panel.classList.contains("expanded"), true);
+  assert.equal(inline.panel.classList.contains("expanded"), true);
 
-  await panel.load('showcase.md');
+  await panel.load("showcase.md");
 
-  assert.equal(dock.panel.classList.contains('expanded'), false);
-  assert.equal(inline.panel.classList.contains('expanded'), false);
-  assert.equal(dock.toggle.textContent, 'Linked Mention');
-  assert.equal(inline.toggle.textContent, 'Linked Mention');
+  assert.equal(dock.panel.classList.contains("expanded"), false);
+  assert.equal(inline.panel.classList.contains("expanded"), false);
+  assert.equal(dock.toggle.textContent, "Linked Mention");
+  assert.equal(inline.toggle.textContent, "Linked Mention");
 });
 
-test('BacklinksPanel closes on escape, outside click, and item selection', async (t) => {
+test("BacklinksPanel closes on escape, outside click, and item selection", async (t) => {
   const selectedFiles = [];
-  const { dock, documentHarness, panel } = createBacklinksPanel(t, {
-    'projects/collabmd.md': [
-      { file: 'README.md', contexts: ['- [[projects/collabmd]]'] },
-    ],
-  }, {
-    onFileSelect(filePath) {
-      selectedFiles.push(filePath);
+  const { dock, documentHarness, panel } = createBacklinksPanel(
+    t,
+    {
+      "projects/collabmd.md": [
+        { file: "README.md", contexts: ["- [[projects/collabmd]]"] },
+      ],
     },
-  });
+    {
+      onFileSelect(filePath) {
+        selectedFiles.push(filePath);
+      },
+    },
+  );
 
-  await panel.load('projects/collabmd.md');
-
-  dock.header.click();
-  assert.equal(dock.panel.classList.contains('expanded'), true);
-
-  documentHarness.dispatch('keydown', { key: 'Escape', preventDefault() {} });
-  assert.equal(dock.panel.classList.contains('expanded'), false);
-
-  dock.header.click();
-  documentHarness.dispatch('pointerdown', { target: new FakeElement('div') });
-  assert.equal(dock.panel.classList.contains('expanded'), false);
+  await panel.load("projects/collabmd.md");
 
   dock.header.click();
-  const item = dock.list.querySelector('.backlink-item');
+  assert.equal(dock.panel.classList.contains("expanded"), true);
+
+  documentHarness.dispatch("keydown", { key: "Escape", preventDefault() {} });
+  assert.equal(dock.panel.classList.contains("expanded"), false);
+
+  dock.header.click();
+  documentHarness.dispatch("pointerdown", { target: new FakeElement("div") });
+  assert.equal(dock.panel.classList.contains("expanded"), false);
+
+  dock.header.click();
+  const item = dock.list.querySelector(".backlink-item");
   item.click();
 
-  assert.deepEqual(selectedFiles, ['README.md']);
-  assert.equal(dock.panel.classList.contains('expanded'), false);
+  assert.deepEqual(selectedFiles, ["README.md"]);
+  assert.equal(dock.panel.classList.contains("expanded"), false);
 });

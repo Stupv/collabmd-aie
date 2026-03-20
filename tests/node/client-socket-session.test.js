@@ -1,9 +1,9 @@
-import test from 'node:test';
-import assert from 'node:assert/strict';
-import { EventEmitter } from 'node:events';
+import test from "node:test";
+import assert from "node:assert/strict";
+import { EventEmitter } from "node:events";
 
-import { ClientSocketSession } from '../../src/server/infrastructure/websocket/client-socket-session.js';
-import { createSyncMessage } from './helpers/collaboration-protocol.js';
+import { ClientSocketSession } from "../../src/server/infrastructure/websocket/client-socket-session.js";
+import { createSyncMessage } from "./helpers/collaboration-protocol.js";
 
 function createSocket() {
   const socket = new EventEmitter();
@@ -25,7 +25,7 @@ function createSocket() {
   return socket;
 }
 
-test('ClientSocketSession flushes queued messages and skips server-initiated initial sync after client sync', async () => {
+test("ClientSocketSession flushes queued messages and skips server-initiated initial sync after client sync", async () => {
   const socket = createSocket();
   const handledPayloads = [];
   let addClientResolved;
@@ -39,23 +39,23 @@ test('ClientSocketSession flushes queued messages and skips server-initiated ini
       handledPayloads.push(payload);
     },
     removeClient: () => {
-      throw new Error('removeClient should not be called');
+      throw new Error("removeClient should not be called");
     },
     sendInitialSync: () => {
-      throw new Error('sendInitialSync should not be called');
+      throw new Error("sendInitialSync should not be called");
     },
   };
 
   const session = new ClientSocketSession({
     room,
-    roomName: 'notes.md',
+    roomName: "notes.md",
     ws: socket,
   });
 
   const initialization = session.initialize();
-  socket.emit('message', createSyncMessage());
-  const queuedPayload = Buffer.from('queued-message');
-  socket.emit('message', queuedPayload);
+  socket.emit("message", createSyncMessage());
+  const queuedPayload = Buffer.from("queued-message");
+  socket.emit("message", queuedPayload);
   addClientResolved();
   await initialization;
   await new Promise((resolve) => setTimeout(resolve, 10));
@@ -63,7 +63,7 @@ test('ClientSocketSession flushes queued messages and skips server-initiated ini
   assert.deepEqual(handledPayloads, [createSyncMessage(), queuedPayload]);
 });
 
-test('ClientSocketSession removes room client when socket closes before room initialization finishes', async () => {
+test("ClientSocketSession removes room client when socket closes before room initialization finishes", async () => {
   const socket = createSocket();
   let addClientResolved;
   const addClientPromise = new Promise((resolve) => {
@@ -86,15 +86,15 @@ test('ClientSocketSession removes room client when socket closes before room ini
       disconnectedRooms.push(roomName);
     },
     room,
-    roomName: 'notes.md',
+    roomName: "notes.md",
     ws: socket,
   });
 
   const initialization = session.initialize();
-  socket.emit('close');
+  socket.emit("close");
   addClientResolved();
   await initialization;
 
   assert.deepEqual(removedSockets, [socket]);
-  assert.deepEqual(disconnectedRooms, ['notes.md']);
+  assert.deepEqual(disconnectedRooms, ["notes.md"]);
 });

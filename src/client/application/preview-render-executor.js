@@ -2,17 +2,19 @@ import {
   cancelIdleRender,
   IDLE_RENDER_TIMEOUT_MS,
   requestIdleRender,
-} from './preview-diagram-utils.js';
+} from "./preview-diagram-utils.js";
 
 function createPreviewWorker() {
-  return new Worker(new URL('./preview-render-worker.js', import.meta.url), { type: 'module' });
+  return new Worker(new URL("./preview-render-worker.js", import.meta.url), {
+    type: "module",
+  });
 }
 
 export class PreviewRenderExecutor {
   constructor({
-    attachmentApiPath = '/api/attachment',
+    attachmentApiPath = "/api/attachment",
     cancelIdleRenderFn = cancelIdleRender,
-    compilePreviewDocumentLoader = () => import('./preview-render-compiler.js'),
+    compilePreviewDocumentLoader = () => import("./preview-render-compiler.js"),
     createWorkerFn = createPreviewWorker,
     getFileList,
     getSourceFilePath = null,
@@ -33,7 +35,10 @@ export class PreviewRenderExecutor {
     this.workerPrewarmId = null;
 
     this.handleWorkerMessage = (event) => {
-      if (!this.workerJob || event.data?.renderVersion !== this.workerJob.renderVersion) {
+      if (
+        !this.workerJob ||
+        event.data?.renderVersion !== this.workerJob.renderVersion
+      ) {
         return;
       }
 
@@ -52,13 +57,13 @@ export class PreviewRenderExecutor {
     };
 
     this.handleWorkerError = (event) => {
-      const error = new Error(event.message || 'Preview worker failed');
+      const error = new Error(event.message || "Preview worker failed");
       if (this.workerJob) {
         this.workerJob.reject(error);
         this.workerJob = null;
       }
 
-      this.reset('Preview worker failed', { disable: true });
+      this.reset("Preview worker failed", { disable: true });
     };
   }
 
@@ -88,8 +93,8 @@ export class PreviewRenderExecutor {
 
     try {
       this.worker = this.createWorkerFn();
-      this.worker.addEventListener('message', this.handleWorkerMessage);
-      this.worker.addEventListener('error', this.handleWorkerError);
+      this.worker.addEventListener("message", this.handleWorkerMessage);
+      this.worker.addEventListener("error", this.handleWorkerError);
       return this.worker;
     } catch {
       this.workerDisabled = true;
@@ -102,7 +107,7 @@ export class PreviewRenderExecutor {
 
     if (worker) {
       if (this.workerJob) {
-        this.reset('Superseded preview render');
+        this.reset("Superseded preview render");
       }
 
       const activeWorker = this.ensureWorker();
@@ -113,17 +118,18 @@ export class PreviewRenderExecutor {
           fileList: this.getFileList?.() ?? [],
           markdownText,
           renderVersion,
-          sourceFilePath: this.getSourceFilePath?.() ?? '',
+          sourceFilePath: this.getSourceFilePath?.() ?? "",
         });
       });
     }
 
-    const { compilePreviewDocument } = await this.compilePreviewDocumentLoader();
+    const { compilePreviewDocument } =
+      await this.compilePreviewDocumentLoader();
     return compilePreviewDocument({
       attachmentApiPath: this.attachmentApiPath,
       fileList: this.getFileList?.() ?? [],
       markdownText,
-      sourceFilePath: this.getSourceFilePath?.() ?? '',
+      sourceFilePath: this.getSourceFilePath?.() ?? "",
     });
   }
 
@@ -140,8 +146,8 @@ export class PreviewRenderExecutor {
     this.cancelWorkerJob(reason);
 
     if (this.worker) {
-      this.worker.removeEventListener('message', this.handleWorkerMessage);
-      this.worker.removeEventListener('error', this.handleWorkerError);
+      this.worker.removeEventListener("message", this.handleWorkerMessage);
+      this.worker.removeEventListener("error", this.handleWorkerError);
       this.worker.terminate();
       this.worker = null;
     }
@@ -151,7 +157,7 @@ export class PreviewRenderExecutor {
     }
   }
 
-  destroy(reason = 'Preview renderer destroyed') {
+  destroy(reason = "Preview renderer destroyed") {
     if (this.workerPrewarmId !== null) {
       this.cancelIdleRenderFn(this.workerPrewarmId);
     }

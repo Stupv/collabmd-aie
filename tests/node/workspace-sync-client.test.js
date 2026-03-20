@@ -1,13 +1,13 @@
-import test from 'node:test';
-import assert from 'node:assert/strict';
+import test from "node:test";
+import assert from "node:assert/strict";
 
-import { WorkspaceSyncClient } from '../../src/client/infrastructure/workspace-sync-client.js';
+import { WorkspaceSyncClient } from "../../src/client/infrastructure/workspace-sync-client.js";
 
 function snapshotTree(tree) {
   return JSON.parse(JSON.stringify(tree));
 }
 
-test('WorkspaceSyncClient incrementally applies workspace entry add, rename, and delete changes', () => {
+test("WorkspaceSyncClient incrementally applies workspace entry add, rename, and delete changes", () => {
   const treeSnapshots = [];
   const changeMetadata = [];
   const client = new WorkspaceSyncClient({
@@ -24,74 +24,82 @@ test('WorkspaceSyncClient incrementally applies workspace entry add, rename, and
   client.entries.observe(client.handleEntriesChange);
 
   client.ydoc.transact(() => {
-    client.entries.set('docs', {
+    client.entries.set("docs", {
       fileKind: null,
-      name: 'docs',
-      nodeType: 'directory',
-      parentPath: '',
-      path: 'docs',
-      type: 'directory',
+      name: "docs",
+      nodeType: "directory",
+      parentPath: "",
+      path: "docs",
+      type: "directory",
     });
-    client.entries.set('docs/guide.md', {
-      fileKind: 'file',
-      name: 'guide.md',
-      nodeType: 'file',
-      parentPath: 'docs',
-      path: 'docs/guide.md',
-      type: 'file',
+    client.entries.set("docs/guide.md", {
+      fileKind: "file",
+      name: "guide.md",
+      nodeType: "file",
+      parentPath: "docs",
+      path: "docs/guide.md",
+      type: "file",
     });
   });
 
-  assert.deepEqual(treeSnapshots.at(-1), [{
-    children: [{
-      name: 'guide.md',
-      path: 'docs/guide.md',
-      type: 'file',
-    }],
-    name: 'docs',
-    path: 'docs',
-    type: 'directory',
-  }]);
+  assert.deepEqual(treeSnapshots.at(-1), [
+    {
+      children: [
+        {
+          name: "guide.md",
+          path: "docs/guide.md",
+          type: "file",
+        },
+      ],
+      name: "docs",
+      path: "docs",
+      type: "directory",
+    },
+  ]);
   assert.deepEqual(changeMetadata.at(-1), {
-    changedPaths: ['docs', 'docs/guide.md'],
+    changedPaths: ["docs", "docs/guide.md"],
     reset: false,
   });
 
   client.ydoc.transact(() => {
-    client.entries.delete('docs/guide.md');
-    client.entries.set('docs/readme.md', {
-      fileKind: 'file',
-      name: 'readme.md',
-      nodeType: 'file',
-      parentPath: 'docs',
-      path: 'docs/readme.md',
-      type: 'file',
+    client.entries.delete("docs/guide.md");
+    client.entries.set("docs/readme.md", {
+      fileKind: "file",
+      name: "readme.md",
+      nodeType: "file",
+      parentPath: "docs",
+      path: "docs/readme.md",
+      type: "file",
     });
   });
 
-  assert.deepEqual(treeSnapshots.at(-1), [{
-    children: [{
-      name: 'readme.md',
-      path: 'docs/readme.md',
-      type: 'file',
-    }],
-    name: 'docs',
-    path: 'docs',
-    type: 'directory',
-  }]);
+  assert.deepEqual(treeSnapshots.at(-1), [
+    {
+      children: [
+        {
+          name: "readme.md",
+          path: "docs/readme.md",
+          type: "file",
+        },
+      ],
+      name: "docs",
+      path: "docs",
+      type: "directory",
+    },
+  ]);
   assert.deepEqual(changeMetadata.at(-1), {
-    changedPaths: ['docs/guide.md', 'docs/readme.md'],
+    changedPaths: ["docs/guide.md", "docs/readme.md"],
     reset: false,
   });
 
   client.ydoc.transact(() => {
-    client.entries.delete('docs/readme.md');
-    client.entries.delete('docs');
+    client.entries.delete("docs/readme.md");
+    client.entries.delete("docs");
   });
 
   assert.deepEqual(treeSnapshots.at(-1), []);
   assert.deepEqual(changeMetadata.at(-1), {
-    changedPaths: ['docs/readme.md', 'docs'],
+    changedPaths: ["docs/readme.md", "docs"],
     reset: false,
   });
   client.entries.unobserve(client.handleEntriesChange);

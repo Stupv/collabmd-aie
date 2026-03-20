@@ -1,10 +1,13 @@
-import { MermaidPreviewHydrator } from './mermaid-preview-hydrator.js';
-import { PlantUmlPreviewHydrator } from './plantuml-preview-hydrator.js';
-import { IDLE_RENDER_TIMEOUT_MS } from './preview-diagram-utils.js';
-import { PreviewRenderExecutor } from './preview-render-executor.js';
-import { getRenderProfile, isLargeDocumentStats } from './preview-render-profile.js';
-import { PreviewRenderScheduler } from './preview-render-scheduler.js';
-import { resolveApiUrl } from '../domain/runtime-paths.js';
+import { MermaidPreviewHydrator } from "./mermaid-preview-hydrator.js";
+import { PlantUmlPreviewHydrator } from "./plantuml-preview-hydrator.js";
+import { IDLE_RENDER_TIMEOUT_MS } from "./preview-diagram-utils.js";
+import { PreviewRenderExecutor } from "./preview-render-executor.js";
+import {
+  getRenderProfile,
+  isLargeDocumentStats,
+} from "./preview-render-profile.js";
+import { PreviewRenderScheduler } from "./preview-render-scheduler.js";
+import { resolveApiUrl } from "../domain/runtime-paths.js";
 
 export class PreviewRenderer {
   constructor({
@@ -37,9 +40,9 @@ export class PreviewRenderer {
     this.hydrationPaused = false;
 
     this.handlePreviewClick = (event) => {
-      const mermaidButton = event.target.closest('.mermaid-placeholder-btn');
+      const mermaidButton = event.target.closest(".mermaid-placeholder-btn");
       if (mermaidButton) {
-        const shell = mermaidButton.closest('.mermaid-shell');
+        const shell = mermaidButton.closest(".mermaid-shell");
         if (!shell) {
           return;
         }
@@ -49,9 +52,9 @@ export class PreviewRenderer {
         return;
       }
 
-      const plantUmlButton = event.target.closest('.plantuml-placeholder-btn');
+      const plantUmlButton = event.target.closest(".plantuml-placeholder-btn");
       if (plantUmlButton) {
-        const shell = plantUmlButton.closest('.plantuml-shell');
+        const shell = plantUmlButton.closest(".plantuml-shell");
         if (!shell) {
           return;
         }
@@ -68,17 +71,19 @@ export class PreviewRenderer {
 
     this.mermaidHydrator = new MermaidPreviewHydrator(this);
     this.plantUmlHydrator = new PlantUmlPreviewHydrator(this);
-    this.renderScheduler = new PreviewRenderScheduler({ getRenderProfileFn: getRenderProfile });
+    this.renderScheduler = new PreviewRenderScheduler({
+      getRenderProfileFn: getRenderProfile,
+    });
     this.renderExecutor = new PreviewRenderExecutor({
-      attachmentApiPath: resolveApiUrl('/attachment'),
+      attachmentApiPath: resolveApiUrl("/attachment"),
       getFileList: () => this.getFileList?.() ?? [],
-      getSourceFilePath: () => this.getSourceFilePath?.() ?? '',
+      getSourceFilePath: () => this.getSourceFilePath?.() ?? "",
       idleTimeoutMs: IDLE_RENDER_TIMEOUT_MS,
     });
 
-    this.previewElement?.addEventListener('click', this.handlePreviewClick);
-    window.addEventListener('resize', this.handleWindowResize);
-    this.setPhase('ready');
+    this.previewElement?.addEventListener("click", this.handlePreviewClick);
+    window.addEventListener("resize", this.handleWindowResize);
+    this.setPhase("ready");
   }
 
   ensureRenderHost() {
@@ -86,14 +91,19 @@ export class PreviewRenderer {
       return null;
     }
 
-    if (this.renderHost?.isConnected && this.renderHost.parentElement === this.previewElement) {
+    if (
+      this.renderHost?.isConnected &&
+      this.renderHost.parentElement === this.previewElement
+    ) {
       return this.renderHost;
     }
 
-    let renderHost = this.previewElement.querySelector('[data-preview-render-host="true"]');
+    let renderHost = this.previewElement.querySelector(
+      '[data-preview-render-host="true"]',
+    );
     if (!renderHost) {
-      renderHost = document.createElement('div');
-      renderHost.dataset.previewRenderHost = 'true';
+      renderHost = document.createElement("div");
+      renderHost.dataset.previewRenderHost = "true";
       this.previewElement.appendChild(renderHost);
     }
 
@@ -107,7 +117,11 @@ export class PreviewRenderer {
     }
 
     Array.from(this.previewElement.children).forEach((child) => {
-      if (child === renderHost || child.dataset.excalidrawOverlayRoot === 'true' || child.dataset.videoOverlayRoot === 'true') {
+      if (
+        child === renderHost ||
+        child.dataset.excalidrawOverlayRoot === "true" ||
+        child.dataset.videoOverlayRoot === "true"
+      ) {
         return;
       }
 
@@ -116,9 +130,14 @@ export class PreviewRenderer {
   }
 
   getReservedPreviewHeight() {
-    const currentRenderHeight = this.renderHost?.getBoundingClientRect?.().height ?? 0;
+    const currentRenderHeight =
+      this.renderHost?.getBoundingClientRect?.().height ?? 0;
     const containerHeight = this.previewContainer?.clientHeight ?? 0;
-    return Math.max(Math.round(currentRenderHeight), Math.round(containerHeight), 320);
+    return Math.max(
+      Math.round(currentRenderHeight),
+      Math.round(containerHeight),
+      320,
+    );
   }
 
   beginDocumentLoad() {
@@ -135,7 +154,7 @@ export class PreviewRenderer {
     this.currentStats = null;
     this.isLargeDocument = false;
     if (this.renderExecutor.hasPendingJob()) {
-      this.resetWorker('Document changed');
+      this.resetWorker("Document changed");
     }
     const renderHost = this.ensureRenderHost();
     this.normalizePreviewChildren(renderHost);
@@ -144,19 +163,19 @@ export class PreviewRenderer {
       renderHost.replaceChildren();
       renderHost.style.minHeight = `${reservedHeight}px`;
     }
-    const shell = document.createElement('div');
-    shell.className = 'preview-shell';
+    const shell = document.createElement("div");
+    shell.className = "preview-shell";
     shell.style.minHeight = `${reservedHeight}px`;
-    shell.textContent = 'Rendering preview…';
+    shell.textContent = "Rendering preview…";
     renderHost?.append(shell);
-    this.setPhase('shell');
+    this.setPhase("shell");
   }
 
   applyTheme(theme) {
-    const highlightTheme = document.getElementById('hljs-theme');
+    const highlightTheme = document.getElementById("hljs-theme");
     if (highlightTheme) {
       const { darkHref, lightHref } = highlightTheme.dataset;
-      highlightTheme.href = theme === 'dark' ? darkHref : lightHref;
+      highlightTheme.href = theme === "dark" ? darkHref : lightHref;
     }
     this.mermaidHydrator.applyTheme(theme);
   }
@@ -183,7 +202,10 @@ export class PreviewRenderer {
     });
   }
 
-  async render(markdownText = this.getContent(), renderVersion = this.pendingRenderVersion) {
+  async render(
+    markdownText = this.getContent(),
+    renderVersion = this.pendingRenderVersion,
+  ) {
     if (!this.previewElement) {
       return;
     }
@@ -200,7 +222,7 @@ export class PreviewRenderer {
         return;
       }
 
-      console.warn('[preview] Failed to render preview:', error);
+      console.warn("[preview] Failed to render preview:", error);
     }
   }
 
@@ -209,8 +231,8 @@ export class PreviewRenderer {
     this.mermaidHydrator.destroy();
     this.plantUmlHydrator.destroy();
     this.renderExecutor.destroy();
-    this.previewElement?.removeEventListener('click', this.handlePreviewClick);
-    window.removeEventListener('resize', this.handleWindowResize);
+    this.previewElement?.removeEventListener("click", this.handlePreviewClick);
+    window.removeEventListener("resize", this.handleWindowResize);
   }
 
   setPhase(phase) {
@@ -283,8 +305,8 @@ export class PreviewRenderer {
 
     this.cancelMermaidHydration();
     this.cancelPlantUmlHydration();
-    document.body.classList.remove('mermaid-maximized-open');
-    document.body.classList.remove('plantuml-maximized-open');
+    document.body.classList.remove("mermaid-maximized-open");
+    document.body.classList.remove("plantuml-maximized-open");
     this.preserveHydratedMermaidsForCommit();
     this.preserveHydratedPlantUmlsForCommit();
 
@@ -296,7 +318,7 @@ export class PreviewRenderer {
     }
     this.reconcileHydratedMermaids();
     this.reconcileHydratedPlantUmls();
-    this.setPhase('base');
+    this.setPhase("base");
 
     this.outlineController.refresh();
     this.onAfterRenderCommit?.(this.previewElement, {
@@ -391,14 +413,20 @@ export class PreviewRenderer {
 
   updateHydrationPhase() {
     if (this.hydrationPaused) {
-      if (this.mermaidHydrator.hasPendingWork() || this.plantUmlHydrator.hasPendingWork()) {
-        this.setPhase('base');
+      if (
+        this.mermaidHydrator.hasPendingWork() ||
+        this.plantUmlHydrator.hasPendingWork()
+      ) {
+        this.setPhase("base");
         return;
       }
     }
 
-    if (this.mermaidHydrator.hasPendingWork() || this.plantUmlHydrator.hasPendingWork()) {
-      this.setPhase('hydrating');
+    if (
+      this.mermaidHydrator.hasPendingWork() ||
+      this.plantUmlHydrator.hasPendingWork()
+    ) {
+      this.setPhase("hydrating");
       return;
     }
 
@@ -407,10 +435,10 @@ export class PreviewRenderer {
 
   notifyReady() {
     if (this.renderHost) {
-      this.renderHost.style.minHeight = '';
+      this.renderHost.style.minHeight = "";
     }
 
-    this.setPhase('ready');
+    this.setPhase("ready");
 
     if (this.readyRenderVersion === this.activeRenderVersion) {
       return;
@@ -435,7 +463,10 @@ export class PreviewRenderer {
     return this.mermaidHydrator.fetchSource(filePath);
   }
 
-  resetPlantUmlShell(shell, { clearCache = false, message = 'Renders server-side when visible' } = {}) {
+  resetPlantUmlShell(
+    shell,
+    { clearCache = false, message = "Renders server-side when visible" } = {},
+  ) {
     this.plantUmlHydrator.resetShell(shell, { clearCache, message });
   }
 

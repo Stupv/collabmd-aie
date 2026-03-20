@@ -1,5 +1,5 @@
-import js from '@eslint/js';
-import globals from 'globals';
+import js from "@eslint/js";
+import globals from "globals";
 
 const sharedGlobals = {
   ...globals.browser,
@@ -10,27 +10,30 @@ const sharedGlobals = {
 export default [
   {
     ignores: [
-      '.codex/**',
-      'public/assets/**',
-      'docs/assets/**',
-      'node_modules/**',
-      'packaging/homebrew-tap/**',
-      'test-vault/**',
+      ".codex/**",
+      "public/assets/**",
+      "docs/assets/**",
+      "node_modules/**",
+      "packaging/homebrew-tap/**",
+      "test-vault/**",
     ],
   },
   js.configs.recommended,
   {
-    files: ['**/*.{js,mjs}'],
+    files: ["**/*.{js,mjs}"],
     languageOptions: {
-      ecmaVersion: 'latest',
+      ecmaVersion: "latest",
       globals: sharedGlobals,
-      sourceType: 'module',
+      sourceType: "module",
     },
     rules: {
-      'no-unused-vars': ['error', {
-        argsIgnorePattern: '^_',
-        caughtErrors: 'none',
-      }],
+      "no-unused-vars": [
+        "error",
+        {
+          argsIgnorePattern: "^_",
+          caughtErrors: "none",
+        },
+      ],
     },
   },
 ];

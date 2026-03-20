@@ -1,22 +1,22 @@
-import { createServer } from 'http';
+import { createServer } from "http";
 
-import { loadConfig } from './config/env.js';
-import { createAuthService } from './auth/create-auth-service.js';
-import { BacklinkIndex } from './domain/backlink-index.js';
-import { CollaborationDocumentStore } from './domain/collaboration/collaboration-document-store.js';
-import { CollaborationRoom } from './domain/collaboration/collaboration-room.js';
-import { GitService } from './infrastructure/git/git-service.js';
-import { PlantUmlRenderer } from './infrastructure/plantuml/plantuml-renderer.js';
-import { RoomRegistry } from './domain/collaboration/room-registry.js';
-import { createRequestHandler } from './infrastructure/http/create-request-handler.js';
-import { VaultFileStore } from './infrastructure/persistence/vault-file-store.js';
-import { attachCollaborationGateway } from './infrastructure/websocket/attach-collaboration-gateway.js';
-import { WORKSPACE_ROOM_NAME } from '../domain/workspace-room.js';
-import { FileSystemSyncService } from './infrastructure/workspace/file-system-sync-service.js';
-import { WorkspaceMutationCoordinator } from './infrastructure/workspace/workspace-mutation-coordinator.js';
+import { loadConfig } from "./config/env.js";
+import { createAuthService } from "./auth/create-auth-service.js";
+import { BacklinkIndex } from "./domain/backlink-index.js";
+import { CollaborationDocumentStore } from "./domain/collaboration/collaboration-document-store.js";
+import { CollaborationRoom } from "./domain/collaboration/collaboration-room.js";
+import { GitService } from "./infrastructure/git/git-service.js";
+import { PlantUmlRenderer } from "./infrastructure/plantuml/plantuml-renderer.js";
+import { RoomRegistry } from "./domain/collaboration/room-registry.js";
+import { createRequestHandler } from "./infrastructure/http/create-request-handler.js";
+import { VaultFileStore } from "./infrastructure/persistence/vault-file-store.js";
+import { attachCollaborationGateway } from "./infrastructure/websocket/attach-collaboration-gateway.js";
+import { WORKSPACE_ROOM_NAME } from "../domain/workspace-room.js";
+import { FileSystemSyncService } from "./infrastructure/workspace/file-system-sync-service.js";
+import { WorkspaceMutationCoordinator } from "./infrastructure/workspace/workspace-mutation-coordinator.js";
 
 function getDisplayHost(host) {
-  return host === '127.0.0.1' ? 'localhost' : host;
+  return host === "127.0.0.1" ? "localhost" : host;
 }
 
 function closeHttpServer(httpServer) {
@@ -30,7 +30,7 @@ function closeHttpServer(httpServer) {
       resolve();
     });
 
-    if (typeof httpServer.closeIdleConnections === 'function') {
+    if (typeof httpServer.closeIdleConnections === "function") {
       httpServer.closeIdleConnections();
     }
   });
@@ -49,16 +49,25 @@ export function createAppServer(config = loadConfig()) {
     vaultDir: config.vaultDir,
   });
   const testControls = {
-    wsRoomHydrateDelayMs: Math.max(0, Number(config.testWsRoomHydrateDelayMs || 0)),
+    wsRoomHydrateDelayMs: Math.max(
+      0,
+      Number(config.testWsRoomHydrateDelayMs || 0),
+    ),
   };
   let workspaceMutationCoordinator = null;
   const roomRegistry = new RoomRegistry({
     createRoom: ({ name, onEmpty }) => {
       const room = new CollaborationRoom({
         documentStore: new CollaborationDocumentStore({
-          backlinkIndex: name === '__lobby__' || name === WORKSPACE_ROOM_NAME ? null : backlinkIndex,
+          backlinkIndex:
+            name === "__lobby__" || name === WORKSPACE_ROOM_NAME
+              ? null
+              : backlinkIndex,
           name,
-          vaultFileStore: name === '__lobby__' || name === WORKSPACE_ROOM_NAME ? null : vaultFileStore,
+          vaultFileStore:
+            name === "__lobby__" || name === WORKSPACE_ROOM_NAME
+              ? null
+              : vaultFileStore,
         }),
         getHydrateDelayMs: () => testControls.wsRoomHydrateDelayMs,
         idleGraceMs: config.wsRoomIdleGraceMs,
@@ -67,10 +76,16 @@ export function createAppServer(config = loadConfig()) {
         onEmpty,
       });
 
-      if (name === WORKSPACE_ROOM_NAME && workspaceMutationCoordinator?.workspaceState) {
-        room.replaceWorkspaceEntries(workspaceMutationCoordinator.workspaceState.entries, {
-          generatedAt: workspaceMutationCoordinator.workspaceState.scannedAt,
-        });
+      if (
+        name === WORKSPACE_ROOM_NAME &&
+        workspaceMutationCoordinator?.workspaceState
+      ) {
+        room.replaceWorkspaceEntries(
+          workspaceMutationCoordinator.workspaceState.entries,
+          {
+            generatedAt: workspaceMutationCoordinator.workspaceState.scannedAt,
+          },
+        );
       }
 
       return room;
@@ -100,11 +115,11 @@ export function createAppServer(config = loadConfig()) {
   );
   const httpServer = createServer((req, res) => {
     requestHandler(req, res).catch((error) => {
-      console.error('[http] Unhandled request error:', error.message);
+      console.error("[http] Unhandled request error:", error.message);
       if (!res.headersSent) {
-        res.writeHead(500, { 'Content-Type': 'text/plain; charset=utf-8' });
+        res.writeHead(500, { "Content-Type": "text/plain; charset=utf-8" });
       }
-      res.end('Internal Server Error');
+      res.end("Internal Server Error");
     });
   });
   httpServer.headersTimeout = config.httpHeadersTimeoutMs;
@@ -130,15 +145,16 @@ export function createAppServer(config = loadConfig()) {
     await fileSystemSyncService.start();
 
     return new Promise((resolve, reject) => {
-      httpServer.once('error', reject);
+      httpServer.once("error", reject);
       httpServer.listen(config.port, config.host, () => {
-        httpServer.off('error', reject);
+        httpServer.off("error", reject);
         const address = httpServer.address();
         resolve({
           address,
           host: getDisplayHost(config.host),
-          port: typeof address === 'object' && address ? address.port : config.port,
-          wsPath: `${config.basePath || ''}${config.wsBasePath}/:file`,
+          port:
+            typeof address === "object" && address ? address.port : config.port,
+          wsPath: `${config.basePath || ""}${config.wsBasePath}/:file`,
         });
       });
     });
@@ -153,10 +169,7 @@ export function createAppServer(config = loadConfig()) {
       await collaborationGateway.close();
       await fileSystemSyncService.close();
       await roomRegistry.reset();
-      await Promise.all([
-        closeHttpServer(httpServer),
-        config.git?.cleanup?.(),
-      ]);
+      await Promise.all([closeHttpServer(httpServer), config.git?.cleanup?.()]);
     })().then(() => undefined);
 
     return shutdownPromise;
@@ -177,6 +190,8 @@ export function createAppServer(config = loadConfig()) {
       testControls.wsRoomHydrateDelayMs = Math.max(0, Number(delayMs) || 0);
     },
     vaultFileStore,
-    get vaultFileCount() { return vaultFileCount; },
+    get vaultFileCount() {
+      return vaultFileCount;
+    },
   };
 }

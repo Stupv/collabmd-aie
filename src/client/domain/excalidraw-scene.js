@@ -1,37 +1,39 @@
 export function normalizeUserName(value) {
-  const normalized = String(value || '').trim().replace(/\s+/g, ' ');
+  const normalized = String(value || "")
+    .trim()
+    .replace(/\s+/g, " ");
   return normalized ? normalized.slice(0, 24) : null;
 }
 
 export function createEmptyScene() {
   return {
-    type: 'excalidraw',
+    type: "excalidraw",
     version: 2,
-    source: 'collabmd',
+    source: "collabmd",
     elements: [],
     appState: {
       gridSize: null,
-      viewBackgroundColor: '#ffffff',
+      viewBackgroundColor: "#ffffff",
     },
     files: {},
   };
 }
 
 export function normalizeScene(raw) {
-  if (!raw || typeof raw !== 'object') {
+  if (!raw || typeof raw !== "object") {
     return createEmptyScene();
   }
 
   return {
-    type: 'excalidraw',
+    type: "excalidraw",
     version: 2,
-    source: 'collabmd',
+    source: "collabmd",
     elements: Array.isArray(raw.elements) ? raw.elements : [],
     appState: {
       gridSize: raw.appState?.gridSize ?? null,
-      viewBackgroundColor: raw.appState?.viewBackgroundColor ?? '#ffffff',
+      viewBackgroundColor: raw.appState?.viewBackgroundColor ?? "#ffffff",
     },
-    files: raw.files && typeof raw.files === 'object' ? raw.files : {},
+    files: raw.files && typeof raw.files === "object" ? raw.files : {},
   };
 }
 
@@ -52,12 +54,13 @@ export function tryParseSceneJson(rawJson) {
   }
 }
 
-export function sceneToInitialData(parsedScene, { theme = 'dark' } = {}) {
+export function sceneToInitialData(parsedScene, { theme = "dark" } = {}) {
   return {
     elements: parsedScene.elements || [],
     appState: {
       theme,
-      viewBackgroundColor: parsedScene.appState?.viewBackgroundColor ?? '#ffffff',
+      viewBackgroundColor:
+        parsedScene.appState?.viewBackgroundColor ?? "#ffffff",
       gridSize: parsedScene.appState?.gridSize ?? null,
     },
     files: parsedScene.files || {},
@@ -69,7 +72,7 @@ export function buildStoredScene(elements, appState, files) {
     elements: elements.filter((element) => !element.isDeleted),
     appState: {
       gridSize: appState.gridSize ?? null,
-      viewBackgroundColor: appState.viewBackgroundColor ?? '#ffffff',
+      viewBackgroundColor: appState.viewBackgroundColor ?? "#ffffff",
     },
     files: files || {},
   });
@@ -80,7 +83,7 @@ export function buildLiveCollaborationScene(elements, appState, files) {
     elements: Array.isArray(elements) ? elements : [],
     appState: {
       gridSize: appState?.gridSize ?? null,
-      viewBackgroundColor: appState?.viewBackgroundColor ?? '#ffffff',
+      viewBackgroundColor: appState?.viewBackgroundColor ?? "#ffffff",
     },
     files: files || {},
   });

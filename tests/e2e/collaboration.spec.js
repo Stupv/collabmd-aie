@@ -18,41 +18,41 @@ import {
   waitForCommentSelectionChip,
   waitForExcalidrawFrameHarness,
   waitForExcalidrawTestHarness,
-} from './helpers/app-fixture.js';
+} from "./helpers/app-fixture.js";
 
 function createSeededMultiplayerScene() {
   const timestamp = 1_710_000_000_000;
 
   return {
-    type: 'excalidraw',
+    type: "excalidraw",
     version: 2,
-    source: 'collabmd',
+    source: "collabmd",
     appState: {
       gridSize: 20,
-      viewBackgroundColor: '#ffffff',
+      viewBackgroundColor: "#ffffff",
     },
     files: {},
     elements: [
       {
-        id: 'table-shell',
-        type: 'rectangle',
+        id: "table-shell",
+        type: "rectangle",
         x: 160,
         y: 120,
         width: 420,
         height: 220,
         angle: 0,
-        strokeColor: '#1f2937',
-        backgroundColor: '#f8fafc',
-        fillStyle: 'solid',
+        strokeColor: "#1f2937",
+        backgroundColor: "#f8fafc",
+        fillStyle: "solid",
         strokeWidth: 2,
-        strokeStyle: 'solid',
+        strokeStyle: "solid",
         roundness: { type: 3 },
         roughness: 0,
         opacity: 100,
         seed: 101,
         version: 11,
         versionNonce: 1001,
-        index: 'a0',
+        index: "a0",
         isDeleted: false,
         groupIds: [],
         frameId: null,
@@ -62,29 +62,32 @@ function createSeededMultiplayerScene() {
         locked: false,
       },
       {
-        id: 'table-divider-1',
-        type: 'line',
+        id: "table-divider-1",
+        type: "line",
         x: 300,
         y: 120,
         width: 0,
         height: 220,
         angle: 0,
-        strokeColor: '#94a3b8',
-        backgroundColor: 'transparent',
-        fillStyle: 'solid',
+        strokeColor: "#94a3b8",
+        backgroundColor: "transparent",
+        fillStyle: "solid",
         strokeWidth: 2,
-        strokeStyle: 'solid',
+        strokeStyle: "solid",
         roundness: null,
         roughness: 0,
         opacity: 100,
         seed: 102,
         version: 11,
         versionNonce: 1002,
-        index: 'a1',
+        index: "a1",
         isDeleted: false,
         groupIds: [],
         frameId: null,
-        points: [[0, 0], [0, 220]],
+        points: [
+          [0, 0],
+          [0, 220],
+        ],
         lastCommittedPoint: null,
         startBinding: null,
         endBinding: null,
@@ -96,29 +99,32 @@ function createSeededMultiplayerScene() {
         locked: false,
       },
       {
-        id: 'table-divider-2',
-        type: 'line',
+        id: "table-divider-2",
+        type: "line",
         x: 440,
         y: 120,
         width: 0,
         height: 220,
         angle: 0,
-        strokeColor: '#94a3b8',
-        backgroundColor: 'transparent',
-        fillStyle: 'solid',
+        strokeColor: "#94a3b8",
+        backgroundColor: "transparent",
+        fillStyle: "solid",
         strokeWidth: 2,
-        strokeStyle: 'solid',
+        strokeStyle: "solid",
         roundness: null,
         roughness: 0,
         opacity: 100,
         seed: 103,
         version: 11,
         versionNonce: 1003,
-        index: 'a2',
+        index: "a2",
         isDeleted: false,
         groupIds: [],
         frameId: null,
-        points: [[0, 0], [0, 220]],
+        points: [
+          [0, 0],
+          [0, 220],
+        ],
         lastCommittedPoint: null,
         startBinding: null,
         endBinding: null,
@@ -130,29 +136,32 @@ function createSeededMultiplayerScene() {
         locked: false,
       },
       {
-        id: 'table-divider-3',
-        type: 'line',
+        id: "table-divider-3",
+        type: "line",
         x: 160,
         y: 193,
         width: 420,
         height: 0,
         angle: 0,
-        strokeColor: '#94a3b8',
-        backgroundColor: 'transparent',
-        fillStyle: 'solid',
+        strokeColor: "#94a3b8",
+        backgroundColor: "transparent",
+        fillStyle: "solid",
         strokeWidth: 2,
-        strokeStyle: 'solid',
+        strokeStyle: "solid",
         roundness: null,
         roughness: 0,
         opacity: 100,
         seed: 104,
         version: 11,
         versionNonce: 1004,
-        index: 'a3',
+        index: "a3",
         isDeleted: false,
         groupIds: [],
         frameId: null,
-        points: [[0, 0], [420, 0]],
+        points: [
+          [0, 0],
+          [420, 0],
+        ],
         lastCommittedPoint: null,
         startBinding: null,
         endBinding: null,
@@ -164,29 +173,32 @@ function createSeededMultiplayerScene() {
         locked: false,
       },
       {
-        id: 'table-divider-4',
-        type: 'line',
+        id: "table-divider-4",
+        type: "line",
         x: 160,
         y: 266,
         width: 420,
         height: 0,
         angle: 0,
-        strokeColor: '#94a3b8',
-        backgroundColor: 'transparent',
-        fillStyle: 'solid',
+        strokeColor: "#94a3b8",
+        backgroundColor: "transparent",
+        fillStyle: "solid",
         strokeWidth: 2,
-        strokeStyle: 'solid',
+        strokeStyle: "solid",
         roundness: null,
         roughness: 0,
         opacity: 100,
         seed: 105,
         version: 11,
         versionNonce: 1005,
-        index: 'a4',
+        index: "a4",
         isDeleted: false,
         groupIds: [],
         frameId: null,
-        points: [[0, 0], [420, 0]],
+        points: [
+          [0, 0],
+          [420, 0],
+        ],
         lastCommittedPoint: null,
         startBinding: null,
         endBinding: null,
@@ -198,25 +210,25 @@ function createSeededMultiplayerScene() {
         locked: false,
       },
       {
-        id: 'table-note',
-        type: 'text',
+        id: "table-note",
+        type: "text",
         x: 205,
         y: 145,
         width: 154.078125,
         height: 25,
         angle: 0,
-        strokeColor: '#0f172a',
-        backgroundColor: 'transparent',
-        fillStyle: 'solid',
+        strokeColor: "#0f172a",
+        backgroundColor: "transparent",
+        fillStyle: "solid",
         strokeWidth: 2,
-        strokeStyle: 'solid',
+        strokeStyle: "solid",
         roundness: null,
         roughness: 0,
         opacity: 100,
         seed: 106,
         version: 11,
         versionNonce: 1006,
-        index: 'a5',
+        index: "a5",
         isDeleted: false,
         groupIds: [],
         frameId: null,
@@ -226,34 +238,34 @@ function createSeededMultiplayerScene() {
         locked: false,
         fontSize: 20,
         fontFamily: 1,
-        text: 'Quarterly pipeline',
-        textAlign: 'left',
-        verticalAlign: 'top',
+        text: "Quarterly pipeline",
+        textAlign: "left",
+        verticalAlign: "top",
         containerId: null,
-        originalText: 'Quarterly pipeline',
+        originalText: "Quarterly pipeline",
         autoResize: true,
         lineHeight: 1.25,
       },
       {
-        id: 'status-pill',
-        type: 'ellipse',
+        id: "status-pill",
+        type: "ellipse",
         x: 640,
         y: 175,
         width: 84,
         height: 84,
         angle: 0,
-        strokeColor: '#2563eb',
-        backgroundColor: '#bfdbfe',
-        fillStyle: 'solid',
+        strokeColor: "#2563eb",
+        backgroundColor: "#bfdbfe",
+        fillStyle: "solid",
         strokeWidth: 2,
-        strokeStyle: 'solid',
+        strokeStyle: "solid",
         roundness: null,
         roughness: 0,
         opacity: 100,
         seed: 107,
         version: 11,
         versionNonce: 1007,
-        index: 'a6',
+        index: "a6",
         isDeleted: false,
         groupIds: [],
         frameId: null,
@@ -268,7 +280,7 @@ function createSeededMultiplayerScene() {
 
 async function hoverPreviewQuotedText(page, quote) {
   const rect = await page.evaluate((targetQuote) => {
-    const root = document.getElementById('previewContent');
+    const root = document.getElementById("previewContent");
     if (!root) {
       return null;
     }
@@ -276,7 +288,7 @@ async function hoverPreviewQuotedText(page, quote) {
     const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
     while (walker.nextNode()) {
       const node = walker.currentNode;
-      const text = node.textContent || '';
+      const text = node.textContent || "";
       const start = text.indexOf(targetQuote);
       if (start < 0) {
         continue;
@@ -313,22 +325,29 @@ async function seedExcalidrawMultiplayerScene(page) {
 }
 
 async function getSceneElementIds(page) {
-  return page.evaluate(() => window.__COLLABMD_EXCALIDRAW_TEST__.getElementIds());
+  return page.evaluate(() =>
+    window.__COLLABMD_EXCALIDRAW_TEST__.getElementIds(),
+  );
 }
 
 async function getSceneElementCount(page) {
-  return page.evaluate(() => window.__COLLABMD_EXCALIDRAW_TEST__.getElementCount());
+  return page.evaluate(() =>
+    window.__COLLABMD_EXCALIDRAW_TEST__.getElementCount(),
+  );
 }
 
 async function getViewportElementCenter(page, elementId) {
-  const bounds = await page.evaluate((id) => window.__COLLABMD_EXCALIDRAW_TEST__.getElementBounds(id), elementId);
+  const bounds = await page.evaluate(
+    (id) => window.__COLLABMD_EXCALIDRAW_TEST__.getElementBounds(id),
+    elementId,
+  );
   if (!bounds) {
     throw new Error(`Missing bounds for element ${elementId}`);
   }
 
   return {
-    x: bounds.centerX ?? (bounds.x + (bounds.width / 2)),
-    y: bounds.centerY ?? (bounds.y + (bounds.height / 2)),
+    x: bounds.centerX ?? bounds.x + bounds.width / 2,
+    y: bounds.centerY ?? bounds.y + bounds.height / 2,
   };
 }
 
@@ -343,89 +362,122 @@ async function readExcalidrawFile(page, filePath) {
   }, filePath);
 }
 
-test('allows explicit session takeover between tabs in the same browser context', async ({ browser }) => {
+test("allows explicit session takeover between tabs in the same browser context", async ({
+  browser,
+}) => {
   const context = await browser.newContext();
   const pageA = await context.newPage();
   const pageB = await context.newPage();
 
-  await openFile(pageA, 'README.md');
+  await openFile(pageA, "README.md");
   await seedStoredUserName(pageB);
-  await pageB.goto('/#file=README.md');
+  await pageB.goto("/#file=README.md");
 
-  await expect(pageB.locator('#tabLockOverlay')).toBeVisible();
-  await expect(pageB.locator('#tabLockTitle')).toHaveText('This vault is active in another tab');
+  await expect(pageB.locator("#tabLockOverlay")).toBeVisible();
+  await expect(pageB.locator("#tabLockTitle")).toHaveText(
+    "This vault is active in another tab",
+  );
 
-  await pageB.locator('#tabLockTakeoverBtn').click();
+  await pageB.locator("#tabLockTakeoverBtn").click();
 
-  await expect(pageB.locator('#tabLockOverlay')).toBeHidden();
-  await expect(pageB.locator('.cm-editor')).toBeVisible();
-  await expect(pageA.locator('#tabLockOverlay')).toBeVisible();
-  await expect(pageA.locator('#tabLockTitle')).toHaveText('This tab is no longer active');
+  await expect(pageB.locator("#tabLockOverlay")).toBeHidden();
+  await expect(pageB.locator(".cm-editor")).toBeVisible();
+  await expect(pageA.locator("#tabLockOverlay")).toBeVisible();
+  await expect(pageA.locator("#tabLockTitle")).toHaveText(
+    "This tab is no longer active",
+  );
 
-  await replaceEditorContent(pageB, '# Takeover Owner\n\nOnly once.\n');
+  await replaceEditorContent(pageB, "# Takeover Owner\n\nOnly once.\n");
 
   await context.close();
 
   const verifyContext = await browser.newContext();
   const verifyPage = await verifyContext.newPage();
-  await verifyPage.goto('/');
-  await expect.poll(async () => {
-    const fileData = await verifyPage.evaluate(async () => {
-      const response = await fetch('/api/file?path=README.md');
-      return response.json();
-    });
-    return fileData.content;
-  }).toBe('# Takeover Owner\n\nOnly once.\n');
+  await verifyPage.goto("/");
+  await expect
+    .poll(async () => {
+      const fileData = await verifyPage.evaluate(async () => {
+        const response = await fetch("/api/file?path=README.md");
+        return response.json();
+      });
+      return fileData.content;
+    })
+    .toBe("# Takeover Owner\n\nOnly once.\n");
 
   await verifyContext.close();
 });
 
-test('direct Excalidraw fallback does not wipe live room state from another page', async ({ browser }) => {
+test("direct Excalidraw fallback does not wipe live room state from another page", async ({
+  browser,
+}) => {
   const context = await browser.newContext();
   const pageA = await context.newPage();
   const pageB = await context.newPage();
 
-  await pageA.goto('/excalidraw-editor.html?file=sample-excalidraw.excalidraw&test=1');
+  await pageA.goto(
+    "/excalidraw-editor.html?file=sample-excalidraw.excalidraw&test=1",
+  );
   await waitForExcalidrawTestHarness(pageA);
 
   await pageA.evaluate(() => {
-    const scene = JSON.parse(window.__COLLABMD_EXCALIDRAW_TEST__.getSceneJson());
+    const scene = JSON.parse(
+      window.__COLLABMD_EXCALIDRAW_TEST__.getSceneJson(),
+    );
     scene.appState = {
       ...(scene.appState || {}),
-      viewBackgroundColor: '#123456',
+      viewBackgroundColor: "#123456",
     };
     window.__COLLABMD_EXCALIDRAW_TEST__.setScene(scene);
   });
   await pageA.waitForTimeout(150);
 
-  await pageB.goto('/excalidraw-editor.html?file=sample-excalidraw.excalidraw&test=1&syncTimeoutMs=0');
+  await pageB.goto(
+    "/excalidraw-editor.html?file=sample-excalidraw.excalidraw&test=1&syncTimeoutMs=0",
+  );
   await waitForExcalidrawTestHarness(pageB);
 
-  await expect.poll(async () => (
-    pageA.evaluate(() => JSON.parse(window.__COLLABMD_EXCALIDRAW_TEST__.getSceneJson()).appState.viewBackgroundColor)
-  )).toBe('#123456');
+  await expect
+    .poll(async () =>
+      pageA.evaluate(
+        () =>
+          JSON.parse(window.__COLLABMD_EXCALIDRAW_TEST__.getSceneJson())
+            .appState.viewBackgroundColor,
+      ),
+    )
+    .toBe("#123456");
 
   await context.close();
 });
 
-test('direct Excalidraw follow tracks remote viewport updates', async ({ browser }) => {
+test("direct Excalidraw follow tracks remote viewport updates", async ({
+  browser,
+}) => {
   const context = await browser.newContext();
   const followerPage = await context.newPage();
   const targetPage = await context.newPage();
 
-  await followerPage.goto('/excalidraw-editor.html?file=sample-excalidraw.excalidraw&test=1&userName=Follower');
-  await targetPage.goto('/excalidraw-editor.html?file=sample-excalidraw.excalidraw&test=1&userName=Target');
+  await followerPage.goto(
+    "/excalidraw-editor.html?file=sample-excalidraw.excalidraw&test=1&userName=Follower",
+  );
+  await targetPage.goto(
+    "/excalidraw-editor.html?file=sample-excalidraw.excalidraw&test=1&userName=Target",
+  );
   await waitForExcalidrawTestHarness(followerPage);
   await waitForExcalidrawTestHarness(targetPage);
 
-  const targetPeerId = await targetPage.evaluate(() => window.__COLLABMD_EXCALIDRAW_TEST__.getLocalPeerId());
+  const targetPeerId = await targetPage.evaluate(() =>
+    window.__COLLABMD_EXCALIDRAW_TEST__.getLocalPeerId(),
+  );
 
   await followerPage.evaluate((peerId) => {
-    window.postMessage({
-      source: 'collabmd-host',
-      type: 'follow-user',
-      peerId,
-    }, window.location.origin);
+    window.postMessage(
+      {
+        source: "collabmd-host",
+        type: "follow-user",
+        peerId,
+      },
+      window.location.origin,
+    );
   }, targetPeerId);
 
   await targetPage.evaluate(() => {
@@ -436,18 +488,24 @@ test('direct Excalidraw follow tracks remote viewport updates', async ({ browser
     });
   });
 
-  await expect.poll(async () => (
-    followerPage.evaluate(() => window.__COLLABMD_EXCALIDRAW_TEST__.getViewport())
-  )).toMatchObject({
-    scrollX: 640,
-    scrollY: 320,
-    zoom: 1.6,
-  });
+  await expect
+    .poll(async () =>
+      followerPage.evaluate(() =>
+        window.__COLLABMD_EXCALIDRAW_TEST__.getViewport(),
+      ),
+    )
+    .toMatchObject({
+      scrollX: 640,
+      scrollY: 320,
+      zoom: 1.6,
+    });
 
   await context.close();
 });
 
-test('taking over an Excalidraw file tab preserves the live scene', async ({ browser }) => {
+test("taking over an Excalidraw file tab preserves the live scene", async ({
+  browser,
+}) => {
   const context = await browser.newContext();
   const pageA = await context.newPage();
   const pageB = await context.newPage();
@@ -455,131 +513,215 @@ test('taking over an Excalidraw file tab preserves the live scene', async ({ bro
   await seedStoredUserName(pageA);
   await seedStoredUserName(pageB);
 
-  await pageA.goto('/?test=1#file=sample-excalidraw.excalidraw');
+  await pageA.goto("/?test=1#file=sample-excalidraw.excalidraw");
   const frameA = await waitForExcalidrawFrameHarness(pageA);
-  await expect.poll(async () => (
-    frameA.evaluate(() => window.__COLLABMD_EXCALIDRAW_TEST__.isAuthoritativeReady())
-  )).toBe(true);
+  await expect
+    .poll(async () =>
+      frameA.evaluate(() =>
+        window.__COLLABMD_EXCALIDRAW_TEST__.isAuthoritativeReady(),
+      ),
+    )
+    .toBe(true);
 
   await frameA.evaluate(() => {
-    const scene = JSON.parse(window.__COLLABMD_EXCALIDRAW_TEST__.getSceneJson());
+    const scene = JSON.parse(
+      window.__COLLABMD_EXCALIDRAW_TEST__.getSceneJson(),
+    );
     scene.appState = {
       ...(scene.appState || {}),
-      viewBackgroundColor: '#345678',
+      viewBackgroundColor: "#345678",
     };
     window.__COLLABMD_EXCALIDRAW_TEST__.setScene(scene);
   });
-  await expect.poll(async () => (
-    frameA.evaluate(() => JSON.parse(window.__COLLABMD_EXCALIDRAW_TEST__.getSceneJson()).appState.viewBackgroundColor)
-  )).toBe('#345678');
+  await expect
+    .poll(async () =>
+      frameA.evaluate(
+        () =>
+          JSON.parse(window.__COLLABMD_EXCALIDRAW_TEST__.getSceneJson())
+            .appState.viewBackgroundColor,
+      ),
+    )
+    .toBe("#345678");
 
-  await pageB.goto('/?test=1#file=sample-excalidraw.excalidraw');
-  await expect(pageB.locator('#tabLockOverlay')).toBeVisible();
-  await pageB.locator('#tabLockTakeoverBtn').click();
+  await pageB.goto("/?test=1#file=sample-excalidraw.excalidraw");
+  await expect(pageB.locator("#tabLockOverlay")).toBeVisible();
+  await pageB.locator("#tabLockTakeoverBtn").click();
 
-  await expect(pageB.locator('#tabLockOverlay')).toBeHidden();
-  await expect(pageA.locator('#tabLockOverlay')).toBeVisible();
+  await expect(pageB.locator("#tabLockOverlay")).toBeHidden();
+  await expect(pageA.locator("#tabLockOverlay")).toBeVisible();
 
   const frameB = await waitForExcalidrawFrameHarness(pageB);
-  await expect.poll(async () => (
-    frameB.evaluate(() => JSON.parse(window.__COLLABMD_EXCALIDRAW_TEST__.getSceneJson()).appState.viewBackgroundColor)
-  )).toBe('#345678');
+  await expect
+    .poll(async () =>
+      frameB.evaluate(
+        () =>
+          JSON.parse(window.__COLLABMD_EXCALIDRAW_TEST__.getSceneJson())
+            .appState.viewBackgroundColor,
+      ),
+    )
+    .toBe("#345678");
 
   await context.close();
 });
 
-test('local Excalidraw undo and redo sync the resulting scene to collaborators', async ({ browser }) => {
+test("local Excalidraw undo and redo sync the resulting scene to collaborators", async ({
+  browser,
+}) => {
   const context = await browser.newContext();
   const pageA = await context.newPage();
   const pageB = await context.newPage();
 
-  await pageA.goto('/excalidraw-editor.html?file=sample-excalidraw.excalidraw&test=1');
-  await pageB.goto('/excalidraw-editor.html?file=sample-excalidraw.excalidraw&test=1');
+  await pageA.goto(
+    "/excalidraw-editor.html?file=sample-excalidraw.excalidraw&test=1",
+  );
+  await pageB.goto(
+    "/excalidraw-editor.html?file=sample-excalidraw.excalidraw&test=1",
+  );
   await waitForExcalidrawTestHarness(pageA);
   await waitForExcalidrawTestHarness(pageB);
 
   await pageA.evaluate(() => {
-    const scene = JSON.parse(window.__COLLABMD_EXCALIDRAW_TEST__.getSceneJson());
+    const scene = JSON.parse(
+      window.__COLLABMD_EXCALIDRAW_TEST__.getSceneJson(),
+    );
     scene.appState = {
       ...(scene.appState || {}),
-      viewBackgroundColor: '#111111',
+      viewBackgroundColor: "#111111",
     };
     window.__COLLABMD_EXCALIDRAW_TEST__.setScene(scene);
   });
 
-  await expect.poll(async () => (
-    pageB.evaluate(() => JSON.parse(window.__COLLABMD_EXCALIDRAW_TEST__.getSceneJson()).appState.viewBackgroundColor)
-  )).toBe('#111111');
+  await expect
+    .poll(async () =>
+      pageB.evaluate(
+        () =>
+          JSON.parse(window.__COLLABMD_EXCALIDRAW_TEST__.getSceneJson())
+            .appState.viewBackgroundColor,
+      ),
+    )
+    .toBe("#111111");
 
   await pageA.evaluate(() => {
-    const scene = JSON.parse(window.__COLLABMD_EXCALIDRAW_TEST__.getSceneJson());
+    const scene = JSON.parse(
+      window.__COLLABMD_EXCALIDRAW_TEST__.getSceneJson(),
+    );
     scene.appState = {
       ...(scene.appState || {}),
-      viewBackgroundColor: '#222222',
+      viewBackgroundColor: "#222222",
     };
     window.__COLLABMD_EXCALIDRAW_TEST__.setScene(scene);
   });
 
-  await expect.poll(async () => (
-    pageB.evaluate(() => JSON.parse(window.__COLLABMD_EXCALIDRAW_TEST__.getSceneJson()).appState.viewBackgroundColor)
-  )).toBe('#222222');
+  await expect
+    .poll(async () =>
+      pageB.evaluate(
+        () =>
+          JSON.parse(window.__COLLABMD_EXCALIDRAW_TEST__.getSceneJson())
+            .appState.viewBackgroundColor,
+      ),
+    )
+    .toBe("#222222");
 
-  await expect.poll(async () => (
-    pageA.evaluate(() => window.__COLLABMD_EXCALIDRAW_TEST__.getHistoryState().canUndo)
-  )).toBe(true);
-  await expect.poll(async () => (
-    pageB.evaluate(() => window.__COLLABMD_EXCALIDRAW_TEST__.getHistoryState().canUndo)
-  )).toBe(false);
+  await expect
+    .poll(async () =>
+      pageA.evaluate(
+        () => window.__COLLABMD_EXCALIDRAW_TEST__.getHistoryState().canUndo,
+      ),
+    )
+    .toBe(true);
+  await expect
+    .poll(async () =>
+      pageB.evaluate(
+        () => window.__COLLABMD_EXCALIDRAW_TEST__.getHistoryState().canUndo,
+      ),
+    )
+    .toBe(false);
 
   await pageA.evaluate(() => window.__COLLABMD_EXCALIDRAW_TEST__.undoShared());
 
-  await expect.poll(async () => (
-    pageA.evaluate(() => JSON.parse(window.__COLLABMD_EXCALIDRAW_TEST__.getSceneJson()).appState.viewBackgroundColor)
-  )).toBe('#111111');
-  await expect.poll(async () => (
-    pageB.evaluate(() => JSON.parse(window.__COLLABMD_EXCALIDRAW_TEST__.getSceneJson()).appState.viewBackgroundColor)
-  )).toBe('#111111');
-  await expect.poll(async () => (
-    pageA.evaluate(() => window.__COLLABMD_EXCALIDRAW_TEST__.getHistoryState().canRedo)
-  )).toBe(true);
+  await expect
+    .poll(async () =>
+      pageA.evaluate(
+        () =>
+          JSON.parse(window.__COLLABMD_EXCALIDRAW_TEST__.getSceneJson())
+            .appState.viewBackgroundColor,
+      ),
+    )
+    .toBe("#111111");
+  await expect
+    .poll(async () =>
+      pageB.evaluate(
+        () =>
+          JSON.parse(window.__COLLABMD_EXCALIDRAW_TEST__.getSceneJson())
+            .appState.viewBackgroundColor,
+      ),
+    )
+    .toBe("#111111");
+  await expect
+    .poll(async () =>
+      pageA.evaluate(
+        () => window.__COLLABMD_EXCALIDRAW_TEST__.getHistoryState().canRedo,
+      ),
+    )
+    .toBe(true);
 
   await pageA.evaluate(() => window.__COLLABMD_EXCALIDRAW_TEST__.redoShared());
 
-  await expect.poll(async () => (
-    pageA.evaluate(() => JSON.parse(window.__COLLABMD_EXCALIDRAW_TEST__.getSceneJson()).appState.viewBackgroundColor)
-  )).toBe('#222222');
-  await expect.poll(async () => (
-    pageB.evaluate(() => JSON.parse(window.__COLLABMD_EXCALIDRAW_TEST__.getSceneJson()).appState.viewBackgroundColor)
-  )).toBe('#222222');
+  await expect
+    .poll(async () =>
+      pageA.evaluate(
+        () =>
+          JSON.parse(window.__COLLABMD_EXCALIDRAW_TEST__.getSceneJson())
+            .appState.viewBackgroundColor,
+      ),
+    )
+    .toBe("#222222");
+  await expect
+    .poll(async () =>
+      pageB.evaluate(
+        () =>
+          JSON.parse(window.__COLLABMD_EXCALIDRAW_TEST__.getSceneJson())
+            .appState.viewBackgroundColor,
+      ),
+    )
+    .toBe("#222222");
 
   await context.close();
 });
 
-test('local Excalidraw redo is dropped after local undo followed by a new local edit', async ({ browser }) => {
+test("local Excalidraw redo is dropped after local undo followed by a new local edit", async ({
+  browser,
+}) => {
   const context = await browser.newContext();
   const pageA = await context.newPage();
   const pageB = await context.newPage();
 
-  await pageA.goto('/excalidraw-editor.html?file=sample-excalidraw.excalidraw&test=1');
-  await pageB.goto('/excalidraw-editor.html?file=sample-excalidraw.excalidraw&test=1');
+  await pageA.goto(
+    "/excalidraw-editor.html?file=sample-excalidraw.excalidraw&test=1",
+  );
+  await pageB.goto(
+    "/excalidraw-editor.html?file=sample-excalidraw.excalidraw&test=1",
+  );
   await waitForExcalidrawTestHarness(pageA);
   await waitForExcalidrawTestHarness(pageB);
 
   await pageA.evaluate(() => {
     const base = {
-      appState: { gridSize: null, viewBackgroundColor: '#ffffff' },
-      elements: [{
-        id: 'shape-1',
-        isDeleted: false,
-        type: 'rectangle',
-        x: 0,
-        y: 0,
-        width: 100,
-        height: 80,
-      }],
+      appState: { gridSize: null, viewBackgroundColor: "#ffffff" },
+      elements: [
+        {
+          id: "shape-1",
+          isDeleted: false,
+          type: "rectangle",
+          x: 0,
+          y: 0,
+          width: 100,
+          height: 80,
+        },
+      ],
       files: {},
-      source: 'collabmd',
-      type: 'excalidraw',
+      source: "collabmd",
+      type: "excalidraw",
       version: 2,
     };
     window.__COLLABMD_EXCALIDRAW_TEST__.setScene(base);
@@ -589,9 +731,9 @@ test('local Excalidraw redo is dropped after local undo followed by a new local 
       elements: [
         ...base.elements,
         {
-          id: 'shape-2',
+          id: "shape-2",
           isDeleted: false,
-          type: 'ellipse',
+          type: "ellipse",
           x: 180,
           y: 0,
           width: 100,
@@ -602,24 +744,30 @@ test('local Excalidraw redo is dropped after local undo followed by a new local 
     window.__COLLABMD_EXCALIDRAW_TEST__.setScene(withSecondShape);
   });
 
-  await expect.poll(async () => (
-    pageB.evaluate(() => window.__COLLABMD_EXCALIDRAW_TEST__.getElementIds())
-  )).toEqual(['shape-1', 'shape-2']);
+  await expect
+    .poll(async () =>
+      pageB.evaluate(() => window.__COLLABMD_EXCALIDRAW_TEST__.getElementIds()),
+    )
+    .toEqual(["shape-1", "shape-2"]);
 
   await pageA.evaluate(() => window.__COLLABMD_EXCALIDRAW_TEST__.undoShared());
 
-  await expect.poll(async () => (
-    pageA.evaluate(() => window.__COLLABMD_EXCALIDRAW_TEST__.getElementIds())
-  )).toEqual(['shape-1']);
+  await expect
+    .poll(async () =>
+      pageA.evaluate(() => window.__COLLABMD_EXCALIDRAW_TEST__.getElementIds()),
+    )
+    .toEqual(["shape-1"]);
 
   await pageA.evaluate(() => {
-    const scene = JSON.parse(window.__COLLABMD_EXCALIDRAW_TEST__.getSceneJson());
+    const scene = JSON.parse(
+      window.__COLLABMD_EXCALIDRAW_TEST__.getSceneJson(),
+    );
     scene.elements = [
       ...(scene.elements || []),
       {
-        id: 'shape-3',
+        id: "shape-3",
         isDeleted: false,
-        type: 'diamond',
+        type: "diamond",
         x: 320,
         y: 0,
         width: 100,
@@ -629,398 +777,554 @@ test('local Excalidraw redo is dropped after local undo followed by a new local 
     window.__COLLABMD_EXCALIDRAW_TEST__.setScene(scene);
   });
 
-  await expect.poll(async () => (
-    pageB.evaluate(() => window.__COLLABMD_EXCALIDRAW_TEST__.getElementIds())
-  )).toEqual(['shape-1', 'shape-3']);
-  await expect.poll(async () => (
-    pageA.evaluate(() => window.__COLLABMD_EXCALIDRAW_TEST__.getHistoryState().canRedo)
-  )).toBe(false);
-  await expect.poll(async () => (
-    pageB.evaluate(() => window.__COLLABMD_EXCALIDRAW_TEST__.getHistoryState().canUndo)
-  )).toBe(false);
+  await expect
+    .poll(async () =>
+      pageB.evaluate(() => window.__COLLABMD_EXCALIDRAW_TEST__.getElementIds()),
+    )
+    .toEqual(["shape-1", "shape-3"]);
+  await expect
+    .poll(async () =>
+      pageA.evaluate(
+        () => window.__COLLABMD_EXCALIDRAW_TEST__.getHistoryState().canRedo,
+      ),
+    )
+    .toBe(false);
+  await expect
+    .poll(async () =>
+      pageB.evaluate(
+        () => window.__COLLABMD_EXCALIDRAW_TEST__.getHistoryState().canUndo,
+      ),
+    )
+    .toBe(false);
 
   await pageA.evaluate(() => window.__COLLABMD_EXCALIDRAW_TEST__.redoShared());
 
-  await expect.poll(async () => (
-    pageA.evaluate(() => window.__COLLABMD_EXCALIDRAW_TEST__.getElementIds())
-  )).toEqual(['shape-1', 'shape-3']);
+  await expect
+    .poll(async () =>
+      pageA.evaluate(() => window.__COLLABMD_EXCALIDRAW_TEST__.getElementIds()),
+    )
+    .toEqual(["shape-1", "shape-3"]);
 
   await context.close();
 });
 
-test('local Excalidraw history resets after the room fully closes', async ({ browser }) => {
+test("local Excalidraw history resets after the room fully closes", async ({
+  browser,
+}) => {
   const editContext = await browser.newContext();
   const pageA = await editContext.newPage();
   const pageB = await editContext.newPage();
 
-  await pageA.goto('/excalidraw-editor.html?file=sample-excalidraw.excalidraw&test=1');
-  await pageB.goto('/excalidraw-editor.html?file=sample-excalidraw.excalidraw&test=1');
+  await pageA.goto(
+    "/excalidraw-editor.html?file=sample-excalidraw.excalidraw&test=1",
+  );
+  await pageB.goto(
+    "/excalidraw-editor.html?file=sample-excalidraw.excalidraw&test=1",
+  );
   await waitForExcalidrawTestHarness(pageA);
   await waitForExcalidrawTestHarness(pageB);
 
   await pageA.evaluate(() => {
-    const first = JSON.parse(window.__COLLABMD_EXCALIDRAW_TEST__.getSceneJson());
+    const first = JSON.parse(
+      window.__COLLABMD_EXCALIDRAW_TEST__.getSceneJson(),
+    );
     first.appState = {
       ...(first.appState || {}),
-      viewBackgroundColor: '#111111',
+      viewBackgroundColor: "#111111",
     };
     window.__COLLABMD_EXCALIDRAW_TEST__.setScene(first);
 
-    const second = JSON.parse(window.__COLLABMD_EXCALIDRAW_TEST__.getSceneJson());
+    const second = JSON.parse(
+      window.__COLLABMD_EXCALIDRAW_TEST__.getSceneJson(),
+    );
     second.appState = {
       ...(second.appState || {}),
-      viewBackgroundColor: '#222222',
+      viewBackgroundColor: "#222222",
     };
     window.__COLLABMD_EXCALIDRAW_TEST__.setScene(second);
   });
 
-  await expect.poll(async () => (
-    pageA.evaluate(() => window.__COLLABMD_EXCALIDRAW_TEST__.getHistoryState().canUndo)
-  )).toBe(true);
-  await expect.poll(async () => (
-    pageB.evaluate(() => window.__COLLABMD_EXCALIDRAW_TEST__.getHistoryState().canUndo)
-  )).toBe(false);
+  await expect
+    .poll(async () =>
+      pageA.evaluate(
+        () => window.__COLLABMD_EXCALIDRAW_TEST__.getHistoryState().canUndo,
+      ),
+    )
+    .toBe(true);
+  await expect
+    .poll(async () =>
+      pageB.evaluate(
+        () => window.__COLLABMD_EXCALIDRAW_TEST__.getHistoryState().canUndo,
+      ),
+    )
+    .toBe(false);
 
   await editContext.close();
 
   const reopenContext = await browser.newContext();
   const pageC = await reopenContext.newPage();
 
-  await pageC.goto('/excalidraw-editor.html?file=sample-excalidraw.excalidraw&test=1');
+  await pageC.goto(
+    "/excalidraw-editor.html?file=sample-excalidraw.excalidraw&test=1",
+  );
   await waitForExcalidrawTestHarness(pageC);
 
-  await expect.poll(async () => (
-    pageC.evaluate(() => JSON.parse(window.__COLLABMD_EXCALIDRAW_TEST__.getSceneJson()).appState.viewBackgroundColor)
-  )).toBe('#222222');
-  await expect.poll(async () => (
-    pageC.evaluate(() => window.__COLLABMD_EXCALIDRAW_TEST__.getHistoryState())
-  )).toEqual({
-    canRedo: false,
-    canUndo: false,
-    head: null,
-    length: null,
-  });
+  await expect
+    .poll(async () =>
+      pageC.evaluate(
+        () =>
+          JSON.parse(window.__COLLABMD_EXCALIDRAW_TEST__.getSceneJson())
+            .appState.viewBackgroundColor,
+      ),
+    )
+    .toBe("#222222");
+  await expect
+    .poll(async () =>
+      pageC.evaluate(() =>
+        window.__COLLABMD_EXCALIDRAW_TEST__.getHistoryState(),
+      ),
+    )
+    .toEqual({
+      canRedo: false,
+      canUndo: false,
+      head: null,
+      length: null,
+    });
 
   await pageC.evaluate(() => window.__COLLABMD_EXCALIDRAW_TEST__.undoShared());
 
-  await expect.poll(async () => (
-    pageC.evaluate(() => JSON.parse(window.__COLLABMD_EXCALIDRAW_TEST__.getSceneJson()).appState.viewBackgroundColor)
-  )).toBe('#222222');
+  await expect
+    .poll(async () =>
+      pageC.evaluate(
+        () =>
+          JSON.parse(window.__COLLABMD_EXCALIDRAW_TEST__.getSceneJson())
+            .appState.viewBackgroundColor,
+      ),
+    )
+    .toBe("#222222");
 
   await reopenContext.close();
 });
 
-test('keeps multiplayer Excalidraw scenes stable while one user drags and another user edits', async ({ browser }) => {
+test("keeps multiplayer Excalidraw scenes stable while one user drags and another user edits", async ({
+  browser,
+}) => {
   const context = await browser.newContext();
   const pageA = await context.newPage();
   const pageB = await context.newPage();
   const expectedIds = [
-    'table-shell',
-    'table-divider-1',
-    'table-divider-2',
-    'table-divider-3',
-    'table-divider-4',
-    'table-note',
-    'status-pill',
+    "table-shell",
+    "table-divider-1",
+    "table-divider-2",
+    "table-divider-3",
+    "table-divider-4",
+    "table-note",
+    "status-pill",
   ].sort();
 
-  await restoreVaultFileFromTemplate(pageA, 'sample-excalidraw.excalidraw');
-  await pageA.goto('/excalidraw-editor.html?file=sample-excalidraw.excalidraw&test=1');
-  await pageB.goto('/excalidraw-editor.html?file=sample-excalidraw.excalidraw&test=1');
+  await restoreVaultFileFromTemplate(pageA, "sample-excalidraw.excalidraw");
+  await pageA.goto(
+    "/excalidraw-editor.html?file=sample-excalidraw.excalidraw&test=1",
+  );
+  await pageB.goto(
+    "/excalidraw-editor.html?file=sample-excalidraw.excalidraw&test=1",
+  );
   await waitForExcalidrawTestHarness(pageA);
   await waitForExcalidrawTestHarness(pageB);
-  await expect.poll(async () => ({
-    idsA: await getSceneElementIds(pageA),
-    idsB: await getSceneElementIds(pageB),
-  })).toEqual({
-    idsA: [],
-    idsB: [],
-  });
+  await expect
+    .poll(async () => ({
+      idsA: await getSceneElementIds(pageA),
+      idsB: await getSceneElementIds(pageB),
+    }))
+    .toEqual({
+      idsA: [],
+      idsB: [],
+    });
 
   await seedExcalidrawMultiplayerScene(pageA);
 
   await expect.poll(async () => getSceneElementIds(pageB)).toEqual(expectedIds);
-  await expect.poll(async () => getSceneElementCount(pageA)).toBe(expectedIds.length);
-  await expect.poll(async () => getSceneElementCount(pageB)).toBe(expectedIds.length);
+  await expect
+    .poll(async () => getSceneElementCount(pageA))
+    .toBe(expectedIds.length);
+  await expect
+    .poll(async () => getSceneElementCount(pageB))
+    .toBe(expectedIds.length);
 
-  const dragStart = await getViewportElementCenter(pageA, 'table-shell');
+  const dragStart = await getViewportElementCenter(pageA, "table-shell");
   await pageA.mouse.move(dragStart.x, dragStart.y);
   await pageA.mouse.down();
   await pageA.mouse.move(dragStart.x + 160, dragStart.y + 90, { steps: 8 });
 
   await pageB.evaluate(() => {
-    const scene = JSON.parse(window.__COLLABMD_EXCALIDRAW_TEST__.getSceneJson());
+    const scene = JSON.parse(
+      window.__COLLABMD_EXCALIDRAW_TEST__.getSceneJson(),
+    );
     scene.appState = {
       ...(scene.appState || {}),
-      viewBackgroundColor: '#dbeafe',
+      viewBackgroundColor: "#dbeafe",
     };
     window.__COLLABMD_EXCALIDRAW_TEST__.setScene(scene);
   });
 
-  await expect.poll(async () => ({
-    countA: await getSceneElementCount(pageA),
-    countB: await getSceneElementCount(pageB),
-    idsA: await getSceneElementIds(pageA),
-    idsB: await getSceneElementIds(pageB),
-  })).toEqual({
-    countA: expectedIds.length,
-    countB: expectedIds.length,
-    idsA: expectedIds,
-    idsB: expectedIds,
-  });
+  await expect
+    .poll(async () => ({
+      countA: await getSceneElementCount(pageA),
+      countB: await getSceneElementCount(pageB),
+      idsA: await getSceneElementIds(pageA),
+      idsB: await getSceneElementIds(pageB),
+    }))
+    .toEqual({
+      countA: expectedIds.length,
+      countB: expectedIds.length,
+      idsA: expectedIds,
+      idsB: expectedIds,
+    });
 
   await pageA.mouse.up();
 
-  await expect.poll(async () => (
-    pageB.evaluate(() => JSON.parse(window.__COLLABMD_EXCALIDRAW_TEST__.getSceneJson()).appState.viewBackgroundColor)
-  )).toBe('#dbeafe');
+  await expect
+    .poll(async () =>
+      pageB.evaluate(
+        () =>
+          JSON.parse(window.__COLLABMD_EXCALIDRAW_TEST__.getSceneJson())
+            .appState.viewBackgroundColor,
+      ),
+    )
+    .toBe("#dbeafe");
 
-  await expect.poll(async () => (
-    (await readExcalidrawFile(pageA, 'sample-excalidraw.excalidraw')).content
-  )).toContain('table-shell');
-  const persistedScene = JSON.parse((await readExcalidrawFile(pageA, 'sample-excalidraw.excalidraw')).content);
-  expect(persistedScene.elements.map((element) => element.id).sort()).toEqual(expectedIds);
+  await expect
+    .poll(
+      async () =>
+        (await readExcalidrawFile(pageA, "sample-excalidraw.excalidraw"))
+          .content,
+    )
+    .toContain("table-shell");
+  const persistedScene = JSON.parse(
+    (await readExcalidrawFile(pageA, "sample-excalidraw.excalidraw")).content,
+  );
+  expect(persistedScene.elements.map((element) => element.id).sort()).toEqual(
+    expectedIds,
+  );
 
   await context.close();
 });
 
-test('renaming in the app updates the mounted Excalidraw iframe user name', async ({ page }) => {
-  await seedStoredUserName(page, 'Before Name');
-  await page.goto('/?test=1#file=sample-excalidraw.excalidraw');
+test("renaming in the app updates the mounted Excalidraw iframe user name", async ({
+  page,
+}) => {
+  await seedStoredUserName(page, "Before Name");
+  await page.goto("/?test=1#file=sample-excalidraw.excalidraw");
 
-  const frame = await waitForExcalidrawFrameHarness(page, '#previewContent .excalidraw-embed iframe');
-  await expect.poll(async () => (
-    frame.evaluate(() => window.__COLLABMD_EXCALIDRAW_TEST__.getLocalUserName())
-  )).toBe('Before Name');
+  const frame = await waitForExcalidrawFrameHarness(
+    page,
+    "#previewContent .excalidraw-embed iframe",
+  );
+  await expect
+    .poll(async () =>
+      frame.evaluate(() =>
+        window.__COLLABMD_EXCALIDRAW_TEST__.getLocalUserName(),
+      ),
+    )
+    .toBe("Before Name");
 
-  await page.locator('#editNameBtn').click();
-  await expect(page.locator('#displayNameDialog')).toBeVisible();
-  await page.locator('#displayNameInput').fill('After Name');
-  await page.locator('#displayNameSubmit').click();
+  await page.locator("#editNameBtn").click();
+  await expect(page.locator("#displayNameDialog")).toBeVisible();
+  await page.locator("#displayNameInput").fill("After Name");
+  await page.locator("#displayNameSubmit").click();
 
-  await expect.poll(async () => (
-    frame.evaluate(() => window.__COLLABMD_EXCALIDRAW_TEST__.getLocalUserName())
-  )).toBe('After Name');
+  await expect
+    .poll(async () =>
+      frame.evaluate(() =>
+        window.__COLLABMD_EXCALIDRAW_TEST__.getLocalUserName(),
+      ),
+    )
+    .toBe("After Name");
 });
 
-test('renders comment controls for text files', async ({ page }) => {
-  await openFile(page, 'README.md');
+test("renders comment controls for text files", async ({ page }) => {
+  await openFile(page, "README.md");
 
-  await expect(page.locator('#commentSelectionBtn')).toBeVisible();
-  await expect(page.locator('#commentsToggle')).toBeVisible();
-  await expect(page.locator('.comment-selection-chip')).toBeHidden();
+  await expect(page.locator("#commentSelectionBtn")).toBeVisible();
+  await expect(page.locator("#commentsToggle")).toBeVisible();
+  await expect(page.locator(".comment-selection-chip")).toBeHidden();
 });
 
-test('reveals a stable inline chip only after selection commit', async ({ page }) => {
-  await openFile(page, 'README.md');
+test("reveals a stable inline chip only after selection commit", async ({
+  page,
+}) => {
+  await openFile(page, "README.md");
 
-  await setEditorSelection(page, 'Welcome to the test vault');
+  await setEditorSelection(page, "Welcome to the test vault");
   const chip = await waitForCommentSelectionChip(page);
   const firstBox = await chip.boundingBox();
 
-  await setEditorSelection(page, 'Welcome to the test vault. This is the top-level readme.');
+  await setEditorSelection(
+    page,
+    "Welcome to the test vault. This is the top-level readme.",
+  );
   const updatedChip = await waitForCommentSelectionChip(page);
   const secondBox = await updatedChip.boundingBox();
 
   expect(firstBox?.x).toBeTruthy();
   expect(secondBox?.x).toBeTruthy();
-  expect(Math.abs((firstBox?.x ?? 0) - (secondBox?.x ?? 0))).toBeLessThanOrEqual(1);
+  expect(
+    Math.abs((firstBox?.x ?? 0) - (secondBox?.x ?? 0)),
+  ).toBeLessThanOrEqual(1);
 
-  await setEditorSelection(page, 'Welcome to the test vault', { collapse: true });
-  await expect(page.locator('.comment-selection-chip')).toBeHidden();
+  await setEditorSelection(page, "Welcome to the test vault", {
+    collapse: true,
+  });
+  await expect(page.locator(".comment-selection-chip")).toBeHidden();
 });
 
-test('focuses the comment textbox when opening the composer', async ({ page }) => {
-  await openFile(page, 'README.md');
+test("focuses the comment textbox when opening the composer", async ({
+  page,
+}) => {
+  await openFile(page, "README.md");
 
-  await setEditorSelection(page, 'Welcome to the test vault');
+  await setEditorSelection(page, "Welcome to the test vault");
   await (await waitForCommentSelectionChip(page)).click();
-  await expect(page.locator('.comment-card')).toBeVisible();
-  await expect(page.locator('.comment-card-input')).toBeFocused();
-  await expect(page.locator('.cm-editor')).not.toHaveClass(/cm-focused/);
-  await page.keyboard.type('inline');
-  await expect(page.locator('.comment-card-input')).toHaveValue('inline');
-  await expect(page.locator('.cm-content')).not.toContainText('inline');
-  await page.locator('.comment-card').getByRole('button', { name: 'Cancel' }).click();
+  await expect(page.locator(".comment-card")).toBeVisible();
+  await expect(page.locator(".comment-card-input")).toBeFocused();
+  await expect(page.locator(".cm-editor")).not.toHaveClass(/cm-focused/);
+  await page.keyboard.type("inline");
+  await expect(page.locator(".comment-card-input")).toHaveValue("inline");
+  await expect(page.locator(".cm-content")).not.toContainText("inline");
+  await page
+    .locator(".comment-card")
+    .getByRole("button", { name: "Cancel" })
+    .click();
 
-  await setEditorSelection(page, 'Welcome to the test vault. This is the top-level readme.', { collapse: true });
-  await page.locator('#commentSelectionBtn').click();
-  await expect(page.locator('.comment-card')).toBeVisible();
-  await expect(page.locator('.comment-card-input')).toBeFocused();
-  await expect(page.locator('.cm-editor')).not.toHaveClass(/cm-focused/);
-  await page.keyboard.type('toolbar');
-  await expect(page.locator('.comment-card-input')).toHaveValue('toolbar');
-  await expect(page.locator('.cm-content')).not.toContainText('toolbar');
+  await setEditorSelection(
+    page,
+    "Welcome to the test vault. This is the top-level readme.",
+    { collapse: true },
+  );
+  await page.locator("#commentSelectionBtn").click();
+  await expect(page.locator(".comment-card")).toBeVisible();
+  await expect(page.locator(".comment-card-input")).toBeFocused();
+  await expect(page.locator(".cm-editor")).not.toHaveClass(/cm-focused/);
+  await page.keyboard.type("toolbar");
+  await expect(page.locator(".comment-card-input")).toHaveValue("toolbar");
+  await expect(page.locator(".cm-content")).not.toContainText("toolbar");
 });
 
-test('typing immediately after opening a multiline comment goes into the composer', async ({ page }) => {
-  await openFile(page, 'README.md');
+test("typing immediately after opening a multiline comment goes into the composer", async ({
+  page,
+}) => {
+  await openFile(page, "README.md");
   await replaceEditorContent(page, createLongMarkdownDocument(20));
 
-  await setEditorSelection(page, 'Line 1 for follow testing.\nLine 2 for follow testing.\nLine 3 for follow testing.');
+  await setEditorSelection(
+    page,
+    "Line 1 for follow testing.\nLine 2 for follow testing.\nLine 3 for follow testing.",
+  );
   await (await waitForCommentSelectionChip(page)).click();
-  await page.keyboard.type('multiline');
+  await page.keyboard.type("multiline");
 
-  await expect(page.locator('.comment-card')).toBeVisible();
-  await expect(page.locator('.cm-editor')).not.toHaveClass(/cm-focused/);
-  await expect(page.locator('.comment-card-input')).toHaveValue('multiline');
-  await expect(page.locator('.cm-content')).not.toContainText('multiline');
+  await expect(page.locator(".comment-card")).toBeVisible();
+  await expect(page.locator(".cm-editor")).not.toHaveClass(/cm-focused/);
+  await expect(page.locator(".comment-card-input")).toHaveValue("multiline");
+  await expect(page.locator(".cm-content")).not.toContainText("multiline");
 });
 
-test('keeps the inline chip hidden during pointer drag and hides it when scrolled out of view', async ({ page }) => {
+test("keeps the inline chip hidden during pointer drag and hides it when scrolled out of view", async ({
+  page,
+}) => {
   await restoreReadmeTestDocument(page);
-  await openFile(page, 'README.md');
-  await expect(page.locator('.cm-editor')).toContainText('Welcome to the test vault');
+  await openFile(page, "README.md");
+  await expect(page.locator(".cm-editor")).toContainText(
+    "Welcome to the test vault",
+  );
 
-  await dragEditorSelection(page, 'Welcome to the test vault');
-  await expect(page.locator('.comment-selection-chip')).toBeHidden();
+  await dragEditorSelection(page, "Welcome to the test vault");
+  await expect(page.locator(".comment-selection-chip")).toBeHidden();
 
   await page.mouse.up();
   await waitForCommentSelectionChip(page);
 
   await replaceEditorContent(page, createLongMarkdownDocument(180));
-  await setEditorSelection(page, 'Line 1 for follow testing.');
+  await setEditorSelection(page, "Line 1 for follow testing.");
   await waitForCommentSelectionChip(page);
 
-  await page.locator('.cm-scroller').evaluate((element) => {
+  await page.locator(".cm-scroller").evaluate((element) => {
     element.scrollTo({ top: element.scrollHeight });
   });
-  await expect(page.locator('.comment-selection-chip')).toBeHidden();
+  await expect(page.locator(".comment-selection-chip")).toBeHidden();
 });
 
-test('creates and syncs a line comment across collaborators', async ({ browser }) => {
+test("creates and syncs a line comment across collaborators", async ({
+  browser,
+}) => {
   const pageA = await browser.newPage();
   const pageB = await browser.newPage();
 
   await clearReadmeCollaborationSidecars();
-  await openFile(pageA, 'README.md');
-  await openFile(pageB, 'README.md');
+  await openFile(pageA, "README.md");
+  await openFile(pageB, "README.md");
   await replaceEditorContent(pageA, README_TEST_DOCUMENT);
-  await expect(pageB.locator('#previewContent')).toContainText('Welcome to the test vault');
+  await expect(pageB.locator("#previewContent")).toContainText(
+    "Welcome to the test vault",
+  );
 
   await createComment(pageA, {
-    body: 'Please tighten this intro.',
+    body: "Please tighten this intro.",
     collapseSelection: true,
-    targetText: 'Welcome to the test vault. This is the top-level readme.',
+    targetText: "Welcome to the test vault. This is the top-level readme.",
   });
 
-  await expect(pageA.locator('#commentsToggle')).toContainText('1');
-  await expect(pageB.locator('#commentsToggle')).toContainText('1');
-  await expect(pageB.locator('#previewContent .comment-preview-badge')).toHaveCount(1);
+  await expect(pageA.locator("#commentsToggle")).toContainText("1");
+  await expect(pageB.locator("#commentsToggle")).toContainText("1");
+  await expect(
+    pageB.locator("#previewContent .comment-preview-badge"),
+  ).toHaveCount(1);
 
-  await pageB.locator('#commentsToggle').click();
-  await expect(pageB.locator('#commentsDrawer')).toBeVisible();
-  await expect(pageB.locator('.comments-drawer-item')).toHaveCount(1);
-  await pageB.locator('.comments-drawer-item').first().click();
-  await expect(pageB.locator('.comment-card')).toContainText('Please tighten this intro.');
+  await pageB.locator("#commentsToggle").click();
+  await expect(pageB.locator("#commentsDrawer")).toBeVisible();
+  await expect(pageB.locator(".comments-drawer-item")).toHaveCount(1);
+  await pageB.locator(".comments-drawer-item").first().click();
+  await expect(pageB.locator(".comment-card")).toContainText(
+    "Please tighten this intro.",
+  );
 
   await pageA.close();
   await pageB.close();
 });
 
-test('renders icon-based thread markers with counts for grouped comments', async ({ page }) => {
+test("renders icon-based thread markers with counts for grouped comments", async ({
+  page,
+}) => {
   await clearReadmeCollaborationSidecars();
-  await openFile(page, 'README.md');
+  await openFile(page, "README.md");
   await replaceEditorContent(page, README_TEST_DOCUMENT);
-  await expect(page.locator('#previewContent')).toContainText('Welcome to the test vault');
+  await expect(page.locator("#previewContent")).toContainText(
+    "Welcome to the test vault",
+  );
 
   await createComment(page, {
-    body: 'First grouped comment',
+    body: "First grouped comment",
     collapseSelection: true,
-    targetText: 'Welcome to the test vault. This is the top-level readme.',
+    targetText: "Welcome to the test vault. This is the top-level readme.",
   });
   await createComment(page, {
-    body: 'Second grouped comment',
+    body: "Second grouped comment",
     collapseSelection: true,
-    targetText: 'Welcome to the test vault. This is the top-level readme.',
+    targetText: "Welcome to the test vault. This is the top-level readme.",
   });
 
-  const editorBadge = page.locator('.comment-editor-badge[data-count="2"]').first();
-  const previewBadge = page.locator('#previewContent .comment-preview-badge[aria-label="2 comment threads"]').first();
+  const editorBadge = page
+    .locator('.comment-editor-badge[data-count="2"]')
+    .first();
+  const previewBadge = page
+    .locator(
+      '#previewContent .comment-preview-badge[aria-label="2 comment threads"]',
+    )
+    .first();
 
-  await expect(editorBadge.locator('.comment-marker-icon')).toBeVisible();
-  await expect(editorBadge.locator('.comment-marker-count')).toHaveText('2');
-  await expect(previewBadge.locator('.comment-marker-icon')).toBeVisible();
-  await expect(previewBadge.locator('.comment-marker-count')).toHaveText('2');
+  await expect(editorBadge.locator(".comment-marker-icon")).toBeVisible();
+  await expect(editorBadge.locator(".comment-marker-count")).toHaveText("2");
+  await expect(previewBadge.locator(".comment-marker-icon")).toBeVisible();
+  await expect(previewBadge.locator(".comment-marker-count")).toHaveText("2");
 });
 
-test('hides editor thread markers when their anchor scrolls out of view', async ({ page }) => {
+test("hides editor thread markers when their anchor scrolls out of view", async ({
+  page,
+}) => {
   await clearReadmeCollaborationSidecars();
-  await openFile(page, 'README.md');
+  await openFile(page, "README.md");
   await replaceEditorContent(page, createLongMarkdownDocument(180));
 
   await createComment(page, {
-    body: 'Scroll-away editor anchor.',
+    body: "Scroll-away editor anchor.",
     collapseSelection: true,
-    targetText: 'Line 4 for follow testing.',
+    targetText: "Line 4 for follow testing.",
   });
 
-  const editorBadge = page.locator('.comment-editor-badge[aria-label="1 comment thread"]').first();
+  const editorBadge = page
+    .locator('.comment-editor-badge[aria-label="1 comment thread"]')
+    .first();
   await expect(editorBadge).toBeVisible();
 
-  await page.locator('.cm-scroller').evaluate((element) => {
+  await page.locator(".cm-scroller").evaluate((element) => {
     element.scrollTop = element.scrollHeight;
-    element.dispatchEvent(new Event('scroll'));
+    element.dispatchEvent(new Event("scroll"));
   });
 
   await expect(editorBadge).toHaveCount(0);
 });
 
-test('aligns preview thread markers to a fixed right rail', async ({ page }) => {
+test("aligns preview thread markers to a fixed right rail", async ({
+  page,
+}) => {
   await clearReadmeCollaborationSidecars();
-  await openFile(page, 'README.md');
+  await openFile(page, "README.md");
   await replaceEditorContent(page, README_TEST_DOCUMENT);
 
   await createComment(page, {
-    body: 'Anchor the intro in the rail.',
-    targetText: 'Welcome to the test vault',
+    body: "Anchor the intro in the rail.",
+    targetText: "Welcome to the test vault",
     useInlineChip: true,
   });
   await createComment(page, {
-    body: 'Anchor the links header in the rail.',
-    targetText: 'Links',
+    body: "Anchor the links header in the rail.",
+    targetText: "Links",
     useInlineChip: true,
   });
 
-  const badges = page.locator('#previewContent .comment-preview-badge[aria-label="1 comment thread"]');
+  const badges = page.locator(
+    '#previewContent .comment-preview-badge[aria-label="1 comment thread"]',
+  );
   await expect(badges).toHaveCount(2);
 
   const [firstBox, secondBox, contentBox] = await Promise.all([
     badges.nth(0).boundingBox(),
     badges.nth(1).boundingBox(),
-    page.locator('#previewContent').boundingBox(),
+    page.locator("#previewContent").boundingBox(),
   ]);
 
   expect(firstBox).toBeTruthy();
   expect(secondBox).toBeTruthy();
   expect(contentBox).toBeTruthy();
-  expect(Math.abs((firstBox?.x ?? 0) - (secondBox?.x ?? 0))).toBeLessThanOrEqual(2);
+  expect(
+    Math.abs((firstBox?.x ?? 0) - (secondBox?.x ?? 0)),
+  ).toBeLessThanOrEqual(2);
 
-  const firstRightInset = ((contentBox?.x ?? 0) + (contentBox?.width ?? 0)) - ((firstBox?.x ?? 0) + (firstBox?.width ?? 0));
-  const secondRightInset = ((contentBox?.x ?? 0) + (contentBox?.width ?? 0)) - ((secondBox?.x ?? 0) + (secondBox?.width ?? 0));
+  const firstRightInset =
+    (contentBox?.x ?? 0) +
+    (contentBox?.width ?? 0) -
+    ((firstBox?.x ?? 0) + (firstBox?.width ?? 0));
+  const secondRightInset =
+    (contentBox?.x ?? 0) +
+    (contentBox?.width ?? 0) -
+    ((secondBox?.x ?? 0) + (secondBox?.width ?? 0));
   expect(firstRightInset).toBeGreaterThanOrEqual(4);
   expect(firstRightInset).toBeLessThanOrEqual(24);
   expect(secondRightInset).toBeGreaterThanOrEqual(4);
   expect(secondRightInset).toBeLessThanOrEqual(24);
 });
 
-test('stacks nearby preview thread markers without overlap in the right rail', async ({ page }) => {
+test("stacks nearby preview thread markers without overlap in the right rail", async ({
+  page,
+}) => {
   await clearReadmeCollaborationSidecars();
-  await openFile(page, 'README.md');
+  await openFile(page, "README.md");
   await replaceEditorContent(page, README_TEST_DOCUMENT);
 
   await createComment(page, {
-    body: 'First sentence comment.',
-    targetText: 'Welcome to the test vault',
+    body: "First sentence comment.",
+    targetText: "Welcome to the test vault",
     useInlineChip: true,
   });
   await createComment(page, {
-    body: 'Second sentence comment.',
-    targetText: 'This is the top-level readme.',
+    body: "Second sentence comment.",
+    targetText: "This is the top-level readme.",
     useInlineChip: true,
   });
 
-  const badges = page.locator('#previewContent .comment-preview-badge[aria-label="1 comment thread"]');
+  const badges = page.locator(
+    '#previewContent .comment-preview-badge[aria-label="1 comment thread"]',
+  );
   await expect(badges).toHaveCount(2);
 
   const [firstBox, secondBox] = await Promise.all([
@@ -1030,67 +1334,106 @@ test('stacks nearby preview thread markers without overlap in the right rail', a
 
   expect(firstBox).toBeTruthy();
   expect(secondBox).toBeTruthy();
-  expect(Math.abs((firstBox?.x ?? 0) - (secondBox?.x ?? 0))).toBeLessThanOrEqual(2);
-  expect(Math.abs((firstBox?.y ?? 0) - (secondBox?.y ?? 0))).toBeGreaterThanOrEqual(24);
+  expect(
+    Math.abs((firstBox?.x ?? 0) - (secondBox?.x ?? 0)),
+  ).toBeLessThanOrEqual(2);
+  expect(
+    Math.abs((firstBox?.y ?? 0) - (secondBox?.y ?? 0)),
+  ).toBeGreaterThanOrEqual(24);
 });
 
-test('keeps reply action aligned by using an active Reply toggle state', async ({ page }) => {
+test("keeps reply action aligned by using an active Reply toggle state", async ({
+  page,
+}) => {
   await clearReadmeCollaborationSidecars();
-  await openFile(page, 'README.md');
+  await openFile(page, "README.md");
   await replaceEditorContent(page, README_TEST_DOCUMENT);
-  await expect(page.locator('#previewContent')).toContainText('Welcome to the test vault');
+  await expect(page.locator("#previewContent")).toContainText(
+    "Welcome to the test vault",
+  );
 
   await createComment(page, {
-    body: 'Please clarify this section.',
+    body: "Please clarify this section.",
     collapseSelection: true,
-    targetText: 'Welcome to the test vault. This is the top-level readme.',
+    targetText: "Welcome to the test vault. This is the top-level readme.",
   });
 
-  await page.locator('#previewContent .comment-preview-badge[aria-label="1 comment thread"]').first().click();
-  const replyButton = page.locator('.comment-thread-card-action').filter({ hasText: 'Reply' }).first();
+  await page
+    .locator(
+      '#previewContent .comment-preview-badge[aria-label="1 comment thread"]',
+    )
+    .first()
+    .click();
+  const replyButton = page
+    .locator(".comment-thread-card-action")
+    .filter({ hasText: "Reply" })
+    .first();
 
-  await expect(replyButton).toHaveText('Reply');
+  await expect(replyButton).toHaveText("Reply");
   await replyButton.click();
-  await expect(replyButton).toHaveText('Reply');
+  await expect(replyButton).toHaveText("Reply");
   await expect(replyButton).toHaveClass(/is-active/);
-  await expect(page.locator('.comment-reply-form')).toBeVisible();
+  await expect(page.locator(".comment-reply-form")).toBeVisible();
 });
 
-test('creates a selected-text comment and surfaces it in the preview bubble card', async ({ page }) => {
+test("creates a selected-text comment and surfaces it in the preview bubble card", async ({
+  page,
+}) => {
   await clearReadmeCollaborationSidecars();
-  await openFile(page, 'README.md');
+  await openFile(page, "README.md");
   await replaceEditorContent(page, README_TEST_DOCUMENT);
-  await expect(page.locator('#previewContent')).toContainText('Welcome to the test vault');
+  await expect(page.locator("#previewContent")).toContainText(
+    "Welcome to the test vault",
+  );
 
   await createComment(page, {
-    body: 'This phrase should stay visible in preview.',
-    targetText: 'Welcome to the test vault',
+    body: "This phrase should stay visible in preview.",
+    targetText: "Welcome to the test vault",
     useInlineChip: true,
   });
 
-  await expect(page.locator('#previewContent .comment-preview-highlight')).toHaveCount(1);
-  await page.locator('#previewContent .comment-preview-badge[aria-label="1 comment thread"]').first().click();
-  await expect(page.locator('.comment-card')).toContainText('Welcome to the test vault');
-  await expect(page.locator('.comment-card')).toContainText('This phrase should stay visible in preview.');
+  await expect(
+    page.locator("#previewContent .comment-preview-highlight"),
+  ).toHaveCount(1);
+  await page
+    .locator(
+      '#previewContent .comment-preview-badge[aria-label="1 comment thread"]',
+    )
+    .first()
+    .click();
+  await expect(page.locator(".comment-card")).toContainText(
+    "Welcome to the test vault",
+  );
+  await expect(page.locator(".comment-card")).toContainText(
+    "This phrase should stay visible in preview.",
+  );
 });
 
-test('promotes preview markers and highlights on hover and active thread selection', async ({ page }) => {
+test("promotes preview markers and highlights on hover and active thread selection", async ({
+  page,
+}) => {
   await clearReadmeCollaborationSidecars();
-  await openFile(page, 'README.md');
+  await openFile(page, "README.md");
   await replaceEditorContent(page, README_TEST_DOCUMENT);
 
   await createComment(page, {
-    body: 'Hover promotion check.',
-    targetText: 'Welcome to the test vault',
+    body: "Hover promotion check.",
+    targetText: "Welcome to the test vault",
     useInlineChip: true,
   });
 
-  const badge = page.locator('#previewContent .comment-preview-badge[aria-label="1 comment thread"]').first();
-  const highlight = page.locator('#previewContent .comment-preview-highlight').first();
+  const badge = page
+    .locator(
+      '#previewContent .comment-preview-badge[aria-label="1 comment thread"]',
+    )
+    .first();
+  const highlight = page
+    .locator("#previewContent .comment-preview-highlight")
+    .first();
   await expect(badge).toHaveClass(/is-passive/);
   await expect(highlight).toHaveClass(/is-passive/);
 
-  await hoverPreviewQuotedText(page, 'Welcome to the test vault');
+  await hoverPreviewQuotedText(page, "Welcome to the test vault");
   await expect(badge).toHaveClass(/is-hovered/);
   await expect(highlight).toHaveClass(/is-hovered/);
 
@@ -1099,19 +1442,27 @@ test('promotes preview markers and highlights on hover and active thread selecti
   await expect(highlight).toHaveClass(/is-active/);
 });
 
-test('uses matching passive and hover states for editor and preview markers', async ({ page }) => {
+test("uses matching passive and hover states for editor and preview markers", async ({
+  page,
+}) => {
   await clearReadmeCollaborationSidecars();
-  await openFile(page, 'README.md');
+  await openFile(page, "README.md");
   await replaceEditorContent(page, README_TEST_DOCUMENT);
 
   await createComment(page, {
-    body: 'State parity check.',
-    targetText: 'Welcome to the test vault',
+    body: "State parity check.",
+    targetText: "Welcome to the test vault",
     useInlineChip: true,
   });
 
-  const editorBadge = page.locator('.comment-editor-badge[aria-label="1 comment thread"]').first();
-  const previewBadge = page.locator('#previewContent .comment-preview-badge[aria-label="1 comment thread"]').first();
+  const editorBadge = page
+    .locator('.comment-editor-badge[aria-label="1 comment thread"]')
+    .first();
+  const previewBadge = page
+    .locator(
+      '#previewContent .comment-preview-badge[aria-label="1 comment thread"]',
+    )
+    .first();
 
   await expect(editorBadge).toHaveClass(/is-passive/);
   await expect(previewBadge).toHaveClass(/is-passive/);
@@ -1119,190 +1470,271 @@ test('uses matching passive and hover states for editor and preview markers', as
   await editorBadge.hover();
   await expect(editorBadge).toHaveClass(/is-hovered/);
 
-  await hoverPreviewQuotedText(page, 'Welcome to the test vault');
+  await hoverPreviewQuotedText(page, "Welcome to the test vault");
   await expect(previewBadge).toHaveClass(/is-hovered/);
 });
 
-test('only promotes the hovered preview marker when a paragraph has multiple comment anchors', async ({ page }) => {
+test("only promotes the hovered preview marker when a paragraph has multiple comment anchors", async ({
+  page,
+}) => {
   await clearReadmeCollaborationSidecars();
-  await openFile(page, 'README.md');
+  await openFile(page, "README.md");
   await replaceEditorContent(page, README_TEST_DOCUMENT);
 
   await createComment(page, {
-    body: 'First anchored phrase.',
-    targetText: 'Welcome',
+    body: "First anchored phrase.",
+    targetText: "Welcome",
     useInlineChip: true,
   });
   await createComment(page, {
-    body: 'Second anchored phrase.',
-    targetText: 'readme',
+    body: "Second anchored phrase.",
+    targetText: "readme",
     useInlineChip: true,
   });
 
-  const badges = page.locator('#previewContent .comment-preview-badge[aria-label="1 comment thread"]');
+  const badges = page.locator(
+    '#previewContent .comment-preview-badge[aria-label="1 comment thread"]',
+  );
   await expect(badges).toHaveCount(2);
-  await expect(page.locator('#previewContent .comment-preview-badge.is-hovered')).toHaveCount(0);
+  await expect(
+    page.locator("#previewContent .comment-preview-badge.is-hovered"),
+  ).toHaveCount(0);
 
-  await hoverPreviewQuotedText(page, 'Welcome');
+  await hoverPreviewQuotedText(page, "Welcome");
 
-  await expect(page.locator('#previewContent .comment-preview-badge.is-hovered')).toHaveCount(1);
+  await expect(
+    page.locator("#previewContent .comment-preview-badge.is-hovered"),
+  ).toHaveCount(1);
 });
 
-test('renders multiline markdown comments with fenced code blocks in the thread card', async ({ page }) => {
+test("renders multiline markdown comments with fenced code blocks in the thread card", async ({
+  page,
+}) => {
   await clearReadmeCollaborationSidecars();
-  await openFile(page, 'README.md');
+  await openFile(page, "README.md");
   await replaceEditorContent(page, README_TEST_DOCUMENT);
 
   await createComment(page, {
-    body: 'First line\nSecond line\n\n```js\nconst answer = 42;\nconsole.log(answer);\n```',
-    targetText: 'Welcome to the test vault',
+    body: "First line\nSecond line\n\n```js\nconst answer = 42;\nconsole.log(answer);\n```",
+    targetText: "Welcome to the test vault",
     useInlineChip: true,
   });
 
-  await page.locator('#previewContent .comment-preview-badge[aria-label="1 comment thread"]').first().click();
+  await page
+    .locator(
+      '#previewContent .comment-preview-badge[aria-label="1 comment thread"]',
+    )
+    .first()
+    .click();
 
-  await expect(page.locator('.comment-message-card-body')).toContainText('First line');
-  await expect(page.locator('.comment-message-card-body')).toContainText('Second line');
-  await expect(page.locator('.comment-message-card-body pre code')).toContainText('const answer = 42;');
-  await expect.poll(async () => (
-    page.locator('.comment-message-card-body pre').evaluate((element) => getComputedStyle(element).overflowX)
-  )).toBe('auto');
+  await expect(page.locator(".comment-message-card-body")).toContainText(
+    "First line",
+  );
+  await expect(page.locator(".comment-message-card-body")).toContainText(
+    "Second line",
+  );
+  await expect(
+    page.locator(".comment-message-card-body pre code"),
+  ).toContainText("const answer = 42;");
+  await expect
+    .poll(async () =>
+      page
+        .locator(".comment-message-card-body pre")
+        .evaluate((element) => getComputedStyle(element).overflowX),
+    )
+    .toBe("auto");
 });
 
-test('shows wrapped excerpts and the latest comment preview in the comments drawer', async ({ page }) => {
+test("shows wrapped excerpts and the latest comment preview in the comments drawer", async ({
+  page,
+}) => {
   await clearReadmeCollaborationSidecars();
-  await openFile(page, 'README.md');
+  await openFile(page, "README.md");
   await replaceEditorContent(page, README_TEST_DOCUMENT);
 
   await createComment(page, {
-    body: 'Initial comment',
-    targetText: 'Welcome to the test vault. This is the top-level readme.',
+    body: "Initial comment",
+    targetText: "Welcome to the test vault. This is the top-level readme.",
   });
-  await page.locator('#previewContent .comment-preview-badge[aria-label="1 comment thread"]').first().click();
-  await page.locator('.comment-thread-card-action').filter({ hasText: 'Reply' }).first().click();
-  await page.locator('.comment-card-input').last().fill('Latest reply with\n\n- bullet one\n- bullet two');
-  await page.locator('.comment-reply-form').getByRole('button', { name: 'Reply' }).click();
-  await expect(page.locator('.comment-reply-form')).toBeHidden();
+  await page
+    .locator(
+      '#previewContent .comment-preview-badge[aria-label="1 comment thread"]',
+    )
+    .first()
+    .click();
+  await page
+    .locator(".comment-thread-card-action")
+    .filter({ hasText: "Reply" })
+    .first()
+    .click();
+  await page
+    .locator(".comment-card-input")
+    .last()
+    .fill("Latest reply with\n\n- bullet one\n- bullet two");
+  await page
+    .locator(".comment-reply-form")
+    .getByRole("button", { name: "Reply" })
+    .click();
+  await expect(page.locator(".comment-reply-form")).toBeHidden();
 
-  await page.locator('#commentsToggle').click();
-  await expect(page.locator('#commentsDrawer')).toBeVisible();
-  await expect(page.locator('.comments-drawer-item-preview')).toContainText('Latest reply with');
-  await expect(page.locator('.comments-drawer-item-preview')).toContainText('bullet one');
-  await expect.poll(async () => (
-    page.locator('.comments-drawer-item-quote').evaluate((element) => getComputedStyle(element).whiteSpace)
-  )).toBe('pre-wrap');
+  await page.locator("#commentsToggle").click();
+  await expect(page.locator("#commentsDrawer")).toBeVisible();
+  await expect(page.locator(".comments-drawer-item-preview")).toContainText(
+    "Latest reply with",
+  );
+  await expect(page.locator(".comments-drawer-item-preview")).toContainText(
+    "bullet one",
+  );
+  await expect
+    .poll(async () =>
+      page
+        .locator(".comments-drawer-item-quote")
+        .evaluate((element) => getComputedStyle(element).whiteSpace),
+    )
+    .toBe("pre-wrap");
 });
 
-test('keeps the preview container width stable when comments open in preview mode', async ({ page }) => {
+test("keeps the preview container width stable when comments open in preview mode", async ({
+  page,
+}) => {
   await clearReadmeCollaborationSidecars();
-  await openFile(page, 'README.md');
+  await openFile(page, "README.md");
   await replaceEditorContent(page, README_TEST_DOCUMENT);
 
   await createComment(page, {
-    body: 'Keep this sidebar floating.',
-    targetText: 'Welcome to the test vault. This is the top-level readme.',
+    body: "Keep this sidebar floating.",
+    targetText: "Welcome to the test vault. This is the top-level readme.",
   });
-  await expect(page.locator('#commentsToggle')).toContainText('1');
+  await expect(page.locator("#commentsToggle")).toContainText("1");
 
   await page.locator('.view-btn[data-view="preview"]').click();
-  await expect(page.locator('#editorLayout')).toHaveAttribute('data-view', 'preview');
+  await expect(page.locator("#editorLayout")).toHaveAttribute(
+    "data-view",
+    "preview",
+  );
 
-  const widthBefore = await page.locator('#previewContainer').evaluate((element) => element.clientWidth);
+  const widthBefore = await page
+    .locator("#previewContainer")
+    .evaluate((element) => element.clientWidth);
 
-  await page.locator('#commentsToggle').click();
-  await expect(page.locator('#commentsDrawer')).toBeVisible();
+  await page.locator("#commentsToggle").click();
+  await expect(page.locator("#commentsDrawer")).toBeVisible();
 
-  const widthAfter = await page.locator('#previewContainer').evaluate((element) => element.clientWidth);
-
-  expect(Math.abs(widthAfter - widthBefore)).toBeLessThanOrEqual(1);
-});
-
-test('keeps the preview container width stable when comments open in split mode', async ({ page }) => {
-  await clearReadmeCollaborationSidecars();
-  await openFile(page, 'README.md');
-  await replaceEditorContent(page, README_TEST_DOCUMENT);
-
-  await createComment(page, {
-    body: 'Keep this sidebar floating in split mode.',
-    targetText: 'Welcome to the test vault. This is the top-level readme.',
-  });
-  await expect(page.locator('#commentsToggle')).toContainText('1');
-  await expect(page.locator('#editorLayout')).toHaveAttribute('data-view', 'split');
-
-  const widthBefore = await page.locator('#previewContainer').evaluate((element) => element.clientWidth);
-
-  await page.locator('#commentsToggle').click();
-  await expect(page.locator('#commentsDrawer')).toBeVisible();
-
-  const widthAfter = await page.locator('#previewContainer').evaluate((element) => element.clientWidth);
+  const widthAfter = await page
+    .locator("#previewContainer")
+    .evaluate((element) => element.clientWidth);
 
   expect(Math.abs(widthAfter - widthBefore)).toBeLessThanOrEqual(1);
 });
 
-test('shows only one preview overlay at a time', async ({ page }) => {
+test("keeps the preview container width stable when comments open in split mode", async ({
+  page,
+}) => {
   await clearReadmeCollaborationSidecars();
-  await openFile(page, 'README.md');
+  await openFile(page, "README.md");
   await replaceEditorContent(page, README_TEST_DOCUMENT);
 
   await createComment(page, {
-    body: 'Mutually exclusive overlay.',
-    targetText: 'Welcome to the test vault. This is the top-level readme.',
+    body: "Keep this sidebar floating in split mode.",
+    targetText: "Welcome to the test vault. This is the top-level readme.",
   });
+  await expect(page.locator("#commentsToggle")).toContainText("1");
+  await expect(page.locator("#editorLayout")).toHaveAttribute(
+    "data-view",
+    "split",
+  );
 
-  await page.locator('#commentsToggle').click();
-  await expect(page.locator('#commentsDrawer')).toBeVisible();
-  await expect(page.locator('#outlinePanel')).toBeHidden();
+  const widthBefore = await page
+    .locator("#previewContainer")
+    .evaluate((element) => element.clientWidth);
 
-  await page.locator('#outlineToggle').click();
-  await expect(page.locator('#outlinePanel')).toBeVisible();
-  await expect(page.locator('#commentsDrawer')).toBeHidden();
+  await page.locator("#commentsToggle").click();
+  await expect(page.locator("#commentsDrawer")).toBeVisible();
 
-  await page.locator('#commentsToggle').click();
-  await expect(page.locator('#commentsDrawer')).toBeVisible();
-  await expect(page.locator('#outlinePanel')).toBeHidden();
+  const widthAfter = await page
+    .locator("#previewContainer")
+    .evaluate((element) => element.clientWidth);
+
+  expect(Math.abs(widthAfter - widthBefore)).toBeLessThanOrEqual(1);
 });
 
-test('closes preview overlays when clicking the editor pane', async ({ page }) => {
+test("shows only one preview overlay at a time", async ({ page }) => {
   await clearReadmeCollaborationSidecars();
-  await openFile(page, 'README.md');
+  await openFile(page, "README.md");
   await replaceEditorContent(page, README_TEST_DOCUMENT);
 
   await createComment(page, {
-    body: 'Dismiss on outside click.',
-    targetText: 'Welcome to the test vault. This is the top-level readme.',
+    body: "Mutually exclusive overlay.",
+    targetText: "Welcome to the test vault. This is the top-level readme.",
   });
 
-  await page.locator('#commentsToggle').click();
-  await expect(page.locator('#commentsDrawer')).toBeVisible();
-  await page.locator('.cm-content').first().click();
-  await expect(page.locator('#commentsDrawer')).toBeHidden();
+  await page.locator("#commentsToggle").click();
+  await expect(page.locator("#commentsDrawer")).toBeVisible();
+  await expect(page.locator("#outlinePanel")).toBeHidden();
 
-  await page.locator('#outlineToggle').click();
-  await expect(page.locator('#outlinePanel')).toBeVisible();
-  await page.locator('.cm-content').first().click();
-  await expect(page.locator('#outlinePanel')).toBeHidden();
+  await page.locator("#outlineToggle").click();
+  await expect(page.locator("#outlinePanel")).toBeVisible();
+  await expect(page.locator("#commentsDrawer")).toBeHidden();
+
+  await page.locator("#commentsToggle").click();
+  await expect(page.locator("#commentsDrawer")).toBeVisible();
+  await expect(page.locator("#outlinePanel")).toBeHidden();
 });
 
-test('keeps the refreshed comment card within a narrow viewport', async ({ page }) => {
+test("closes preview overlays when clicking the editor pane", async ({
+  page,
+}) => {
+  await clearReadmeCollaborationSidecars();
+  await openFile(page, "README.md");
+  await replaceEditorContent(page, README_TEST_DOCUMENT);
+
+  await createComment(page, {
+    body: "Dismiss on outside click.",
+    targetText: "Welcome to the test vault. This is the top-level readme.",
+  });
+
+  await page.locator("#commentsToggle").click();
+  await expect(page.locator("#commentsDrawer")).toBeVisible();
+  await page.locator(".cm-content").first().click();
+  await expect(page.locator("#commentsDrawer")).toBeHidden();
+
+  await page.locator("#outlineToggle").click();
+  await expect(page.locator("#outlinePanel")).toBeVisible();
+  await page.locator(".cm-content").first().click();
+  await expect(page.locator("#outlinePanel")).toBeHidden();
+});
+
+test("keeps the refreshed comment card within a narrow viewport", async ({
+  page,
+}) => {
   await page.setViewportSize({ height: 900, width: 780 });
   await clearReadmeCollaborationSidecars();
-  await openFile(page, 'README.md');
+  await openFile(page, "README.md");
   await replaceEditorContent(page, README_TEST_DOCUMENT);
 
   await createComment(page, {
     body: '```js\nconst veryLongLine = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";\n```\n\nLine one\nLine two\nLine three\nLine four\nLine five',
-    targetText: 'Welcome to the test vault',
+    targetText: "Welcome to the test vault",
     useInlineChip: true,
   });
 
-  await hoverPreviewQuotedText(page, 'Welcome to the test vault');
-  await page.locator('#previewContent .comment-preview-badge[aria-label="1 comment thread"]').first().click();
-  await expect(page.locator('.comment-card-scroll')).toBeVisible();
-  await expect.poll(async () => (
-    page.locator('.comment-card-scroll').evaluate((element) => getComputedStyle(element).overflowY)
-  )).toBe('auto');
+  await hoverPreviewQuotedText(page, "Welcome to the test vault");
+  await page
+    .locator(
+      '#previewContent .comment-preview-badge[aria-label="1 comment thread"]',
+    )
+    .first()
+    .click();
+  await expect(page.locator(".comment-card-scroll")).toBeVisible();
+  await expect
+    .poll(async () =>
+      page
+        .locator(".comment-card-scroll")
+        .evaluate((element) => getComputedStyle(element).overflowY),
+    )
+    .toBe("auto");
 
-  const box = await page.locator('.comment-card').boundingBox();
+  const box = await page.locator(".comment-card").boundingBox();
   expect(box).toBeTruthy();
   expect((box?.x ?? 0) >= 0).toBe(true);
   expect((box?.y ?? 0) >= 0).toBe(true);
@@ -1310,175 +1742,251 @@ test('keeps the refreshed comment card within a narrow viewport', async ({ page 
   expect((box?.y ?? 0) + (box?.height ?? 0)).toBeLessThanOrEqual(900);
 });
 
-test('hides passive preview markers in narrow split layouts while keeping comments accessible', async ({ page }) => {
+test("hides passive preview markers in narrow split layouts while keeping comments accessible", async ({
+  page,
+}) => {
   await page.setViewportSize({ height: 900, width: 780 });
   await clearReadmeCollaborationSidecars();
-  await openFile(page, 'README.md');
+  await openFile(page, "README.md");
   await replaceEditorContent(page, README_TEST_DOCUMENT);
-  await expect(page.locator('#editorLayout')).toHaveAttribute('data-view', 'split');
+  await expect(page.locator("#editorLayout")).toHaveAttribute(
+    "data-view",
+    "split",
+  );
 
   await createComment(page, {
-    body: 'Narrow layout comment.',
-    targetText: 'Welcome to the test vault',
+    body: "Narrow layout comment.",
+    targetText: "Welcome to the test vault",
     useInlineChip: true,
   });
 
-  const previewBadge = page.locator('#previewContent .comment-preview-badge[aria-label="1 comment thread"]');
+  const previewBadge = page.locator(
+    '#previewContent .comment-preview-badge[aria-label="1 comment thread"]',
+  );
   await expect(previewBadge).toHaveCount(0);
 
-  await hoverPreviewQuotedText(page, 'Welcome to the test vault');
+  await hoverPreviewQuotedText(page, "Welcome to the test vault");
   await expect(previewBadge).toHaveCount(1);
 
-  await page.locator('#commentsToggle').click();
-  await expect(page.locator('#commentsDrawer')).toBeVisible();
-  await expect(page.locator('.comments-drawer-item')).toHaveCount(1);
+  await page.locator("#commentsToggle").click();
+  await expect(page.locator("#commentsDrawer")).toBeVisible();
+  await expect(page.locator(".comments-drawer-item")).toHaveCount(1);
 });
 
-test('toggles a preset emoji reaction on a comment message', async ({ page }) => {
+test("toggles a preset emoji reaction on a comment message", async ({
+  page,
+}) => {
   await clearReadmeCollaborationSidecars();
-  await openFile(page, 'README.md');
+  await openFile(page, "README.md");
   await replaceEditorContent(page, README_TEST_DOCUMENT);
 
   await createComment(page, {
-    body: 'Reaction ready',
-    targetText: 'Welcome to the test vault',
+    body: "Reaction ready",
+    targetText: "Welcome to the test vault",
     useInlineChip: true,
   });
 
-  await page.locator('#previewContent .comment-preview-badge[aria-label="1 comment thread"]').first().click();
-  await page.locator('.comment-reaction-quick-add').filter({ hasText: '👍' }).first().click();
+  await page
+    .locator(
+      '#previewContent .comment-preview-badge[aria-label="1 comment thread"]',
+    )
+    .first()
+    .click();
+  await page
+    .locator(".comment-reaction-quick-add")
+    .filter({ hasText: "👍" })
+    .first()
+    .click();
 
-  const chip = page.locator('.comment-reaction-chip').filter({ hasText: '👍' }).first();
-  await expect(chip).toContainText('1');
+  const chip = page
+    .locator(".comment-reaction-chip")
+    .filter({ hasText: "👍" })
+    .first();
+  await expect(chip).toContainText("1");
   await expect(chip).toHaveClass(/is-active/);
-  await expect(page.locator('.comment-reaction-quick-add').filter({ hasText: '👍' })).toHaveCount(0);
+  await expect(
+    page.locator(".comment-reaction-quick-add").filter({ hasText: "👍" }),
+  ).toHaveCount(0);
 
   await chip.click();
-  await expect(page.locator('.comment-reaction-chip').filter({ hasText: '👍' })).toHaveCount(0);
+  await expect(
+    page.locator(".comment-reaction-chip").filter({ hasText: "👍" }),
+  ).toHaveCount(0);
 });
 
-test('supports reacting to reply messages through the extended reaction picker', async ({ page }) => {
+test("supports reacting to reply messages through the extended reaction picker", async ({
+  page,
+}) => {
   await clearReadmeCollaborationSidecars();
-  await openFile(page, 'README.md');
+  await openFile(page, "README.md");
   await replaceEditorContent(page, README_TEST_DOCUMENT);
 
   await createComment(page, {
-    body: 'Initial comment',
-    targetText: 'Welcome to the test vault',
+    body: "Initial comment",
+    targetText: "Welcome to the test vault",
     useInlineChip: true,
   });
 
-  await page.locator('#previewContent .comment-preview-badge[aria-label="1 comment thread"]').first().click();
-  await page.locator('.comment-thread-card-action').filter({ hasText: 'Reply' }).first().click();
-  await page.locator('.comment-card-input').last().fill('Reply with reaction');
-  await page.locator('.comment-reply-form').getByRole('button', { name: 'Reply' }).click();
-  await expect(page.locator('.comment-reply-form')).toBeHidden();
+  await page
+    .locator(
+      '#previewContent .comment-preview-badge[aria-label="1 comment thread"]',
+    )
+    .first()
+    .click();
+  await page
+    .locator(".comment-thread-card-action")
+    .filter({ hasText: "Reply" })
+    .first()
+    .click();
+  await page.locator(".comment-card-input").last().fill("Reply with reaction");
+  await page
+    .locator(".comment-reply-form")
+    .getByRole("button", { name: "Reply" })
+    .click();
+  await expect(page.locator(".comment-reply-form")).toBeHidden();
 
-  const replyCard = page.locator('.comment-message-card').last();
-  await replyCard.locator('.comment-reaction-more-trigger').click();
-  await expect(replyCard.locator('.comment-reaction-picker')).toBeVisible();
-  await replyCard.locator('.comment-reaction-picker-btn').filter({ hasText: '💡' }).click();
+  const replyCard = page.locator(".comment-message-card").last();
+  await replyCard.locator(".comment-reaction-more-trigger").click();
+  await expect(replyCard.locator(".comment-reaction-picker")).toBeVisible();
+  await replyCard
+    .locator(".comment-reaction-picker-btn")
+    .filter({ hasText: "💡" })
+    .click();
 
-  const chip = replyCard.locator('.comment-reaction-chip').filter({ hasText: '💡' });
-  await expect(chip).toContainText('1');
+  const chip = replyCard
+    .locator(".comment-reaction-chip")
+    .filter({ hasText: "💡" });
+  await expect(chip).toContainText("1");
   await expect(chip).toHaveClass(/is-active/);
 });
 
-test('syncs reaction counts across collaborators while keeping active state local', async ({ browser }) => {
+test("syncs reaction counts across collaborators while keeping active state local", async ({
+  browser,
+}) => {
   const contextA = await browser.newContext();
   const contextB = await browser.newContext();
   const pageA = await contextA.newPage();
   const pageB = await contextB.newPage();
 
   await clearReadmeCollaborationSidecars();
-  await openFile(pageA, 'README.md', { userName: 'Andes A' });
-  await openFile(pageB, 'README.md', { userName: 'Andes B' });
+  await openFile(pageA, "README.md", { userName: "Andes A" });
+  await openFile(pageB, "README.md", { userName: "Andes B" });
   await replaceEditorContent(pageA, README_TEST_DOCUMENT);
-  await expect(pageB.locator('#previewContent')).toContainText('Welcome to the test vault');
+  await expect(pageB.locator("#previewContent")).toContainText(
+    "Welcome to the test vault",
+  );
 
   await createComment(pageA, {
-    body: 'Sync reaction',
-    targetText: 'Welcome to the test vault',
+    body: "Sync reaction",
+    targetText: "Welcome to the test vault",
     useInlineChip: true,
   });
 
   const openThread = async (targetPage) => {
-    await targetPage.locator('#previewContent .comment-preview-badge[aria-label="1 comment thread"]').first().click();
-    await expect(targetPage.locator('.comment-card')).toBeVisible();
+    await targetPage
+      .locator(
+        '#previewContent .comment-preview-badge[aria-label="1 comment thread"]',
+      )
+      .first()
+      .click();
+    await expect(targetPage.locator(".comment-card")).toBeVisible();
   };
 
   await openThread(pageA);
-  await pageA.locator('.comment-reaction-quick-add').filter({ hasText: '👍' }).first().click();
+  await pageA
+    .locator(".comment-reaction-quick-add")
+    .filter({ hasText: "👍" })
+    .first()
+    .click();
 
   await openThread(pageB);
-  const pageBChip = pageB.locator('.comment-reaction-chip').filter({ hasText: '👍' }).first();
-  await expect(pageBChip).toContainText('1');
+  const pageBChip = pageB
+    .locator(".comment-reaction-chip")
+    .filter({ hasText: "👍" })
+    .first();
+  await expect(pageBChip).toContainText("1");
   await expect(pageBChip).not.toHaveClass(/is-active/);
 
   await pageBChip.click();
-  await expect(pageBChip).toContainText('2');
+  await expect(pageBChip).toContainText("2");
   await expect(pageBChip).toHaveClass(/is-active/);
-  await expect(pageA.locator('.comment-reaction-chip').filter({ hasText: '👍' }).first()).toContainText('2');
+  await expect(
+    pageA.locator(".comment-reaction-chip").filter({ hasText: "👍" }).first(),
+  ).toContainText("2");
 
   await contextA.close();
   await contextB.close();
 });
 
-test('supports comments for Mermaid and PlantUML files', async ({ page }) => {
-  await stubPlantUmlRender(page, 'commentable-plantuml');
+test("supports comments for Mermaid and PlantUML files", async ({ page }) => {
+  await stubPlantUmlRender(page, "commentable-plantuml");
 
-  await openFile(page, 'sample-mermaid.mmd');
-  await expect(page.locator('#commentSelectionBtn')).toBeVisible();
+  await openFile(page, "sample-mermaid.mmd");
+  await expect(page.locator("#commentSelectionBtn")).toBeVisible();
   await createComment(page, {
-    body: 'Mermaid source comment',
+    body: "Mermaid source comment",
     collapseSelection: true,
-    targetText: 'flowchart TD',
+    targetText: "flowchart TD",
   });
-  await expect(page.locator('#previewContent .comment-preview-badge')).toHaveCount(1);
+  await expect(
+    page.locator("#previewContent .comment-preview-badge"),
+  ).toHaveCount(1);
 
-  await openFile(page, 'sample-plantuml.puml');
-  await expect(page.locator('#commentSelectionBtn')).toBeVisible();
+  await openFile(page, "sample-plantuml.puml");
+  await expect(page.locator("#commentSelectionBtn")).toBeVisible();
   await createComment(page, {
-    body: 'PlantUML source comment',
+    body: "PlantUML source comment",
     collapseSelection: true,
-    targetText: '@startuml',
+    targetText: "@startuml",
   });
-  await expect(page.locator('#previewContent .comment-preview-badge')).toHaveCount(1);
+  await expect(
+    page.locator("#previewContent .comment-preview-badge"),
+  ).toHaveCount(1);
 });
 
-test('does not render comment UI controls for Excalidraw', async ({ page }) => {
-  await page.goto('/?test=1#file=sample-excalidraw.excalidraw');
+test("does not render comment UI controls for Excalidraw", async ({ page }) => {
+  await page.goto("/?test=1#file=sample-excalidraw.excalidraw");
 
-  await expect(page.locator('#commentSelectionBtn')).toBeHidden();
-  await expect(page.locator('#commentsToggle')).toBeHidden();
+  await expect(page.locator("#commentSelectionBtn")).toBeHidden();
+  await expect(page.locator("#commentsToggle")).toBeHidden();
 });
 
-test('syncs collaborative edits across two users on the same file', async ({ browser }) => {
+test("syncs collaborative edits across two users on the same file", async ({
+  browser,
+}) => {
   const pageA = await browser.newPage();
   const pageB = await browser.newPage();
 
   await clearReadmeCollaborationSidecars();
-  await openFile(pageA, 'README.md');
-  await openFile(pageB, 'README.md');
+  await openFile(pageA, "README.md");
+  await openFile(pageB, "README.md");
   await replaceEditorContent(pageA, README_TEST_DOCUMENT);
-  await expect(pageB.locator('#previewContent')).toContainText('Welcome to the test vault');
+  await expect(pageB.locator("#previewContent")).toContainText(
+    "Welcome to the test vault",
+  );
 
-  await expect(pageA.locator('#userCount')).toHaveText('2 online');
+  await expect(pageA.locator("#userCount")).toHaveText("2 online");
 
-  await pageA.locator('.cm-content').first().click();
-  await pageA.keyboard.press('Control+End');
-  await pageA.keyboard.press('Enter');
-  await pageA.keyboard.press('Enter');
-  await pageA.keyboard.type('# Shared Draft\n\nUpdated from browser A.', { delay: 5 });
+  await pageA.locator(".cm-content").first().click();
+  await pageA.keyboard.press("Control+End");
+  await pageA.keyboard.press("Enter");
+  await pageA.keyboard.press("Enter");
+  await pageA.keyboard.type("# Shared Draft\n\nUpdated from browser A.", {
+    delay: 5,
+  });
 
-  await expect(pageB.locator('#previewContent')).toContainText('Shared Draft');
-  await expect(pageB.locator('#previewContent')).toContainText('Updated from browser A.');
+  await expect(pageB.locator("#previewContent")).toContainText("Shared Draft");
+  await expect(pageB.locator("#previewContent")).toContainText(
+    "Updated from browser A.",
+  );
 
   await pageA.close();
   await pageB.close();
 });
 
-test('shows a foreground toast and stronger unread state for visible remote chat messages', async ({ browser }) => {
+test("shows a foreground toast and stronger unread state for visible remote chat messages", async ({
+  browser,
+}) => {
   const pageA = await browser.newPage();
   const pageB = await browser.newPage();
 
@@ -1486,10 +1994,10 @@ test('shows a foreground toast and stronger unread state for visible remote chat
     window.__testNotifications = [];
 
     class TestNotification {
-      static permission = 'granted';
+      static permission = "granted";
 
       static async requestPermission() {
-        return 'granted';
+        return "granted";
       }
 
       constructor(title, options = {}) {
@@ -1498,51 +2006,58 @@ test('shows a foreground toast and stronger unread state for visible remote chat
         window.__testNotifications.push({ title, ...options });
       }
 
-      addEventListener() { }
+      addEventListener() {}
 
-      close() { }
+      close() {}
     }
 
-    Object.defineProperty(window, 'Notification', {
+    Object.defineProperty(window, "Notification", {
       configurable: true,
       writable: true,
       value: TestNotification,
     });
   });
 
-  await openFile(pageA, 'README.md', { userName: 'Sender' });
-  await openFile(pageB, 'README.md', { userName: 'Receiver' });
+  await openFile(pageA, "README.md", { userName: "Sender" });
+  await openFile(pageB, "README.md", { userName: "Receiver" });
 
   await openChat(pageB);
-  await pageB.locator('#chatNotificationBtn').click();
-  await expect(pageB.locator('#chatNotificationBtn')).toHaveText('Alerts on');
-  await pageB.locator('#chatToggleBtn').click();
+  await pageB.locator("#chatNotificationBtn").click();
+  await expect(pageB.locator("#chatNotificationBtn")).toHaveText("Alerts on");
+  await pageB.locator("#chatToggleBtn").click();
 
-  await sendChatMessage(pageA, 'Quick sync: reviewing README right now.');
+  await sendChatMessage(pageA, "Quick sync: reviewing README right now.");
 
-  const chatToast = pageB.locator('#chatToastContainer .toast').filter({
-    hasText: 'Sender: Quick sync: reviewing README right now.',
-  }).first();
+  const chatToast = pageB
+    .locator("#chatToastContainer .toast")
+    .filter({
+      hasText: "Sender: Quick sync: reviewing README right now.",
+    })
+    .first();
   await expect(chatToast).toBeVisible();
   await expect(chatToast).toContainText(
-    'Sender: Quick sync: reviewing README right now.',
+    "Sender: Quick sync: reviewing README right now.",
   );
-  await expect(pageB.locator('#chatToggleBadge')).toHaveText('1');
-  await expect(pageB.locator('#chatToggleBtn')).toHaveClass(/is-unread/);
-  await expect.poll(async () => (
-    pageB.evaluate(() => window.__testNotifications.length)
-  )).toBe(0);
+  await expect(pageB.locator("#chatToggleBadge")).toHaveText("1");
+  await expect(pageB.locator("#chatToggleBtn")).toHaveClass(/is-unread/);
+  await expect
+    .poll(async () => pageB.evaluate(() => window.__testNotifications.length))
+    .toBe(0);
 
   await openChat(pageB);
-  await expect(pageB.locator('#chatMessages')).toContainText('Quick sync: reviewing README right now.');
-  await expect(pageB.locator('#chatToggleBadge')).toBeHidden();
-  await expect(pageB.locator('#chatToggleBtn')).not.toHaveClass(/is-unread/);
+  await expect(pageB.locator("#chatMessages")).toContainText(
+    "Quick sync: reviewing README right now.",
+  );
+  await expect(pageB.locator("#chatToggleBadge")).toBeHidden();
+  await expect(pageB.locator("#chatToggleBtn")).not.toHaveClass(/is-unread/);
 
   await pageA.close();
   await pageB.close();
 });
 
-test('shows a browser notification for a background chat message when alerts are enabled', async ({ browser }) => {
+test("shows a browser notification for a background chat message when alerts are enabled", async ({
+  browser,
+}) => {
   const pageA = await browser.newPage();
   const pageB = await browser.newPage();
 
@@ -1550,10 +2065,10 @@ test('shows a browser notification for a background chat message when alerts are
     window.__testNotifications = [];
 
     class TestNotification {
-      static permission = 'granted';
+      static permission = "granted";
 
       static async requestPermission() {
-        return 'granted';
+        return "granted";
       }
 
       constructor(title, options = {}) {
@@ -1562,88 +2077,110 @@ test('shows a browser notification for a background chat message when alerts are
         window.__testNotifications.push({ title, ...options });
       }
 
-      addEventListener() { }
+      addEventListener() {}
 
-      close() { }
+      close() {}
     }
 
-    Object.defineProperty(window, 'Notification', {
+    Object.defineProperty(window, "Notification", {
       configurable: true,
       writable: true,
       value: TestNotification,
     });
   });
 
-  await openFile(pageA, 'README.md');
-  await openFile(pageB, 'README.md');
+  await openFile(pageA, "README.md");
+  await openFile(pageB, "README.md");
 
   await openChat(pageB);
-  await pageB.locator('#chatNotificationBtn').click();
-  await expect(pageB.locator('#chatNotificationBtn')).toHaveText('Alerts on');
-  await pageB.locator('#chatToggleBtn').click();
+  await pageB.locator("#chatNotificationBtn").click();
+  await expect(pageB.locator("#chatNotificationBtn")).toHaveText("Alerts on");
+  await pageB.locator("#chatToggleBtn").click();
 
   await pageB.evaluate(() => {
-    Object.defineProperty(document, 'hidden', {
+    Object.defineProperty(document, "hidden", {
       configurable: true,
       get: () => true,
     });
-    Object.defineProperty(document, 'visibilityState', {
+    Object.defineProperty(document, "visibilityState", {
       configurable: true,
-      get: () => 'hidden',
+      get: () => "hidden",
     });
   });
 
-  await sendChatMessage(pageA, 'Background ping from README.');
+  await sendChatMessage(pageA, "Background ping from README.");
 
-  await expect.poll(async () => (
-    pageB.evaluate(() => window.__testNotifications.length)
-  )).toBe(1);
+  await expect
+    .poll(async () => pageB.evaluate(() => window.__testNotifications.length))
+    .toBe(1);
 
-  const notification = await pageB.evaluate(() => window.__testNotifications[0]);
-  expect(notification.title).toContain('CollabMD chat');
-  expect(notification.body).toBe('README: Background ping from README.');
+  const notification = await pageB.evaluate(
+    () => window.__testNotifications[0],
+  );
+  expect(notification.title).toContain("CollabMD chat");
+  expect(notification.body).toBe("README: Background ping from README.");
 
   await pageA.close();
   await pageB.close();
 });
 
-test('follows another user to their current cursor position', async ({ browser }) => {
+test("follows another user to their current cursor position", async ({
+  browser,
+}) => {
   const followerPage = await browser.newPage();
   const targetPage = await browser.newPage();
 
-  await openFile(followerPage, 'README.md');
-  await openFile(targetPage, 'README.md');
+  await openFile(followerPage, "README.md");
+  await openFile(targetPage, "README.md");
 
-  await expect(followerPage.locator('#userCount')).toHaveText('2 online');
+  await expect(followerPage.locator("#userCount")).toHaveText("2 online");
 
   await replaceEditorContent(targetPage, createLongMarkdownDocument());
-  await expect(followerPage.locator('#previewContent')).toContainText('Line 80 for follow testing.');
+  await expect(followerPage.locator("#previewContent")).toContainText(
+    "Line 80 for follow testing.",
+  );
 
-  const initialScrollTop = await followerPage.locator('.cm-scroller').evaluate((element) => element.scrollTop);
-  await followerPage.locator('#userAvatars .user-avatar-button').first().click();
+  const initialScrollTop = await followerPage
+    .locator(".cm-scroller")
+    .evaluate((element) => element.scrollTop);
+  await followerPage
+    .locator("#userAvatars .user-avatar-button")
+    .first()
+    .click();
 
-  await expect.poll(async () => (
-    followerPage.locator('.cm-scroller').evaluate((element) => element.scrollTop)
-  )).toBeGreaterThan(initialScrollTop + 150);
+  await expect
+    .poll(async () =>
+      followerPage
+        .locator(".cm-scroller")
+        .evaluate((element) => element.scrollTop),
+    )
+    .toBeGreaterThan(initialScrollTop + 150);
 
   await followerPage.close();
   await targetPage.close();
 });
 
-test('pins and labels the current user in the header avatar list', async ({ browser }) => {
+test("pins and labels the current user in the header avatar list", async ({
+  browser,
+}) => {
   const localPage = await browser.newPage();
   const remotePage = await browser.newPage();
 
-  await openFile(localPage, 'README.md', { userName: 'Owner' });
-  await openFile(remotePage, 'README.md', { userName: 'Teammate' });
+  await openFile(localPage, "README.md", { userName: "Owner" });
+  await openFile(remotePage, "README.md", { userName: "Teammate" });
 
-  await expect(localPage.locator('#userCount')).toHaveText('2 online');
+  await expect(localPage.locator("#userCount")).toHaveText("2 online");
 
-  const localAvatar = localPage.locator('#userAvatars > .user-avatar').first();
+  const localAvatar = localPage.locator("#userAvatars > .user-avatar").first();
   await expect(localAvatar).toHaveClass(/is-local/);
-  await expect(localAvatar).toContainText('You');
-  await expect(localAvatar).toHaveAttribute('aria-label', /Owner \(you\) — README/);
-  await expect(localPage.locator('#userAvatars .user-avatar-button')).toHaveCount(1);
+  await expect(localAvatar).toContainText("You");
+  await expect(localAvatar).toHaveAttribute(
+    "aria-label",
+    /Owner \(you\) — README/,
+  );
+  await expect(
+    localPage.locator("#userAvatars .user-avatar-button"),
+  ).toHaveCount(1);
 
   await localPage.close();
   await remotePage.close();

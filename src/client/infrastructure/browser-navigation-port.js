@@ -2,7 +2,7 @@ import {
   getHashRoute,
   navigateToFile,
   navigateToGitDiff,
-} from './runtime-config.js';
+} from "./runtime-config.js";
 
 export class BrowserNavigationPort {
   getHashRoute() {

@@ -1,8 +1,8 @@
-import * as Y from 'yjs';
+import * as Y from "yjs";
 
-import { CommentThreadStore } from './comment-thread-store.js';
-import { EditorCollaborationClient } from './editor-collaboration-client.js';
-import { EditorViewAdapter } from './editor-view-adapter.js';
+import { CommentThreadStore } from "./comment-thread-store.js";
+import { EditorCollaborationClient } from "./editor-collaboration-client.js";
+import { EditorViewAdapter } from "./editor-view-adapter.js";
 
 export class EditorSession {
   constructor({
@@ -24,7 +24,7 @@ export class EditorSession {
     this.onCommentsChange = onCommentsChange;
     this.onContentChange = onContentChange;
     this.onSelectionChange = onSelectionChange;
-    this.activeFilePath = '';
+    this.activeFilePath = "";
     this.bootstrapContent = null;
     this.pendingCollaborativeBindings = null;
     this.hasDeliveredContent = false;
@@ -67,7 +67,8 @@ export class EditorSession {
     this.activeFilePath = filePath;
     this.hasDeliveredContent = false;
     this.lastDeliveredContent = null;
-    const collaborationBindings = await this.collaborationClient.initialize(filePath);
+    const collaborationBindings =
+      await this.collaborationClient.initialize(filePath);
     this.commentThreadStore.bind({
       commentThreads: collaborationBindings.commentThreads,
       ydoc: collaborationBindings.ydoc,
@@ -79,7 +80,11 @@ export class EditorSession {
       this.activateCollaborativeView();
     }
 
-    this.onAwarenessChange?.(this.collaborationClient.collectUsers((cursor) => this.resolveAwarenessCursor(cursor)));
+    this.onAwarenessChange?.(
+      this.collaborationClient.collectUsers((cursor) =>
+        this.resolveAwarenessCursor(cursor),
+      ),
+    );
   }
 
   activateCollaborativeView() {
@@ -98,13 +103,13 @@ export class EditorSession {
     return true;
   }
 
-  showBootstrapContent({ content = '', filePath = this.activeFilePath } = {}) {
+  showBootstrapContent({ content = "", filePath = this.activeFilePath } = {}) {
     if (this.collaborationClient.initialSyncComplete) {
       return false;
     }
 
     this.activeFilePath = filePath;
-    this.bootstrapContent = String(content ?? '');
+    this.bootstrapContent = String(content ?? "");
     this.viewAdapter.initializeProvisional({
       content: this.bootstrapContent,
       filePath: this.activeFilePath,
@@ -118,7 +123,11 @@ export class EditorSession {
 
   emitContentChange({ force = false } = {}) {
     const nextContent = this.getText();
-    if (!force && this.hasDeliveredContent && nextContent === this.lastDeliveredContent) {
+    if (
+      !force &&
+      this.hasDeliveredContent &&
+      nextContent === this.lastDeliveredContent
+    ) {
       return false;
     }
 
@@ -197,7 +206,11 @@ export class EditorSession {
   }
 
   toggleCommentReaction(threadId, messageId, emoji) {
-    return this.commentThreadStore.toggleCommentReaction(threadId, messageId, emoji);
+    return this.commentThreadStore.toggleCommentReaction(
+      threadId,
+      messageId,
+      emoji,
+    );
   }
 
   deleteCommentThread(threadId) {
@@ -217,9 +230,8 @@ export class EditorSession {
   }
 
   getUserCursor(clientId) {
-    return this.collaborationClient.getUserCursor(
-      clientId,
-      (cursor) => this.resolveAwarenessCursor(cursor),
+    return this.collaborationClient.getUserCursor(clientId, (cursor) =>
+      this.resolveAwarenessCursor(cursor),
     );
   }
 
@@ -227,7 +239,7 @@ export class EditorSession {
     return this.collaborationClient.getUserViewport(clientId);
   }
 
-  scrollToPosition(position, alignment = 'center') {
+  scrollToPosition(position, alignment = "center") {
     return this.viewAdapter.scrollToPosition(position, alignment);
   }
 
@@ -240,14 +252,16 @@ export class EditorSession {
     return this.scrollToLine(viewport.topLine, viewport.viewportRatio);
   }
 
-  scrollToUserCursor(clientId, alignment = 'center') {
+  scrollToUserCursor(clientId, alignment = "center") {
     const cursor = this.getUserCursor(clientId);
     if (!cursor) {
       return false;
     }
 
-    return this.scrollToPosition(cursor.cursorHead, alignment)
-      || this.scrollToLine(cursor.cursorLine);
+    return (
+      this.scrollToPosition(cursor.cursorHead, alignment) ||
+      this.scrollToLine(cursor.cursorLine)
+    );
   }
 
   setUserName(name) {
@@ -276,7 +290,7 @@ export class EditorSession {
 
   destroy() {
     this.commentThreadStore.unbind();
-    this.activeFilePath = '';
+    this.activeFilePath = "";
     this.bootstrapContent = null;
     this.pendingCollaborativeBindings = null;
     this.hasDeliveredContent = false;
@@ -293,8 +307,14 @@ export class EditorSession {
       return null;
     }
 
-    const anchor = Y.createAbsolutePositionFromRelativePosition(cursor.anchor, ydoc);
-    const head = Y.createAbsolutePositionFromRelativePosition(cursor.head, ydoc);
+    const anchor = Y.createAbsolutePositionFromRelativePosition(
+      cursor.anchor,
+      ydoc,
+    );
+    const head = Y.createAbsolutePositionFromRelativePosition(
+      cursor.head,
+      ydoc,
+    );
     if (!anchor || !head || anchor.type !== ytext || head.type !== ytext) {
       return null;
     }

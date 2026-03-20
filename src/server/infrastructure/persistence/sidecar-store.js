@@ -1,13 +1,16 @@
-import { dirname, resolve } from 'path';
-import { mkdir, readFile, rename, rm, stat, writeFile } from 'fs/promises';
+import { dirname, resolve } from "path";
+import { mkdir, readFile, rename, rm, stat, writeFile } from "fs/promises";
 
-import { resolveVaultFilePath, toVaultRelativePath } from './path-utils.js';
+import { resolveVaultFilePath, toVaultRelativePath } from "./path-utils.js";
 
-const COMMENT_STORAGE_ROOT = '.collabmd/comments';
-const YJS_SNAPSHOT_STORAGE_ROOT = '.collabmd/yjs';
+const COMMENT_STORAGE_ROOT = ".collabmd/comments";
+const YJS_SNAPSHOT_STORAGE_ROOT = ".collabmd/yjs";
 
 function resolveSidecarPath(vaultDir, filePath, storageRoot, extension) {
-  const { absolute: absoluteVaultPath } = resolveVaultFilePath(vaultDir, filePath);
+  const { absolute: absoluteVaultPath } = resolveVaultFilePath(
+    vaultDir,
+    filePath,
+  );
   if (!absoluteVaultPath) {
     return null;
   }
@@ -26,7 +29,7 @@ async function renameIfPresent(sourcePath, targetPath) {
     await mkdir(dirname(targetPath), { recursive: true });
     await rename(sourcePath, targetPath);
   } catch (error) {
-    if (error.code !== 'ENOENT') {
+    if (error.code !== "ENOENT") {
       throw error;
     }
   }
@@ -38,11 +41,21 @@ export class SidecarStore {
   }
 
   getCommentThreadPath(filePath) {
-    return resolveSidecarPath(this.vaultDir, filePath, COMMENT_STORAGE_ROOT, '.json');
+    return resolveSidecarPath(
+      this.vaultDir,
+      filePath,
+      COMMENT_STORAGE_ROOT,
+      ".json",
+    );
   }
 
   getSnapshotPath(filePath) {
-    return resolveSidecarPath(this.vaultDir, filePath, YJS_SNAPSHOT_STORAGE_ROOT, '.bin');
+    return resolveSidecarPath(
+      this.vaultDir,
+      filePath,
+      YJS_SNAPSHOT_STORAGE_ROOT,
+      ".bin",
+    );
   }
 
   async readCommentThreads(filePath) {
@@ -52,7 +65,7 @@ export class SidecarStore {
     }
 
     try {
-      const raw = await readFile(absolute, 'utf-8');
+      const raw = await readFile(absolute, "utf-8");
       const parsed = JSON.parse(raw);
       if (Array.isArray(parsed)) {
         return parsed;
@@ -60,7 +73,7 @@ export class SidecarStore {
 
       return Array.isArray(parsed?.threads) ? parsed.threads : [];
     } catch (error) {
-      if (error.code === 'ENOENT') {
+      if (error.code === "ENOENT") {
         return [];
       }
 
@@ -71,7 +84,7 @@ export class SidecarStore {
   async writeCommentThreads(filePath, threads = []) {
     const absolute = this.getCommentThreadPath(filePath);
     if (!absolute) {
-      return { ok: false, error: 'Invalid file path' };
+      return { ok: false, error: "Invalid file path" };
     }
 
     try {
@@ -81,10 +94,18 @@ export class SidecarStore {
       }
 
       await mkdir(dirname(absolute), { recursive: true });
-      await writeFile(absolute, `${JSON.stringify({
-        threads,
-        version: 1,
-      }, null, 2)}\n`, 'utf-8');
+      await writeFile(
+        absolute,
+        `${JSON.stringify(
+          {
+            threads,
+            version: 1,
+          },
+          null,
+          2,
+        )}\n`,
+        "utf-8",
+      );
       return { ok: true };
     } catch (error) {
       return { ok: false, error: error.message };
@@ -101,7 +122,7 @@ export class SidecarStore {
       const content = await readFile(absolute);
       return new Uint8Array(content);
     } catch (error) {
-      if (error.code === 'ENOENT') {
+      if (error.code === "ENOENT") {
         return null;
       }
 
@@ -112,7 +133,7 @@ export class SidecarStore {
   async writeSnapshot(filePath, snapshot) {
     const absolute = this.getSnapshotPath(filePath);
     if (!absolute) {
-      return { ok: false, error: 'Invalid file path' };
+      return { ok: false, error: "Invalid file path" };
     }
 
     try {
@@ -127,7 +148,7 @@ export class SidecarStore {
   async deleteSnapshot(filePath) {
     const absolute = this.getSnapshotPath(filePath);
     if (!absolute) {
-      return { ok: false, error: 'Invalid file path' };
+      return { ok: false, error: "Invalid file path" };
     }
 
     try {
@@ -139,12 +160,25 @@ export class SidecarStore {
   }
 
   async deleteAllForFile(filePath) {
-    const paths = [this.getCommentThreadPath(filePath), this.getSnapshotPath(filePath)];
-    await Promise.all(paths.filter(Boolean).map(async (pathValue) => rm(pathValue, { force: true })));
+    const paths = [
+      this.getCommentThreadPath(filePath),
+      this.getSnapshotPath(filePath),
+    ];
+    await Promise.all(
+      paths
+        .filter(Boolean)
+        .map(async (pathValue) => rm(pathValue, { force: true })),
+    );
   }
 
   async renameAllForFile(oldPath, newPath) {
-    await renameIfPresent(this.getCommentThreadPath(oldPath), this.getCommentThreadPath(newPath));
-    await renameIfPresent(this.getSnapshotPath(oldPath), this.getSnapshotPath(newPath));
+    await renameIfPresent(
+      this.getCommentThreadPath(oldPath),
+      this.getCommentThreadPath(newPath),
+    );
+    await renameIfPresent(
+      this.getSnapshotPath(oldPath),
+      this.getSnapshotPath(newPath),
+    );
   }
 }

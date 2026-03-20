@@ -1,6 +1,6 @@
-const LOCK_KEY = 'collabmd-active-tab-lock';
-const TAB_ID_KEY = 'collabmd-tab-id';
-const CHANNEL_NAME = 'collabmd-tab-lock';
+const LOCK_KEY = "collabmd-active-tab-lock";
+const TAB_ID_KEY = "collabmd-tab-id";
+const CHANNEL_NAME = "collabmd-tab-lock";
 const HEARTBEAT_INTERVAL_MS = 4000;
 
 function now() {
@@ -46,12 +46,12 @@ export class TabActivityLock {
   }
 
   initialize() {
-    window.addEventListener('storage', this.handleStorageEvent);
-    window.addEventListener('pagehide', this.handlePageHide);
+    window.addEventListener("storage", this.handleStorageEvent);
+    window.addEventListener("pagehide", this.handlePageHide);
 
-    if ('BroadcastChannel' in globalThis) {
+    if ("BroadcastChannel" in globalThis) {
       this.channel = new BroadcastChannel(CHANNEL_NAME);
-      this.channel.addEventListener('message', (event) => {
+      this.channel.addEventListener("message", (event) => {
         this.handleChannelMessage(event.data);
       });
     }
@@ -59,25 +59,32 @@ export class TabActivityLock {
 
   destroy() {
     this.release();
-    window.removeEventListener('storage', this.handleStorageEvent);
-    window.removeEventListener('pagehide', this.handlePageHide);
+    window.removeEventListener("storage", this.handleStorageEvent);
+    window.removeEventListener("pagehide", this.handlePageHide);
     this.channel?.close();
     this.channel = null;
   }
 
   tryActivate({ takeover = false } = {}) {
     const currentLock = this.readLock();
-    if (this.isFreshLock(currentLock) && currentLock.tabId !== this.tabId && !takeover) {
+    if (
+      this.isFreshLock(currentLock) &&
+      currentLock.tabId !== this.tabId &&
+      !takeover
+    ) {
       this.isOwner = false;
       this.stopHeartbeat();
-      this.onBlocked?.({ reason: 'active-elsewhere', ownerTabId: currentLock.tabId });
+      this.onBlocked?.({
+        reason: "active-elsewhere",
+        ownerTabId: currentLock.tabId,
+      });
       return false;
     }
 
     this.writeLock();
     this.startHeartbeat();
     this.isOwner = true;
-    this.channel?.postMessage({ type: 'claimed', takeover, tabId: this.tabId });
+    this.channel?.postMessage({ type: "claimed", takeover, tabId: this.tabId });
     this.onActivated?.({ takeover });
     return true;
   }
@@ -86,7 +93,7 @@ export class TabActivityLock {
     const currentLock = this.readLock();
     if (currentLock?.tabId === this.tabId) {
       localStorage.removeItem(LOCK_KEY);
-      this.channel?.postMessage({ type: 'released', tabId: this.tabId });
+      this.channel?.postMessage({ type: "released", tabId: this.tabId });
     }
 
     this.isOwner = false;
@@ -118,19 +125,22 @@ export class TabActivityLock {
 
   isFreshLock(lock) {
     return Boolean(
-      lock
-      && typeof lock.tabId === 'string'
-      && Number.isFinite(lock.updatedAt)
-      && (now() - lock.updatedAt) < this.staleAfterMs
+      lock &&
+      typeof lock.tabId === "string" &&
+      Number.isFinite(lock.updatedAt) &&
+      now() - lock.updatedAt < this.staleAfterMs,
     );
   }
 
   writeLock() {
     try {
-      window.localStorage.setItem(LOCK_KEY, JSON.stringify({
-        tabId: this.tabId,
-        updatedAt: now(),
-      }));
+      window.localStorage.setItem(
+        LOCK_KEY,
+        JSON.stringify({
+          tabId: this.tabId,
+          updatedAt: now(),
+        }),
+      );
     } catch {
       // Ignore storage failures and continue in best-effort mode.
     }
@@ -166,11 +176,15 @@ export class TabActivityLock {
   }
 
   handleChannelMessage(message) {
-    if (!message || typeof message !== 'object' || message.tabId === this.tabId) {
+    if (
+      !message ||
+      typeof message !== "object" ||
+      message.tabId === this.tabId
+    ) {
       return;
     }
 
-    if (message.type === 'claimed') {
+    if (message.type === "claimed") {
       this.handleExternalLockChange(this.readLock());
     }
   }

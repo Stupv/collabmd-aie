@@ -1,7 +1,7 @@
 import {
   isMarkdownFilePath,
   supportsBacklinksForFilePath,
-} from '../../domain/file-kind.js';
+} from "../../domain/file-kind.js";
 
 export class WorkspaceChromeController {
   constructor({
@@ -45,11 +45,14 @@ export class WorkspaceChromeController {
   prepareForFileOpen(filePath, { resetConnectionState = true } = {}) {
     this.onViewModeReset();
     this.onBeforeFileOpen();
-    this.stateStore.set('connectionHelpShown', false);
+    this.stateStore.set("connectionHelpShown", false);
     if (resetConnectionState) {
-      this.stateStore.set('connectionState', { status: 'connecting', unreachable: false });
+      this.stateStore.set("connectionState", {
+        status: "connecting",
+        unreachable: false,
+      });
     }
-    this.stateStore.set('currentFilePath', filePath);
+    this.stateStore.set("currentFilePath", filePath);
     this.onUpdateCurrentFile(filePath);
     this.onUpdateLobbyCurrentFile(filePath);
     this.onUpdateActiveFile(filePath);

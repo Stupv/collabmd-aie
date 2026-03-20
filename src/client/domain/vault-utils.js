@@ -1,4 +1,4 @@
-import { resolveWikiTargetPath } from '../../domain/wiki-link-resolver.js';
+import { resolveWikiTargetPath } from "../../domain/wiki-link-resolver.js";
 
 /**
  * Shared utilities for vault file operations and HTML escaping.
@@ -13,11 +13,11 @@ import { resolveWikiTargetPath } from '../../domain/wiki-link-resolver.js';
  */
 export function escapeHtml(text) {
   return String(text)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
 }
 
 /**
@@ -49,16 +49,16 @@ export function clamp(value, min, max) {
 }
 
 function normalizePathSegments(pathValue) {
-  return String(pathValue ?? '')
-    .replace(/\\/g, '/')
-    .split('/')
+  return String(pathValue ?? "")
+    .replace(/\\/g, "/")
+    .split("/")
     .filter(Boolean);
 }
 
 export function resolveVaultRelativePath(fromFilePath, relativePath) {
   const sourceSegments = normalizePathSegments(fromFilePath);
-  const targetSegments = String(relativePath ?? '')
-    .split('/')
+  const targetSegments = String(relativePath ?? "")
+    .split("/")
     .map((segment) => {
       try {
         return decodeURIComponent(segment);
@@ -68,21 +68,21 @@ export function resolveVaultRelativePath(fromFilePath, relativePath) {
     });
 
   if (targetSegments.length === 0) {
-    return '';
+    return "";
   }
 
   sourceSegments.pop();
   const resolvedSegments = [...sourceSegments];
 
   for (const rawSegment of targetSegments) {
-    const segment = String(rawSegment ?? '').trim();
-    if (!segment || segment === '.') {
+    const segment = String(rawSegment ?? "").trim();
+    if (!segment || segment === ".") {
       continue;
     }
 
-    if (segment === '..') {
+    if (segment === "..") {
       if (resolvedSegments.length === 0) {
-        return '';
+        return "";
       }
       resolvedSegments.pop();
       continue;
@@ -91,5 +91,5 @@ export function resolveVaultRelativePath(fromFilePath, relativePath) {
     resolvedSegments.push(segment);
   }
 
-  return resolvedSegments.join('/');
+  return resolvedSegments.join("/");
 }

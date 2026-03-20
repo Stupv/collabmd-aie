@@ -1,17 +1,17 @@
-import { WebsocketProvider } from 'y-websocket';
-import * as Y from 'yjs';
+import { WebsocketProvider } from "y-websocket";
+import * as Y from "yjs";
 
-import { createRandomUser } from '../domain/room.js';
-import { resolveWsBaseUrl } from './runtime-config.js';
-import { stopReconnectOnControlledClose } from './yjs-provider-reset-guard.js';
+import { createRandomUser } from "../domain/room.js";
+import { resolveWsBaseUrl } from "./runtime-config.js";
+import { stopReconnectOnControlledClose } from "./yjs-provider-reset-guard.js";
 
-const LOBBY_ROOM_NAME = '__lobby__';
+const LOBBY_ROOM_NAME = "__lobby__";
 export const LOBBY_CHAT_MESSAGE_MAX_LENGTH = 280;
 export const LOBBY_CHAT_MAX_MESSAGES = 40;
 
 function normalizeChatMessage(value) {
-  const normalized = String(value ?? '')
-    .replace(/\s+/g, ' ')
+  const normalized = String(value ?? "")
+    .replace(/\s+/g, " ")
     .trim()
     .slice(0, LOBBY_CHAT_MESSAGE_MAX_LENGTH);
 
@@ -23,30 +23,37 @@ function createLobbyMessageId(peerId) {
     return globalThis.crypto.randomUUID();
   }
 
-  return `${peerId || 'user'}-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+  return `${peerId || "user"}-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
 }
 
 function normalizeWorkspaceEvent(event) {
-  if (!event || typeof event !== 'object' || typeof event.id !== 'string') {
+  if (!event || typeof event !== "object" || typeof event.id !== "string") {
     return null;
   }
 
-  const workspaceChange = event.workspaceChange && typeof event.workspaceChange === 'object'
-    ? event.workspaceChange
-    : {};
+  const workspaceChange =
+    event.workspaceChange && typeof event.workspaceChange === "object"
+      ? event.workspaceChange
+      : {};
 
   return {
-    action: typeof event.action === 'string' ? event.action : 'git',
+    action: typeof event.action === "string" ? event.action : "git",
     createdAt: Number.isFinite(event.createdAt) ? event.createdAt : Date.now(),
     id: event.id,
-    peerId: typeof event.peerId === 'string' ? event.peerId : null,
-    sourceRef: typeof event.sourceRef === 'string' ? event.sourceRef : null,
+    peerId: typeof event.peerId === "string" ? event.peerId : null,
+    sourceRef: typeof event.sourceRef === "string" ? event.sourceRef : null,
     workspaceChange: {
-      changedPaths: Array.isArray(workspaceChange.changedPaths) ? workspaceChange.changedPaths.filter(Boolean) : [],
-      deletedPaths: Array.isArray(workspaceChange.deletedPaths) ? workspaceChange.deletedPaths.filter(Boolean) : [],
+      changedPaths: Array.isArray(workspaceChange.changedPaths)
+        ? workspaceChange.changedPaths.filter(Boolean)
+        : [],
+      deletedPaths: Array.isArray(workspaceChange.deletedPaths)
+        ? workspaceChange.deletedPaths.filter(Boolean)
+        : [],
       refreshExplorer: workspaceChange.refreshExplorer !== false,
       renamedPaths: Array.isArray(workspaceChange.renamedPaths)
-        ? workspaceChange.renamedPaths.filter((entry) => entry?.oldPath && entry?.newPath)
+        ? workspaceChange.renamedPaths.filter(
+            (entry) => entry?.oldPath && entry?.newPath,
+          )
         : [],
     },
   };
@@ -67,8 +74,8 @@ export class LobbyPresence {
     this.onWorkspaceEvent = onWorkspaceEvent;
     this.wsBaseUrl = resolveWsBaseUrl();
     this.ydoc = new Y.Doc();
-    this.chatMessages = this.ydoc.getArray('chat-messages');
-    this.workspaceEvents = this.ydoc.getArray('workspace-events');
+    this.chatMessages = this.ydoc.getArray("chat-messages");
+    this.workspaceEvents = this.ydoc.getArray("workspace-events");
     this.provider = null;
     this.awareness = null;
     this.localUser = createRandomUser(preferredUserName);
@@ -101,19 +108,19 @@ export class LobbyPresence {
     stopReconnectOnControlledClose(this.provider);
 
     this.awareness = this.provider.awareness;
-    this.awareness.setLocalStateField('user', this.localUser);
-    this.awareness.setLocalStateField('currentFile', this.currentFile);
+    this.awareness.setLocalStateField("user", this.localUser);
+    this.awareness.setLocalStateField("currentFile", this.currentFile);
 
-    this.awareness.on('change', this.handleAwarenessChange);
+    this.awareness.on("change", this.handleAwarenessChange);
 
     this.chatMessages.observe(this.handleChatMessagesChange);
     this.workspaceEvents.observe(this.handleWorkspaceEventsChange);
 
-    this.provider.on('status', ({ status }) => {
-      this._connected = status === 'connected';
+    this.provider.on("status", ({ status }) => {
+      this._connected = status === "connected";
     });
 
-    this.provider.on('sync', (isSynced) => {
+    this.provider.on("sync", (isSynced) => {
       if (!isSynced || this._didInitialSync) {
         return;
       }
@@ -129,7 +136,7 @@ export class LobbyPresence {
   setCurrentFile(filePath) {
     this.currentFile = filePath;
     if (this.awareness) {
-      this.awareness.setLocalStateField('currentFile', filePath);
+      this.awareness.setLocalStateField("currentFile", filePath);
     }
   }
 
@@ -138,7 +145,7 @@ export class LobbyPresence {
     if (!name) return;
     this.localUser = { ...this.localUser, name };
     if (this.awareness) {
-      this.awareness.setLocalStateField('user', this.localUser);
+      this.awareness.setLocalStateField("user", this.localUser);
     }
   }
 
@@ -170,12 +177,16 @@ export class LobbyPresence {
       if (overflow > 0) {
         this.chatMessages.delete(0, overflow);
       }
-    }, 'lobby-chat-message');
+    }, "lobby-chat-message");
 
     return message;
   }
 
-  sendWorkspaceEvent({ action = 'git', sourceRef = null, workspaceChange = {} } = {}) {
+  sendWorkspaceEvent({
+    action = "git",
+    sourceRef = null,
+    workspaceChange = {},
+  } = {}) {
     const event = normalizeWorkspaceEvent({
       action,
       createdAt: Date.now(),
@@ -195,20 +206,23 @@ export class LobbyPresence {
       if (overflow > 0) {
         this.workspaceEvents.delete(0, overflow);
       }
-    }, 'lobby-workspace-event');
+    }, "lobby-workspace-event");
 
     this.seenWorkspaceEventIds.add(event.id);
     return event;
   }
 
   getMessages() {
-    return this.chatMessages.toArray().filter((message) => (
-      message
-      && typeof message.id === 'string'
-      && typeof message.peerId === 'string'
-      && typeof message.text === 'string'
-      && typeof message.userName === 'string'
-    ));
+    return this.chatMessages
+      .toArray()
+      .filter(
+        (message) =>
+          message &&
+          typeof message.id === "string" &&
+          typeof message.peerId === "string" &&
+          typeof message.text === "string" &&
+          typeof message.userName === "string",
+      );
   }
 
   /**
@@ -233,19 +247,19 @@ export class LobbyPresence {
 
   getConnectionState() {
     if (this._connected) {
-      return { status: 'connected', unreachable: false };
+      return { status: "connected", unreachable: false };
     }
 
     if (this.provider) {
-      return { status: 'connecting', unreachable: false };
+      return { status: "connecting", unreachable: false };
     }
 
-    return { status: 'disconnected', unreachable: false };
+    return { status: "disconnected", unreachable: false };
   }
 
   disconnect() {
     if (this.provider) {
-      this.awareness?.off('change', this.handleAwarenessChange);
+      this.awareness?.off("change", this.handleAwarenessChange);
       this.chatMessages?.unobserve(this.handleChatMessagesChange);
       this.workspaceEvents?.unobserve(this.handleWorkspaceEventsChange);
     }

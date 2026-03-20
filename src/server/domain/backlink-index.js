@@ -10,7 +10,10 @@
  * incrementally whenever a file is persisted, created, deleted, or renamed.
  */
 
-import { createWikiTargetIndex, resolveWikiTargetWithIndex } from '../../domain/wiki-link-resolver.js';
+import {
+  createWikiTargetIndex,
+  resolveWikiTargetWithIndex,
+} from "../../domain/wiki-link-resolver.js";
 
 const WIKI_LINK_RE = /\[\[([^\]|]+)(?:\|[^\]]+)?\]\]/g;
 
@@ -118,7 +121,10 @@ export class BacklinkIndex {
     const targetVersion = this._requestedBuildVersion;
     this._buildPromise = (async () => {
       await this._performBuild();
-      this._completedBuildVersion = Math.max(this._completedBuildVersion, targetVersion);
+      this._completedBuildVersion = Math.max(
+        this._completedBuildVersion,
+        targetVersion,
+      );
     })().finally(() => {
       this._buildPromise = null;
     });
@@ -144,7 +150,9 @@ export class BacklinkIndex {
     }
 
     this._built = true;
-    console.log(`[backlinks] Index built: ${this._fileList.length} files, ${this.reverse.size} targets with backlinks`);
+    console.log(
+      `[backlinks] Index built: ${this._fileList.length} files, ${this.reverse.size} targets with backlinks`,
+    );
   }
 
   /**
@@ -168,7 +176,7 @@ export class BacklinkIndex {
   /**
    * Handle file creation — add to file list and index its content.
    */
-  onFileCreated(filePath, content = '') {
+  onFileCreated(filePath, content = "") {
     if (!this._fileSet.has(filePath)) {
       this._fileSet.add(filePath);
       this._fileList.push(filePath);
@@ -241,7 +249,10 @@ export class BacklinkIndex {
         const sourceContexts = this.contextsBySource.get(sourcePath);
         if (sourceContexts?.has(oldPath)) {
           const previous = sourceContexts.get(newPath) ?? [];
-          sourceContexts.set(newPath, [...previous, ...sourceContexts.get(oldPath)]);
+          sourceContexts.set(newPath, [
+            ...previous,
+            ...sourceContexts.get(oldPath),
+          ]);
           sourceContexts.delete(oldPath);
         }
       }
@@ -298,7 +309,7 @@ export class BacklinkIndex {
   _indexFile(filePath, content) {
     const resolvedTargets = new Set();
     const contextsByTarget = new Map();
-    const lines = content.split('\n');
+    const lines = content.split("\n");
 
     for (const line of lines) {
       WIKI_LINK_RE.lastIndex = 0;
@@ -374,7 +385,7 @@ export class BacklinkIndex {
 function flattenTree(nodes) {
   const files = [];
   for (const node of nodes) {
-    if (node.type === 'file') {
+    if (node.type === "file") {
       files.push(node.path);
     } else if (node.children) {
       files.push(...flattenTree(node.children));

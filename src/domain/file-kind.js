@@ -1,8 +1,15 @@
-const MARKDOWN_FILE_EXTENSIONS = Object.freeze(['.md', '.markdown', '.mdx']);
-const EXCALIDRAW_FILE_EXTENSION = '.excalidraw';
-const MERMAID_FILE_EXTENSIONS = Object.freeze(['.mmd', '.mermaid']);
-const PLANTUML_FILE_EXTENSIONS = Object.freeze(['.puml', '.plantuml']);
-const IMAGE_ATTACHMENT_EXTENSIONS = Object.freeze(['.png', '.jpg', '.jpeg', '.webp', '.gif', '.svg']);
+const MARKDOWN_FILE_EXTENSIONS = Object.freeze([".md", ".markdown", ".mdx"]);
+const EXCALIDRAW_FILE_EXTENSION = ".excalidraw";
+const MERMAID_FILE_EXTENSIONS = Object.freeze([".mmd", ".mermaid"]);
+const PLANTUML_FILE_EXTENSIONS = Object.freeze([".puml", ".plantuml"]);
+const IMAGE_ATTACHMENT_EXTENSIONS = Object.freeze([
+  ".png",
+  ".jpg",
+  ".jpeg",
+  ".webp",
+  ".gif",
+  ".svg",
+]);
 const DIAGRAM_FILE_EXTENSIONS = Object.freeze([
   EXCALIDRAW_FILE_EXTENSION,
   ...MERMAID_FILE_EXTENSIONS,
@@ -13,10 +20,13 @@ const VAULT_FILE_EXTENSIONS = Object.freeze([
   ...DIAGRAM_FILE_EXTENSIONS,
   ...IMAGE_ATTACHMENT_EXTENSIONS,
 ]);
-const STRIP_VAULT_EXTENSION_PATTERN = /\.(?:md|markdown|mdx|excalidraw|mmd|mermaid|puml|plantuml|png|jpe?g|webp|gif|svg)$/i;
+const STRIP_VAULT_EXTENSION_PATTERN =
+  /\.(?:md|markdown|mdx|excalidraw|mmd|mermaid|puml|plantuml|png|jpe?g|webp|gif|svg)$/i;
 
 function normalizeFilePath(filePath) {
-  return String(filePath ?? '').trim().toLowerCase();
+  return String(filePath ?? "")
+    .trim()
+    .toLowerCase();
 }
 
 function hasFileExtension(filePath, extensions) {
@@ -36,23 +46,23 @@ export {
 
 export function getVaultFileKind(filePath) {
   if (hasFileExtension(filePath, MARKDOWN_FILE_EXTENSIONS)) {
-    return 'markdown';
+    return "markdown";
   }
 
   if (hasFileExtension(filePath, [EXCALIDRAW_FILE_EXTENSION])) {
-    return 'excalidraw';
+    return "excalidraw";
   }
 
   if (hasFileExtension(filePath, MERMAID_FILE_EXTENSIONS)) {
-    return 'mermaid';
+    return "mermaid";
   }
 
   if (hasFileExtension(filePath, PLANTUML_FILE_EXTENSIONS)) {
-    return 'plantuml';
+    return "plantuml";
   }
 
   if (hasFileExtension(filePath, IMAGE_ATTACHMENT_EXTENSIONS)) {
-    return 'image';
+    return "image";
   }
 
   return null;
@@ -64,41 +74,44 @@ export function getVaultTreeNodeType(filePath) {
     return null;
   }
 
-  if (kind === 'image') {
-    return 'image';
+  if (kind === "image") {
+    return "image";
   }
 
-  return kind === 'markdown' ? 'file' : kind;
+  return kind === "markdown" ? "file" : kind;
 }
 
 export function getVaultFileExtension(filePath) {
   const normalized = normalizeFilePath(filePath);
-  return VAULT_FILE_EXTENSIONS.find((extension) => normalized.endsWith(extension)) ?? '';
+  return (
+    VAULT_FILE_EXTENSIONS.find((extension) => normalized.endsWith(extension)) ??
+    ""
+  );
 }
 
 export function isMarkdownFilePath(filePath) {
-  return getVaultFileKind(filePath) === 'markdown';
+  return getVaultFileKind(filePath) === "markdown";
 }
 
 export function isExcalidrawFilePath(filePath) {
-  return getVaultFileKind(filePath) === 'excalidraw';
+  return getVaultFileKind(filePath) === "excalidraw";
 }
 
 export function isMermaidFilePath(filePath) {
-  return getVaultFileKind(filePath) === 'mermaid';
+  return getVaultFileKind(filePath) === "mermaid";
 }
 
 export function isPlantUmlFilePath(filePath) {
-  return getVaultFileKind(filePath) === 'plantuml';
+  return getVaultFileKind(filePath) === "plantuml";
 }
 
 export function isImageAttachmentFilePath(filePath) {
-  return getVaultFileKind(filePath) === 'image';
+  return getVaultFileKind(filePath) === "image";
 }
 
 export function isDiagramFilePath(filePath) {
   const kind = getVaultFileKind(filePath);
-  return kind === 'excalidraw' || kind === 'mermaid' || kind === 'plantuml';
+  return kind === "excalidraw" || kind === "mermaid" || kind === "plantuml";
 }
 
 export function isVaultFilePath(filePath) {
@@ -107,7 +120,7 @@ export function isVaultFilePath(filePath) {
 
 export function supportsCommentsForFilePath(filePath) {
   const kind = getVaultFileKind(filePath);
-  return kind === 'markdown' || kind === 'mermaid' || kind === 'plantuml';
+  return kind === "markdown" || kind === "mermaid" || kind === "plantuml";
 }
 
 export function supportsBacklinksForFilePath(filePath) {
@@ -115,5 +128,5 @@ export function supportsBacklinksForFilePath(filePath) {
 }
 
 export function stripVaultFileExtension(name) {
-  return String(name ?? '').replace(STRIP_VAULT_EXTENSION_PATTERN, '');
+  return String(name ?? "").replace(STRIP_VAULT_EXTENSION_PATTERN, "");
 }

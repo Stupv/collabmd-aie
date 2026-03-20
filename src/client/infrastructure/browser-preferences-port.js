@@ -15,9 +15,9 @@ export class BrowserPreferencesPort {
 
   getUserName() {
     try {
-      return this.storage.getItem(this.userNameKey) || '';
+      return this.storage.getItem(this.userNameKey) || "";
     } catch {
-      return '';
+      return "";
     }
   }
 
@@ -31,7 +31,7 @@ export class BrowserPreferencesPort {
 
   getLineWrappingEnabled() {
     try {
-      return this.storage.getItem(this.lineWrappingKey) !== 'false';
+      return this.storage.getItem(this.lineWrappingKey) !== "false";
     } catch {
       return true;
     }
@@ -55,7 +55,10 @@ export class BrowserPreferencesPort {
 
   setSidebarVisible(showSidebar) {
     try {
-      this.storage.setItem(this.sidebarVisibleKey, showSidebar ? 'true' : 'false');
+      this.storage.setItem(
+        this.sidebarVisibleKey,
+        showSidebar ? "true" : "false",
+      );
     } catch {
       // Ignore storage errors.
     }
@@ -63,7 +66,7 @@ export class BrowserPreferencesPort {
 
   getChatNotificationsEnabled() {
     try {
-      return this.storage.getItem(this.chatNotificationsKey) === 'true';
+      return this.storage.getItem(this.chatNotificationsKey) === "true";
     } catch {
       return false;
     }

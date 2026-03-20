@@ -1,22 +1,22 @@
-import { WebsocketProvider } from 'y-websocket';
-import * as Y from 'yjs';
+import { WebsocketProvider } from "y-websocket";
+import * as Y from "yjs";
 
-import { normalizeWorkspaceEvent } from '../../domain/workspace-change.js';
-import { WORKSPACE_ROOM_NAME } from '../../domain/workspace-room.js';
-import { resolveWsBaseUrl } from '../domain/runtime-paths.js';
-import { stopReconnectOnControlledClose } from './yjs-provider-reset-guard.js';
+import { normalizeWorkspaceEvent } from "../../domain/workspace-change.js";
+import { WORKSPACE_ROOM_NAME } from "../../domain/workspace-room.js";
+import { resolveWsBaseUrl } from "../domain/runtime-paths.js";
+import { stopReconnectOnControlledClose } from "./yjs-provider-reset-guard.js";
 
 function createNode(entry) {
   if (!entry?.path || !entry?.type) {
     return null;
   }
 
-  if (entry.nodeType === 'directory' || entry.type === 'directory') {
+  if (entry.nodeType === "directory" || entry.type === "directory") {
     return {
       children: [],
       name: entry.name,
       path: entry.path,
-      type: 'directory',
+      type: "directory",
     };
   }
 
@@ -29,9 +29,11 @@ function createNode(entry) {
 
 function sortNodes(nodes = []) {
   nodes.sort((left, right) => {
-    if (left.type === 'directory' && right.type !== 'directory') return -1;
-    if (left.type !== 'directory' && right.type === 'directory') return 1;
-    return left.name.localeCompare(right.name, undefined, { sensitivity: 'base' });
+    if (left.type === "directory" && right.type !== "directory") return -1;
+    if (left.type !== "directory" && right.type === "directory") return 1;
+    return left.name.localeCompare(right.name, undefined, {
+      sensitivity: "base",
+    });
   });
 
   nodes.forEach((node) => {
@@ -51,15 +53,17 @@ function toEntryMap(value) {
   return new Map(Object.entries(value ?? {}));
 }
 
-function sortPathsByDepth(values = [], direction = 'asc') {
-  const factor = direction === 'desc' ? -1 : 1;
+function sortPathsByDepth(values = [], direction = "asc") {
+  const factor = direction === "desc" ? -1 : 1;
   return [...values].sort((left, right) => {
-    const depthDelta = left.split('/').length - right.split('/').length;
+    const depthDelta = left.split("/").length - right.split("/").length;
     if (depthDelta !== 0) {
       return depthDelta * factor;
     }
 
-    return left.localeCompare(right, undefined, { sensitivity: 'base' }) * factor;
+    return (
+      left.localeCompare(right, undefined, { sensitivity: "base" }) * factor
+    );
   });
 }
 
@@ -84,12 +88,18 @@ class WorkspaceTreeModel {
       }
     });
 
-    sortPathsByDepth(Array.from(this.nodesByPath.keys())).forEach((pathValue) => {
-      const node = this.nodesByPath.get(pathValue);
-      if (node) {
-        this.attachNode(pathValue, node, this.entriesByPath.get(pathValue)?.parentPath || '');
-      }
-    });
+    sortPathsByDepth(Array.from(this.nodesByPath.keys())).forEach(
+      (pathValue) => {
+        const node = this.nodesByPath.get(pathValue);
+        if (node) {
+          this.attachNode(
+            pathValue,
+            node,
+            this.entriesByPath.get(pathValue)?.parentPath || "",
+          );
+        }
+      },
+    );
 
     sortNodes(this.roots);
     return this.roots;
@@ -104,14 +114,14 @@ class WorkspaceTreeModel {
     const upsertPaths = [];
 
     changes.forEach((change, pathValue) => {
-      if (change.action === 'delete') {
+      if (change.action === "delete") {
         deletePaths.push(pathValue);
       } else {
         upsertPaths.push(pathValue);
       }
     });
 
-    sortPathsByDepth(deletePaths, 'desc').forEach((pathValue) => {
+    sortPathsByDepth(deletePaths, "desc").forEach((pathValue) => {
       this.removeEntry(pathValue);
     });
 
@@ -151,7 +161,10 @@ class WorkspaceTreeModel {
 
     const existingNode = this.nodesByPath.get(pathValue);
     let node = existingNode;
-    if (!node || (node.type === 'directory') !== (nextNode.type === 'directory')) {
+    if (
+      !node ||
+      (node.type === "directory") !== (nextNode.type === "directory")
+    ) {
       if (node) {
         this.detachNode(pathValue, node);
       }
@@ -161,24 +174,24 @@ class WorkspaceTreeModel {
       node.name = nextNode.name;
       node.path = nextNode.path;
       node.type = nextNode.type;
-      if (node.type === 'directory' && !Array.isArray(node.children)) {
+      if (node.type === "directory" && !Array.isArray(node.children)) {
         node.children = [];
       }
-      if (node.type !== 'directory' && Array.isArray(node.children)) {
+      if (node.type !== "directory" && Array.isArray(node.children)) {
         delete node.children;
       }
     }
 
     this.entriesByPath.set(pathValue, entry);
-    this.attachNode(pathValue, node, entry.parentPath || '');
+    this.attachNode(pathValue, node, entry.parentPath || "");
 
-    if (node.type === 'directory') {
+    if (node.type === "directory") {
       this.rehomeChildren(pathValue);
     }
   }
 
   detachNode(pathValue, node) {
-    const currentParentPath = this.nodeParentPathByPath.get(pathValue) || '';
+    const currentParentPath = this.nodeParentPathByPath.get(pathValue) || "";
     const siblings = currentParentPath
       ? this.nodesByPath.get(currentParentPath)?.children
       : this.roots;
@@ -189,10 +202,11 @@ class WorkspaceTreeModel {
     this.nodeParentPathByPath.delete(pathValue);
   }
 
-  attachNode(pathValue, node, requestedParentPath = '') {
-    const parentPath = this.nodesByPath.get(requestedParentPath)?.type === 'directory'
-      ? requestedParentPath
-      : '';
+  attachNode(pathValue, node, requestedParentPath = "") {
+    const parentPath =
+      this.nodesByPath.get(requestedParentPath)?.type === "directory"
+        ? requestedParentPath
+        : "";
     const currentParentPath = this.nodeParentPathByPath.get(pathValue);
 
     if (currentParentPath === parentPath) {
@@ -227,15 +241,12 @@ class WorkspaceTreeModel {
 }
 
 export class WorkspaceSyncClient {
-  constructor({
-    onTreeChange = () => {},
-    onWorkspaceEvent = () => {},
-  } = {}) {
+  constructor({ onTreeChange = () => {}, onWorkspaceEvent = () => {} } = {}) {
     this.onTreeChange = onTreeChange;
     this.onWorkspaceEvent = onWorkspaceEvent;
     this.ydoc = new Y.Doc();
-    this.entries = this.ydoc.getMap('entries');
-    this.events = this.ydoc.getArray('events');
+    this.entries = this.ydoc.getMap("entries");
+    this.events = this.ydoc.getArray("events");
     this.provider = null;
     this._didInitialSync = false;
     this.seenEventIds = new Set();
@@ -246,10 +257,13 @@ export class WorkspaceSyncClient {
         return;
       }
 
-      this.onTreeChange(this.treeModel.applyMapChanges(event.changes.keys, this.entries), {
-        changedPaths: Array.from(event.changes.keys.keys()),
-        reset: false,
-      });
+      this.onTreeChange(
+        this.treeModel.applyMapChanges(event.changes.keys, this.entries),
+        {
+          changedPaths: Array.from(event.changes.keys.keys()),
+          reset: false,
+        },
+      );
     };
     this.handleEventsChange = () => {
       if (!this._didInitialSync) {
@@ -275,15 +289,20 @@ export class WorkspaceSyncClient {
     }
 
     this._didInitialSync = false;
-    this.provider = new WebsocketProvider(resolveWsBaseUrl(), WORKSPACE_ROOM_NAME, this.ydoc, {
-      disableBc: true,
-      maxBackoffTime: 5000,
-    });
+    this.provider = new WebsocketProvider(
+      resolveWsBaseUrl(),
+      WORKSPACE_ROOM_NAME,
+      this.ydoc,
+      {
+        disableBc: true,
+        maxBackoffTime: 5000,
+      },
+    );
     stopReconnectOnControlledClose(this.provider);
 
     this.entries.observe(this.handleEntriesChange);
     this.events.observe(this.handleEventsChange);
-    this.provider.on('sync', (isSynced) => {
+    this.provider.on("sync", (isSynced) => {
       if (!isSynced || this._didInitialSync) {
         return;
       }

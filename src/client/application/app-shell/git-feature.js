@@ -1,5 +1,5 @@
-import { createWorkspaceChange } from '../../../domain/workspace-change.js';
-import { resolveApiUrl } from '../../domain/runtime-paths.js';
+import { createWorkspaceChange } from "../../../domain/workspace-change.js";
+import { resolveApiUrl } from "../../domain/runtime-paths.js";
 
 function normalizeWorkspaceChange(workspaceChange = {}) {
   return createWorkspaceChange(workspaceChange);
@@ -17,23 +17,23 @@ export const gitFeature = {
   formatPullBackupToast(pullBackup = null) {
     const fileCount = Number(pullBackup?.fileCount || 0);
     if (fileCount === 1) {
-      return 'Pulled latest changes. 1 overlapping local file was backed up.';
+      return "Pulled latest changes. 1 overlapping local file was backed up.";
     }
     if (fileCount > 1) {
       return `Pulled latest changes. ${fileCount} overlapping local files were backed up.`;
     }
-    return 'Pulled latest changes. Overlapping local changes were recorded in a pull backup.';
+    return "Pulled latest changes. Overlapping local changes were recorded in a pull backup.";
   },
 
-  setGitOperationStatus(message = '') {
+  setGitOperationStatus(message = "") {
     const badge = this.elements.gitOperationStatus;
     if (!badge) {
       return;
     }
 
-    const text = String(message ?? '').trim();
+    const text = String(message ?? "").trim();
     badge.textContent = text;
-    badge.classList.toggle('hidden', !text);
+    badge.classList.toggle("hidden", !text);
   },
 
   async runGitActionWithStatus(message, callback) {
@@ -41,11 +41,14 @@ export const gitFeature = {
     try {
       return await callback();
     } finally {
-      this.setGitOperationStatus('');
+      this.setGitOperationStatus("");
     }
   },
 
-  handleGitDiffSelection(filePath, { closeSidebarOnMobile = false, scope = 'working-tree' } = {}) {
+  handleGitDiffSelection(
+    filePath,
+    { closeSidebarOnMobile = false, scope = "working-tree" } = {},
+  ) {
     if (closeSidebarOnMobile) {
       this.closeSidebarOnMobile();
     }
@@ -55,41 +58,51 @@ export const gitFeature = {
 
   handleGitRepoChange(isGitRepo, status = null) {
     this.gitRepoAvailable = Boolean(isGitRepo);
-    this.elements.sidebarTabs?.classList.toggle('hidden', !this.gitRepoAvailable);
-    this.elements.gitSidebarTab?.classList.toggle('hidden', !this.gitRepoAvailable);
-    
+    this.elements.sidebarTabs?.classList.toggle(
+      "hidden",
+      !this.gitRepoAvailable,
+    );
+    this.elements.gitSidebarTab?.classList.toggle(
+      "hidden",
+      !this.gitRepoAvailable,
+    );
+
     const hasChanges = isGitRepo && status?.summary?.changedFiles > 0;
-    this.elements.gitSidebarTab?.classList.toggle('has-changes', hasChanges);
-    
+    this.elements.gitSidebarTab?.classList.toggle("has-changes", hasChanges);
+
     this.gitDiffView.setRepoStatus(this.gitRepoAvailable ? status : null);
 
-    if (!this.gitRepoAvailable && this.activeSidebarTab === 'git') {
-      this.setSidebarTab('files');
+    if (!this.gitRepoAvailable && this.activeSidebarTab === "git") {
+      this.setSidebarTab("files");
       return;
     }
 
-    if (this.gitRepoAvailable && this.navigation.getHashRoute().type === 'git-diff' && this.activeSidebarTab !== 'git') {
-      this.setSidebarTab('git');
+    if (
+      this.gitRepoAvailable &&
+      this.navigation.getHashRoute().type === "git-diff" &&
+      this.activeSidebarTab !== "git"
+    ) {
+      this.setSidebarTab("git");
     }
   },
 
   syncMainChrome({ mode, title = null } = {}) {
-    const isDiffMode = mode === 'diff';
-    this.elements.toolbarCenter?.classList.toggle('hidden', isDiffMode);
-    this.elements.mobileViewToggle?.classList.toggle('hidden', isDiffMode);
-    this.elements.userCount?.classList.toggle('hidden', isDiffMode);
-    this.elements.toolbarDiffBadge?.classList.toggle('hidden', !isDiffMode);
+    const isDiffMode = mode === "diff";
+    this.elements.toolbarCenter?.classList.toggle("hidden", isDiffMode);
+    this.elements.mobileViewToggle?.classList.toggle("hidden", isDiffMode);
+    this.elements.userCount?.classList.toggle("hidden", isDiffMode);
+    this.elements.toolbarDiffBadge?.classList.toggle("hidden", !isDiffMode);
 
     if (title && this.elements.activeFileName) {
       this.elements.activeFileName.textContent = title;
     }
   },
 
-  async showGitDiff({ filePath = null, scope = 'all' } = {}) {
+  async showGitDiff({ filePath = null, scope = "all" } = {}) {
     this.gitPanel.setSelection(filePath ? { path: filePath, scope } : {});
     this.showDiffState();
     this.syncMainChrome({
-      mode: 'diff',
+      mode: "diff",
       title: this.gitDiffView.getToolbarTitle({ filePath, scope }),
     });
     await this.gitDiffView.open({ filePath, scope });
@@ -101,16 +114,16 @@ export const gitFeature = {
     const response = await fetch(endpoint, {
       body: JSON.stringify(payload),
       headers: {
-        'Content-Type': 'application/json',
-        'X-CollabMD-Request-Id': requestId,
+        "Content-Type": "application/json",
+        "X-CollabMD-Request-Id": requestId,
       },
-      method: 'POST',
+      method: "POST",
     });
     const data = await response.json();
     if (!response.ok) {
       this.pendingWorkspaceRequestIds?.delete(requestId);
-      const error = new Error(data.error || 'Git action failed');
-      if (typeof data?.code === 'string') {
+      const error = new Error(data.error || "Git action failed");
+      if (typeof data?.code === "string") {
         error.code = data.code;
       }
       throw error;
@@ -118,7 +131,10 @@ export const gitFeature = {
     return data;
   },
 
-  async refreshWorkspaceAfterGitAction({ filePath = null, preferredScope = null } = {}) {
+  async refreshWorkspaceAfterGitAction({
+    filePath = null,
+    preferredScope = null,
+  } = {}) {
     await this.fileExplorer.refresh();
     await this.refreshGitAfterAction({ filePath, preferredScope });
   },
@@ -127,14 +143,17 @@ export const gitFeature = {
     await this.gitPanel.refresh({ force: true });
 
     const route = this.navigation.getHashRoute();
-    if (route.type !== 'git-diff') {
+    if (route.type !== "git-diff") {
       return;
     }
 
     const nextFilePath = filePath ?? route.filePath;
     const nextScope = preferredScope ?? route.scope;
     if (nextScope !== route.scope || nextFilePath !== route.filePath) {
-      this.navigation.navigateToGitDiff({ filePath: nextFilePath, scope: nextScope });
+      this.navigation.navigateToGitDiff({
+        filePath: nextFilePath,
+        scope: nextScope,
+      });
       return;
     }
 
@@ -150,18 +169,27 @@ export const gitFeature = {
   } = {}) {
     const workspaceChange = normalizeWorkspaceChange(result.workspaceChange);
     await this.refreshWorkspaceAfterGitAction({ filePath, preferredScope });
-    this.handleWorkspaceChangeForCurrentFile(workspaceChange, { action, local: true, showToast: showLocalFileToast });
+    this.handleWorkspaceChangeForCurrentFile(workspaceChange, {
+      action,
+      local: true,
+      showToast: showLocalFileToast,
+    });
     return workspaceChange;
   },
 
-  handleWorkspaceChangeForCurrentFile(workspaceChange, { action = 'git', local = false, showToast = true } = {}) {
+  handleWorkspaceChangeForCurrentFile(
+    workspaceChange,
+    { action = "git", local = false, showToast = true } = {},
+  ) {
     const currentFilePath = this.currentFilePath;
     if (!currentFilePath) {
       return false;
     }
 
     const wasDeleted = workspaceChange.deletedPaths.includes(currentFilePath);
-    const renameEntry = workspaceChange.renamedPaths.find((entry) => entry.oldPath === currentFilePath);
+    const renameEntry = workspaceChange.renamedPaths.find(
+      (entry) => entry.oldPath === currentFilePath,
+    );
     if (!wasDeleted && !renameEntry) {
       return false;
     }
@@ -200,117 +228,140 @@ export const gitFeature = {
       return;
     }
 
-    if (event.requestId && this.pendingWorkspaceRequestIds?.has(event.requestId)) {
+    if (
+      event.requestId &&
+      this.pendingWorkspaceRequestIds?.has(event.requestId)
+    ) {
       this.pendingWorkspaceRequestIds.delete(event.requestId);
       return;
     }
 
     const workspaceChange = normalizeWorkspaceChange(event.workspaceChange);
-    if (event.origin === 'git') {
+    if (event.origin === "git") {
       await this.refreshGitAfterAction();
     }
     this.handleWorkspaceChangeForCurrentFile(workspaceChange, {
-      action: event.action || event.origin || 'workspace',
+      action: event.action || event.origin || "workspace",
       local: false,
       showToast: true,
     });
 
     if (
-      event.origin === 'filesystem'
-      && this.currentFilePath
-      && workspaceChange.changedPaths.includes(this.currentFilePath)
+      event.origin === "filesystem" &&
+      this.currentFilePath &&
+      workspaceChange.changedPaths.includes(this.currentFilePath)
     ) {
       const canUseInlineCue = workspaceChange.changedPaths.length === 1;
-      const highlightRange = canUseInlineCue && Array.isArray(event.highlightRanges)
-        ? event.highlightRanges.find((entry) => entry.path === this.currentFilePath)
-        : null;
+      const highlightRange =
+        canUseInlineCue && Array.isArray(event.highlightRanges)
+          ? event.highlightRanges.find(
+              (entry) => entry.path === this.currentFilePath,
+            )
+          : null;
       const didFlash = highlightRange
         ? this.session?.flashExternalUpdate?.(highlightRange)
         : false;
       if (!didFlash) {
-        this.toastController.show(`${this.getDisplayName(this.currentFilePath)} updated from disk`);
+        this.toastController.show(
+          `${this.getDisplayName(this.currentFilePath)} updated from disk`,
+        );
       }
     }
 
     if (
-      this.currentFilePath
-      && Array.isArray(event.reloadRequiredPaths)
-      && event.reloadRequiredPaths.includes(this.currentFilePath)
+      this.currentFilePath &&
+      Array.isArray(event.reloadRequiredPaths) &&
+      event.reloadRequiredPaths.includes(this.currentFilePath)
     ) {
-      this.toastController.show(`${this.getDisplayName(this.currentFilePath)} needs a manual reload`);
+      this.toastController.show(
+        `${this.getDisplayName(this.currentFilePath)} needs a manual reload`,
+      );
     }
   },
 
-  async stageGitFile(filePath, { scope = 'working-tree' } = {}) {
+  async stageGitFile(filePath, { scope = "working-tree" } = {}) {
     if (!filePath) {
       return;
     }
 
-    await this.runGitActionWithStatus('Staging changes...', async () => {
-      const result = await this.postGitAction(resolveApiUrl('/git/stage'), { path: filePath });
+    await this.runGitActionWithStatus("Staging changes...", async () => {
+      const result = await this.postGitAction(resolveApiUrl("/git/stage"), {
+        path: filePath,
+      });
       await this.finalizeGitAction({
-        action: 'stage',
+        action: "stage",
         filePath,
-        preferredScope: scope === 'all' ? 'all' : 'staged',
+        preferredScope: scope === "all" ? "all" : "staged",
         result,
       });
     });
   },
 
-  async unstageGitFile(filePath, { scope = 'staged' } = {}) {
+  async unstageGitFile(filePath, { scope = "staged" } = {}) {
     if (!filePath) {
       return;
     }
 
-    await this.runGitActionWithStatus('Unstaging changes...', async () => {
-      const result = await this.postGitAction(resolveApiUrl('/git/unstage'), { path: filePath });
+    await this.runGitActionWithStatus("Unstaging changes...", async () => {
+      const result = await this.postGitAction(resolveApiUrl("/git/unstage"), {
+        path: filePath,
+      });
       await this.finalizeGitAction({
-        action: 'unstage',
+        action: "unstage",
         filePath,
-        preferredScope: scope === 'all' ? 'all' : 'working-tree',
+        preferredScope: scope === "all" ? "all" : "working-tree",
         result,
       });
     });
   },
 
   async pushGitBranch() {
-    await this.runGitActionWithStatus('Pushing branch...', async () => {
+    await this.runGitActionWithStatus("Pushing branch...", async () => {
       try {
-        const result = await this.postGitAction(resolveApiUrl('/git/push'), {});
+        const result = await this.postGitAction(resolveApiUrl("/git/push"), {});
         await this.finalizeGitAction({
-          action: 'push',
+          action: "push",
           result,
         });
       } catch (error) {
-        this.toastController.show(error.message || 'Failed to push branch');
+        this.toastController.show(error.message || "Failed to push branch");
       }
     });
   },
 
   async pullGitBranch() {
-    await this.runGitActionWithStatus('Pulling branch...', async () => {
+    await this.runGitActionWithStatus("Pulling branch...", async () => {
       try {
-        const result = await this.postGitAction(resolveApiUrl('/git/pull'), {});
+        const result = await this.postGitAction(resolveApiUrl("/git/pull"), {});
         await this.finalizeGitAction({
-          action: 'pull',
+          action: "pull",
           result,
           showLocalFileToast: true,
         });
         if (result.pullBackup) {
-          this.toastController.show(this.formatPullBackupToast(result.pullBackup), 5000);
+          this.toastController.show(
+            this.formatPullBackupToast(result.pullBackup),
+            5000,
+          );
         }
       } catch (error) {
-        if (error?.code === 'pull_diverged_ff_only') {
-          this.toastController.show('Cannot pull because local and remote commits have diverged. Fast-forward only pull is not possible.', 5000);
+        if (error?.code === "pull_diverged_ff_only") {
+          this.toastController.show(
+            "Cannot pull because local and remote commits have diverged. Fast-forward only pull is not possible.",
+            5000,
+          );
           return;
         }
 
-        if (error?.code === 'pull_conflicted_after_autostash') {
-          this.toastController.show('Pull updated the branch, but reapplying local changes caused conflicts. Review the conflicted files and the pull backup summary.', 6000);
+        if (error?.code === "pull_conflicted_after_autostash") {
+          this.toastController.show(
+            "Pull updated the branch, but reapplying local changes caused conflicts. Review the conflicted files and the pull backup summary.",
+            6000,
+          );
           return;
         }
 
-        this.toastController.show(error.message || 'Failed to pull branch');
+        this.toastController.show(error.message || "Failed to pull branch");
       }
     });
   },
@@ -327,24 +378,25 @@ export const gitFeature = {
 
     this.pendingGitResetPath = filePath;
     if (this.elements.gitResetTitle) {
-      this.elements.gitResetTitle.textContent = 'Reset file to current branch';
+      this.elements.gitResetTitle.textContent = "Reset file to current branch";
     }
     if (this.elements.gitResetCopy) {
-      this.elements.gitResetCopy.textContent = 'Restore this file from the current checked-out branch. If this branch does not contain the file, the file will be deleted locally.';
+      this.elements.gitResetCopy.textContent =
+        "Restore this file from the current checked-out branch. If this branch does not contain the file, the file will be deleted locally.";
     }
     this.elements.gitResetFileName.value = filePath;
     if (this.elements.gitResetSubmit) {
-      this.elements.gitResetSubmit.textContent = 'Reset File';
+      this.elements.gitResetSubmit.textContent = "Reset File";
     }
-    this.elements.gitResetSubmit?.toggleAttribute('disabled', false);
+    this.elements.gitResetSubmit?.toggleAttribute("disabled", false);
 
     if (dialog.open) {
       return;
     }
-    if (typeof dialog.showModal === 'function') {
+    if (typeof dialog.showModal === "function") {
       dialog.showModal();
     } else {
-      dialog.setAttribute('open', 'true');
+      dialog.setAttribute("open", "true");
     }
   },
 
@@ -356,15 +408,18 @@ export const gitFeature = {
       return;
     }
 
-    submit?.toggleAttribute('disabled', true);
+    submit?.toggleAttribute("disabled", true);
     if (submit) {
-      submit.textContent = 'Resetting...';
+      submit.textContent = "Resetting...";
     }
     try {
-      await this.runGitActionWithStatus('Resetting file...', async () => {
-        const result = await this.postGitAction(resolveApiUrl('/git/reset-file'), { path: filePath });
+      await this.runGitActionWithStatus("Resetting file...", async () => {
+        const result = await this.postGitAction(
+          resolveApiUrl("/git/reset-file"),
+          { path: filePath },
+        );
         await this.finalizeGitAction({
-          action: 'reset',
+          action: "reset",
           filePath,
           result,
           showLocalFileToast: true,
@@ -372,12 +427,12 @@ export const gitFeature = {
       });
       dialog.close();
     } catch (error) {
-      this.toastController.show(error.message || 'Failed to reset file');
+      this.toastController.show(error.message || "Failed to reset file");
     } finally {
       if (submit) {
-        submit.textContent = 'Reset File';
+        submit.textContent = "Reset File";
       }
-      submit?.toggleAttribute('disabled', false);
+      submit?.toggleAttribute("disabled", false);
     }
   },
 
@@ -393,26 +448,27 @@ export const gitFeature = {
     }
 
     if (this.elements.gitCommitTitle) {
-      this.elements.gitCommitTitle.textContent = 'Commit staged changes';
+      this.elements.gitCommitTitle.textContent = "Commit staged changes";
     }
     if (this.elements.gitCommitCopy) {
       const stagedCount = Number(this.gitPanel.status?.summary?.staged || 0);
-      this.elements.gitCommitCopy.textContent = stagedCount > 0
-        ? `${stagedCount} staged file${stagedCount === 1 ? '' : 's'} will be included.`
-        : 'All staged changes will be included.';
+      this.elements.gitCommitCopy.textContent =
+        stagedCount > 0
+          ? `${stagedCount} staged file${stagedCount === 1 ? "" : "s"} will be included.`
+          : "All staged changes will be included.";
     }
     if (this.elements.gitCommitSubmit) {
-      this.elements.gitCommitSubmit.textContent = 'Commit staged changes';
+      this.elements.gitCommitSubmit.textContent = "Commit staged changes";
     }
-    input.value = '';
+    input.value = "";
 
     if (dialog.open) {
       return;
     }
-    if (typeof dialog.showModal === 'function') {
+    if (typeof dialog.showModal === "function") {
       dialog.showModal();
     } else {
-      dialog.setAttribute('open', 'true');
+      dialog.setAttribute("open", "true");
     }
     requestAnimationFrame(() => {
       input.focus();
@@ -424,38 +480,40 @@ export const gitFeature = {
     const dialog = this.elements.gitCommitDialog;
     const input = this.elements.gitCommitInput;
     const submit = this.elements.gitCommitSubmit;
-    const message = String(input?.value ?? '').trim();
+    const message = String(input?.value ?? "").trim();
     if (!dialog || !input) {
       return;
     }
     if (!message) {
       input.focus();
-      this.toastController.show('Commit message cannot be empty');
+      this.toastController.show("Commit message cannot be empty");
       return;
     }
 
-    submit?.toggleAttribute('disabled', true);
+    submit?.toggleAttribute("disabled", true);
     if (submit) {
-      submit.textContent = 'Committing...';
+      submit.textContent = "Committing...";
     }
     try {
-      await this.runGitActionWithStatus('Committing changes...', async () => {
-        const result = await this.postGitAction(resolveApiUrl('/git/commit'), {
+      await this.runGitActionWithStatus("Committing changes...", async () => {
+        const result = await this.postGitAction(resolveApiUrl("/git/commit"), {
           message,
         });
         await this.finalizeGitAction({
-          action: 'commit',
+          action: "commit",
           result,
         });
       });
       dialog.close();
     } catch (error) {
-      this.toastController.show(error.message || 'Failed to commit staged changes');
+      this.toastController.show(
+        error.message || "Failed to commit staged changes",
+      );
     } finally {
       if (submit) {
-        submit.textContent = 'Commit staged changes';
+        submit.textContent = "Commit staged changes";
       }
-      submit?.toggleAttribute('disabled', false);
+      submit?.toggleAttribute("disabled", false);
     }
   },
 };

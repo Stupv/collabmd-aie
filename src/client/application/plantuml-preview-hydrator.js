@@ -1,7 +1,7 @@
-import { clamp } from '../domain/vault-utils.js';
-import { setDiagramActionButtonIcon } from '../domain/diagram-action-icons.js';
-import { resolveApiUrl } from '../domain/runtime-paths.js';
-import { DiagramPreviewHydrator } from './diagram-preview-hydrator.js';
+import { clamp } from "../domain/vault-utils.js";
+import { setDiagramActionButtonIcon } from "../domain/diagram-action-icons.js";
+import { resolveApiUrl } from "../domain/runtime-paths.js";
+import { DiagramPreviewHydrator } from "./diagram-preview-hydrator.js";
 import {
   createPlantUmlPlaceholderCard,
   easeOutCubic,
@@ -10,26 +10,26 @@ import {
   PLANTUML_BATCH_SIZE,
   PLANTUML_ZOOM,
   sanitizeSvgMarkup,
-} from './preview-diagram-utils.js';
+} from "./preview-diagram-utils.js";
 
 export class PlantUmlPreviewHydrator extends DiagramPreviewHydrator {
   constructor(renderer) {
     super(renderer, {
       batchSize: PLANTUML_BATCH_SIZE,
       datasetKeys: {
-        hydrated: 'plantumlHydrated',
-        instanceId: 'plantumlInstanceId',
-        key: 'plantumlKey',
-        label: 'plantumlLabel',
-        queued: 'plantumlQueued',
-        sourceHash: 'plantumlSourceHash',
-        sourceLine: 'sourceLine',
-        sourceLineEnd: 'sourceLineEnd',
-        target: 'plantumlTarget',
+        hydrated: "plantumlHydrated",
+        instanceId: "plantumlInstanceId",
+        key: "plantumlKey",
+        label: "plantumlLabel",
+        queued: "plantumlQueued",
+        sourceHash: "plantumlSourceHash",
+        sourceLine: "sourceLine",
+        sourceLineEnd: "sourceLineEnd",
+        target: "plantumlTarget",
       },
-      filePathLabel: 'PlantUML',
-      shellClassName: 'plantuml-shell',
-      sourceClassName: 'plantuml-source',
+      filePathLabel: "PlantUML",
+      shellClassName: "plantuml-shell",
+      sourceClassName: "plantuml-source",
     });
     this.renderer = renderer;
     this.svgCache = new Map();
@@ -61,8 +61,8 @@ export class PlantUmlPreviewHydrator extends DiagramPreviewHydrator {
 
   syncActiveShell() {
     if (
-      this.activeMaximizedShell?.isConnected
-      && this.activeMaximizedShell.classList.contains('is-maximized')
+      this.activeMaximizedShell?.isConnected &&
+      this.activeMaximizedShell.classList.contains("is-maximized")
     ) {
       return this.activeMaximizedShell;
     }
@@ -89,21 +89,26 @@ export class PlantUmlPreviewHydrator extends DiagramPreviewHydrator {
 
   handleReconcile({ restoredMaximizedShell }) {
     if (restoredMaximizedShell) {
-      document.body.classList.add('plantuml-maximized-open');
+      document.body.classList.add("plantuml-maximized-open");
     }
     this.syncActiveShell();
   }
 
   ensureMaximizedRoot() {
-    if (this.maximizedRoot?.isConnected && this.maximizedRoot.parentElement === document.body) {
+    if (
+      this.maximizedRoot?.isConnected &&
+      this.maximizedRoot.parentElement === document.body
+    ) {
       return this.maximizedRoot;
     }
 
-    let maximizedRoot = document.body.querySelector('[data-plantuml-maximized-root="true"]');
+    let maximizedRoot = document.body.querySelector(
+      '[data-plantuml-maximized-root="true"]',
+    );
     if (!maximizedRoot) {
-      maximizedRoot = document.createElement('div');
-      maximizedRoot.dataset.plantumlMaximizedRoot = 'true';
-      maximizedRoot.className = 'plantuml-maximized-root';
+      maximizedRoot = document.createElement("div");
+      maximizedRoot.dataset.plantumlMaximizedRoot = "true";
+      maximizedRoot.className = "plantuml-maximized-root";
       document.body.appendChild(maximizedRoot);
     }
 
@@ -151,18 +156,18 @@ export class PlantUmlPreviewHydrator extends DiagramPreviewHydrator {
       return;
     }
 
-    let sourceNode = shell.querySelector('.plantuml-source');
+    let sourceNode = shell.querySelector(".plantuml-source");
     if (!sourceNode) {
-      sourceNode = document.createElement('span');
-      sourceNode.className = 'plantuml-source';
+      sourceNode = document.createElement("span");
+      sourceNode.className = "plantuml-source";
       sourceNode.hidden = true;
       shell.appendChild(sourceNode);
     }
 
-    shell.querySelector('.plantuml-placeholder-card')?.remove();
+    shell.querySelector(".plantuml-placeholder-card")?.remove();
 
     try {
-      let source = sourceNode.textContent ?? '';
+      let source = sourceNode.textContent ?? "";
       if (!source.trim() && shell.dataset.plantumlTarget) {
         source = await this.fetchSource(shell.dataset.plantumlTarget);
         if (!shell.isConnected) {
@@ -172,7 +177,11 @@ export class PlantUmlPreviewHydrator extends DiagramPreviewHydrator {
       }
 
       if (!source.trim()) {
-        throw new Error(shell.dataset.plantumlTarget ? 'PlantUML file is empty' : 'PlantUML source is empty');
+        throw new Error(
+          shell.dataset.plantumlTarget
+            ? "PlantUML file is empty"
+            : "PlantUML source is empty",
+        );
       }
 
       const svgMarkup = await this.fetchSvg(source);
@@ -184,14 +193,16 @@ export class PlantUmlPreviewHydrator extends DiagramPreviewHydrator {
       this.enhanceDiagram(shell, svgMarkup);
       this.markShellHydrated(shell);
     } catch (error) {
-      console.warn('[preview] PlantUML render failed:', error);
-      shell.querySelector(':scope > .plantuml-toolbar')?.remove();
-      shell.querySelector(':scope > .plantuml-frame')?.remove();
-      if (!shell.querySelector('.plantuml-placeholder-card')) {
-        sourceNode?.after(createPlantUmlPlaceholderCard(
-          shell.dataset.plantumlKey || 'plantuml',
-          error instanceof Error ? error.message : 'Render failed',
-        ));
+      console.warn("[preview] PlantUML render failed:", error);
+      shell.querySelector(":scope > .plantuml-toolbar")?.remove();
+      shell.querySelector(":scope > .plantuml-frame")?.remove();
+      if (!shell.querySelector(".plantuml-placeholder-card")) {
+        sourceNode?.after(
+          createPlantUmlPlaceholderCard(
+            shell.dataset.plantumlKey || "plantuml",
+            error instanceof Error ? error.message : "Render failed",
+          ),
+        );
       }
     }
   }
@@ -206,17 +217,17 @@ export class PlantUmlPreviewHydrator extends DiagramPreviewHydrator {
       return this.svgInflightRequests.get(cacheKey);
     }
 
-    const request = fetch(resolveApiUrl('/plantuml/render'), {
-      method: 'POST',
+    const request = fetch(resolveApiUrl("/plantuml/render"), {
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
       body: JSON.stringify({ source }),
     })
       .then(async (response) => {
         const data = await response.json().catch(() => null);
-        if (!response.ok || !data?.ok || typeof data.svg !== 'string') {
-          throw new Error(data?.error || 'Failed to render PlantUML');
+        if (!response.ok || !data?.ok || typeof data.svg !== "string") {
+          throw new Error(data?.error || "Failed to render PlantUML");
         }
 
         const sanitized = sanitizeSvgMarkup(data.svg);
@@ -231,8 +242,11 @@ export class PlantUmlPreviewHydrator extends DiagramPreviewHydrator {
     return request;
   }
 
-  resetShell(shell, { clearCache = false, message = 'Renders server-side when visible' } = {}) {
-    const source = shell.querySelector('.plantuml-source')?.textContent ?? '';
+  resetShell(
+    shell,
+    { clearCache = false, message = "Renders server-side when visible" } = {},
+  ) {
+    const source = shell.querySelector(".plantuml-source")?.textContent ?? "";
     if (clearCache && source) {
       this.svgCache.delete(source);
       this.svgInflightRequests.delete(source);
@@ -244,49 +258,60 @@ export class PlantUmlPreviewHydrator extends DiagramPreviewHydrator {
       this.clearActiveShell();
     }
 
-    shell.removeAttribute('data-plantuml-hydrated');
-    shell.removeAttribute('data-plantuml-instance-id');
-    shell.removeAttribute('data-plantuml-queued');
-    shell.classList.remove('is-maximized');
+    shell.removeAttribute("data-plantuml-hydrated");
+    shell.removeAttribute("data-plantuml-instance-id");
+    shell.removeAttribute("data-plantuml-queued");
+    shell.classList.remove("is-maximized");
     if (!this.syncActiveShell()) {
-      document.body.classList.remove('plantuml-maximized-open');
+      document.body.classList.remove("plantuml-maximized-open");
     }
-    shell.querySelector(':scope > .plantuml-toolbar')?.remove();
-    shell.querySelector(':scope > .plantuml-frame')?.remove();
-    if (!shell.querySelector('.plantuml-placeholder-card')) {
-      shell.querySelector('.plantuml-source')?.after(createPlantUmlPlaceholderCard(
-        shell.dataset.plantumlKey || 'plantuml',
-        message,
-      ));
+    shell.querySelector(":scope > .plantuml-toolbar")?.remove();
+    shell.querySelector(":scope > .plantuml-frame")?.remove();
+    if (!shell.querySelector(".plantuml-placeholder-card")) {
+      shell
+        .querySelector(".plantuml-source")
+        ?.after(
+          createPlantUmlPlaceholderCard(
+            shell.dataset.plantumlKey || "plantuml",
+            message,
+          ),
+        );
     }
   }
 
   enhanceDiagram(shell, svgMarkup) {
-    const container = document.createElement('div');
+    const container = document.createElement("div");
     container.innerHTML = svgMarkup;
-    const svg = container.querySelector('svg');
+    const svg = container.querySelector("svg");
     if (!svg) {
-      throw new Error('Renderer returned invalid SVG');
+      throw new Error("Renderer returned invalid SVG");
     }
 
-    const toolbar = document.createElement('div');
-    toolbar.className = 'plantuml-toolbar diagram-preview-toolbar';
+    const toolbar = document.createElement("div");
+    toolbar.className = "plantuml-toolbar diagram-preview-toolbar";
 
-    const frame = document.createElement('div');
-    frame.className = 'plantuml-frame diagram-preview-frame';
-    const decreaseButton = this.createToolButton('−', 'Zoom out');
-    const increaseButton = this.createToolButton('+', 'Zoom in');
-    const resetButton = this.createToolButton('Reset', 'Reset zoom');
-    const reloadButton = this.createToolButton('Reload', 'Reload diagram');
-    const maximizeButton = this.createToolButton('Max', 'Maximize diagram');
-    maximizeButton.classList.add('plantuml-maximize-btn');
-    setDiagramActionButtonIcon(reloadButton, 'refresh');
-    setDiagramActionButtonIcon(maximizeButton, 'maximize');
-    const zoomLabel = document.createElement('span');
-    zoomLabel.className = 'plantuml-zoom-label diagram-preview-zoom-label';
-    zoomLabel.setAttribute('aria-live', 'polite');
+    const frame = document.createElement("div");
+    frame.className = "plantuml-frame diagram-preview-frame";
+    const decreaseButton = this.createToolButton("−", "Zoom out");
+    const increaseButton = this.createToolButton("+", "Zoom in");
+    const resetButton = this.createToolButton("Reset", "Reset zoom");
+    const reloadButton = this.createToolButton("Reload", "Reload diagram");
+    const maximizeButton = this.createToolButton("Max", "Maximize diagram");
+    maximizeButton.classList.add("plantuml-maximize-btn");
+    setDiagramActionButtonIcon(reloadButton, "refresh");
+    setDiagramActionButtonIcon(maximizeButton, "maximize");
+    const zoomLabel = document.createElement("span");
+    zoomLabel.className = "plantuml-zoom-label diagram-preview-zoom-label";
+    zoomLabel.setAttribute("aria-live", "polite");
 
-    toolbar.append(decreaseButton, zoomLabel, resetButton, increaseButton, reloadButton, maximizeButton);
+    toolbar.append(
+      decreaseButton,
+      zoomLabel,
+      resetButton,
+      increaseButton,
+      reloadButton,
+      maximizeButton,
+    );
 
     const { width: baseWidth, height: baseHeight } = getSvgSize(svg);
     let currentZoom = PLANTUML_ZOOM.default;
@@ -299,17 +324,25 @@ export class PlantUmlPreviewHydrator extends DiagramPreviewHydrator {
     let panStartScrollLeft = 0;
     let panStartScrollTop = 0;
 
-    svg.style.display = 'block';
-    svg.style.margin = '0 auto';
-    svg.style.maxWidth = 'none';
+    svg.style.display = "block";
+    svg.style.margin = "0 auto";
+    svg.style.maxWidth = "none";
 
     const calculateDefaultZoom = () => {
       const viewport = getFrameViewportSize(frame);
-      if (!Number.isFinite(baseWidth) || baseWidth <= 0 || viewport.width <= 0) {
+      if (
+        !Number.isFinite(baseWidth) ||
+        baseWidth <= 0 ||
+        viewport.width <= 0
+      ) {
         return PLANTUML_ZOOM.default;
       }
 
-      return clamp(Math.min(PLANTUML_ZOOM.default, viewport.width / baseWidth), PLANTUML_ZOOM.min, PLANTUML_ZOOM.max);
+      return clamp(
+        Math.min(PLANTUML_ZOOM.default, viewport.width / baseWidth),
+        PLANTUML_ZOOM.min,
+        PLANTUML_ZOOM.max,
+      );
     };
 
     const applyZoom = (nextZoom) => {
@@ -323,13 +356,15 @@ export class PlantUmlPreviewHydrator extends DiagramPreviewHydrator {
       increaseButton.disabled = currentZoom >= PLANTUML_ZOOM.max;
 
       const viewport = getFrameViewportSize(frame);
-      const isPannable = (baseWidth * currentZoom) > viewport.width || (baseHeight * currentZoom) > viewport.height;
-      frame.classList.toggle('is-pannable', isPannable);
+      const isPannable =
+        baseWidth * currentZoom > viewport.width ||
+        baseHeight * currentZoom > viewport.height;
+      frame.classList.toggle("is-pannable", isPannable);
     };
 
     const getViewportCenter = () => ({
-      x: frame.scrollLeft + (frame.clientWidth / 2),
-      y: frame.scrollTop + (frame.clientHeight / 2),
+      x: frame.scrollLeft + frame.clientWidth / 2,
+      y: frame.scrollTop + frame.clientHeight / 2,
     });
 
     const restoreViewportCenter = (previousZoom, nextZoom, center) => {
@@ -338,8 +373,8 @@ export class PlantUmlPreviewHydrator extends DiagramPreviewHydrator {
       }
 
       const scale = nextZoom / previousZoom;
-      frame.scrollLeft = (center.x * scale) - (frame.clientWidth / 2);
-      frame.scrollTop = (center.y * scale) - (frame.clientHeight / 2);
+      frame.scrollLeft = center.x * scale - frame.clientWidth / 2;
+      frame.scrollTop = center.y * scale - frame.clientHeight / 2;
     };
 
     const animateZoomTo = (nextZoom) => {
@@ -358,9 +393,14 @@ export class PlantUmlPreviewHydrator extends DiagramPreviewHydrator {
       }
 
       const tick = (now) => {
-        const progress = clamp((now - startedAt) / PLANTUML_ZOOM.animationDurationMs, 0, 1);
+        const progress = clamp(
+          (now - startedAt) / PLANTUML_ZOOM.animationDurationMs,
+          0,
+          1,
+        );
         const easedProgress = easeOutCubic(progress);
-        const animatedZoom = startZoom + ((targetZoom - startZoom) * easedProgress);
+        const animatedZoom =
+          startZoom + (targetZoom - startZoom) * easedProgress;
 
         applyZoom(animatedZoom);
         restoreViewportCenter(startZoom, animatedZoom, center);
@@ -418,17 +458,20 @@ export class PlantUmlPreviewHydrator extends DiagramPreviewHydrator {
 
     this.shellRefits.set(shell, scheduleResetZoomToFit);
 
-    decreaseButton.addEventListener('click', () => zoomBy(-PLANTUML_ZOOM.step));
-    increaseButton.addEventListener('click', () => zoomBy(PLANTUML_ZOOM.step));
-    resetButton.addEventListener('click', () => {
+    decreaseButton.addEventListener("click", () => zoomBy(-PLANTUML_ZOOM.step));
+    increaseButton.addEventListener("click", () => zoomBy(PLANTUML_ZOOM.step));
+    resetButton.addEventListener("click", () => {
       resetZoomToFit({ animate: true });
     });
 
     const syncMaximizeButtonState = () => {
-      const isMaximized = shell.classList.contains('is-maximized');
-      setDiagramActionButtonIcon(maximizeButton, isMaximized ? 'restore' : 'maximize');
-      const label = isMaximized ? 'Restore diagram size' : 'Maximize diagram';
-      maximizeButton.setAttribute('aria-label', label);
+      const isMaximized = shell.classList.contains("is-maximized");
+      setDiagramActionButtonIcon(
+        maximizeButton,
+        isMaximized ? "restore" : "maximize",
+      );
+      const label = isMaximized ? "Restore diagram size" : "Maximize diagram";
+      maximizeButton.setAttribute("aria-label", label);
       maximizeButton.title = label;
     };
 
@@ -437,51 +480,53 @@ export class PlantUmlPreviewHydrator extends DiagramPreviewHydrator {
         const activeContainer = this.syncActiveShell();
         if (activeContainer && activeContainer !== shell) {
           this.restoreShellMount(activeContainer);
-          activeContainer.classList.remove('is-maximized');
+          activeContainer.classList.remove("is-maximized");
           if (this.activeMaximizedShell === activeContainer) {
             this.clearActiveShell();
           }
           this.shellRefits.get(activeContainer)?.();
-          const activeButton = activeContainer.querySelector('.plantuml-maximize-btn');
+          const activeButton = activeContainer.querySelector(
+            ".plantuml-maximize-btn",
+          );
           if (activeButton) {
-            setDiagramActionButtonIcon(activeButton, 'maximize');
-            activeButton.setAttribute('aria-label', 'Maximize diagram');
-            activeButton.title = 'Maximize diagram';
+            setDiagramActionButtonIcon(activeButton, "maximize");
+            activeButton.setAttribute("aria-label", "Maximize diagram");
+            activeButton.title = "Maximize diagram";
           }
         }
 
         this.mountShellInMaximizedRoot(shell);
-        shell.classList.add('is-maximized');
+        shell.classList.add("is-maximized");
         this.activeMaximizedShell = shell;
-        document.body.classList.add('plantuml-maximized-open');
+        document.body.classList.add("plantuml-maximized-open");
         syncMaximizeButtonState();
         scheduleResetZoomToFit();
         return;
       }
 
       this.restoreShellMount(shell);
-      shell.classList.remove('is-maximized');
+      shell.classList.remove("is-maximized");
       if (this.activeMaximizedShell === shell) {
         this.clearActiveShell();
       }
       if (!this.syncActiveShell()) {
-        document.body.classList.remove('plantuml-maximized-open');
+        document.body.classList.remove("plantuml-maximized-open");
       }
       syncMaximizeButtonState();
       scheduleResetZoomToFit();
     };
 
-    reloadButton.addEventListener('click', () => {
+    reloadButton.addEventListener("click", () => {
       this.resetShell(shell, {
         clearCache: true,
-        message: 'Refreshing…',
+        message: "Refreshing…",
       });
       this.enqueueShell(shell, { prioritize: true });
     });
 
     syncMaximizeButtonState();
-    maximizeButton.addEventListener('click', () => {
-      setMaximizedState(!shell.classList.contains('is-maximized'));
+    maximizeButton.addEventListener("click", () => {
+      setMaximizedState(!shell.classList.contains("is-maximized"));
     });
 
     const stopPanning = () => {
@@ -490,9 +535,12 @@ export class PlantUmlPreviewHydrator extends DiagramPreviewHydrator {
       }
 
       isPanning = false;
-      frame.classList.remove('is-dragging');
+      frame.classList.remove("is-dragging");
 
-      if (activePointerId !== null && typeof frame.releasePointerCapture === 'function') {
+      if (
+        activePointerId !== null &&
+        typeof frame.releasePointerCapture === "function"
+      ) {
         try {
           frame.releasePointerCapture(activePointerId);
         } catch {
@@ -503,8 +551,8 @@ export class PlantUmlPreviewHydrator extends DiagramPreviewHydrator {
       activePointerId = null;
     };
 
-    frame.addEventListener('pointerdown', (event) => {
-      if (event.button !== 0 || !frame.classList.contains('is-pannable')) {
+    frame.addEventListener("pointerdown", (event) => {
+      if (event.button !== 0 || !frame.classList.contains("is-pannable")) {
         return;
       }
 
@@ -520,12 +568,12 @@ export class PlantUmlPreviewHydrator extends DiagramPreviewHydrator {
       panStartScrollLeft = frame.scrollLeft;
       panStartScrollTop = frame.scrollTop;
 
-      frame.classList.add('is-dragging');
+      frame.classList.add("is-dragging");
       frame.setPointerCapture?.(event.pointerId);
       event.preventDefault();
     });
 
-    frame.addEventListener('pointermove', (event) => {
+    frame.addEventListener("pointermove", (event) => {
       if (!isPanning) {
         return;
       }
@@ -534,12 +582,12 @@ export class PlantUmlPreviewHydrator extends DiagramPreviewHydrator {
       frame.scrollTop = panStartScrollTop - (event.clientY - panStartY);
     });
 
-    frame.addEventListener('pointerup', stopPanning);
-    frame.addEventListener('pointercancel', stopPanning);
-    frame.addEventListener('lostpointercapture', stopPanning);
+    frame.addEventListener("pointerup", stopPanning);
+    frame.addEventListener("pointercancel", stopPanning);
+    frame.addEventListener("lostpointercapture", stopPanning);
 
     frame.appendChild(svg);
-    const sourceNode = shell.querySelector('.plantuml-source');
+    const sourceNode = shell.querySelector(".plantuml-source");
     shell.replaceChildren();
     if (sourceNode) {
       sourceNode.hidden = true;
@@ -552,10 +600,10 @@ export class PlantUmlPreviewHydrator extends DiagramPreviewHydrator {
   }
 
   createToolButton(label, ariaLabel) {
-    const button = document.createElement('button');
-    button.type = 'button';
-    button.className = 'plantuml-tool-btn diagram-preview-action-btn';
-    button.setAttribute('aria-label', ariaLabel);
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "plantuml-tool-btn diagram-preview-action-btn";
+    button.setAttribute("aria-label", ariaLabel);
     button.title = ariaLabel;
     button.textContent = label;
     return button;

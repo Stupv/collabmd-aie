@@ -1,27 +1,35 @@
-import { escapeHtml } from '../domain/vault-utils.js';
-import { resolveApiUrl } from '../domain/runtime-paths.js';
+import { escapeHtml } from "../domain/vault-utils.js";
+import { resolveApiUrl } from "../domain/runtime-paths.js";
 
 function getPathLeaf(pathValue) {
-  return String(pathValue ?? '').split('/').pop() || '';
+  return (
+    String(pathValue ?? "")
+      .split("/")
+      .pop() || ""
+  );
 }
 
 function badgeClass(status) {
   switch (status) {
-    case 'added':
-    case 'untracked':
-      return 'added';
-    case 'deleted':
-      return 'deleted';
-    case 'renamed':
-      return 'renamed';
+    case "added":
+    case "untracked":
+      return "added";
+    case "deleted":
+      return "deleted";
+    case "renamed":
+      return "renamed";
     default:
-      return 'modified';
+      return "modified";
   }
 }
 
 function commonPrefixLength(left, right) {
   let index = 0;
-  while (index < left.length && index < right.length && left[index] === right[index]) {
+  while (
+    index < left.length &&
+    index < right.length &&
+    left[index] === right[index]
+  ) {
     index += 1;
   }
   return index;
@@ -45,10 +53,13 @@ function highlightPair(leftText, rightText) {
   const prefixLength = commonPrefixLength(leftText, rightText);
   const suffixLength = commonSuffixLength(leftText, rightText, prefixLength);
   const leftChangedEnd = Math.max(prefixLength, leftText.length - suffixLength);
-  const rightChangedEnd = Math.max(prefixLength, rightText.length - suffixLength);
+  const rightChangedEnd = Math.max(
+    prefixLength,
+    rightText.length - suffixLength,
+  );
 
-  const leftHtml = `${escapeHtml(leftText.slice(0, prefixLength))}${leftChangedEnd > prefixLength ? `<span class="diff-highlight-del">${escapeHtml(leftText.slice(prefixLength, leftChangedEnd))}</span>` : ''}${escapeHtml(leftText.slice(leftChangedEnd))}`;
-  const rightHtml = `${escapeHtml(rightText.slice(0, prefixLength))}${rightChangedEnd > prefixLength ? `<span class="diff-highlight-add">${escapeHtml(rightText.slice(prefixLength, rightChangedEnd))}</span>` : ''}${escapeHtml(rightText.slice(rightChangedEnd))}`;
+  const leftHtml = `${escapeHtml(leftText.slice(0, prefixLength))}${leftChangedEnd > prefixLength ? `<span class="diff-highlight-del">${escapeHtml(leftText.slice(prefixLength, leftChangedEnd))}</span>` : ""}${escapeHtml(leftText.slice(leftChangedEnd))}`;
+  const rightHtml = `${escapeHtml(rightText.slice(0, prefixLength))}${rightChangedEnd > prefixLength ? `<span class="diff-highlight-add">${escapeHtml(rightText.slice(prefixLength, rightChangedEnd))}</span>` : ""}${escapeHtml(rightText.slice(rightChangedEnd))}`;
 
   return { leftHtml, rightHtml };
 }
@@ -58,24 +69,24 @@ function createPairedBlocks(lines = []) {
 
   for (let index = 0; index < lines.length; index += 1) {
     const line = lines[index];
-    if (line.type === 'context' || line.type === 'note') {
+    if (line.type === "context" || line.type === "note") {
       blocks.push({ additions: [], context: [line], deletions: [] });
       continue;
     }
 
-    if (line.type !== 'deletion' && line.type !== 'addition') {
+    if (line.type !== "deletion" && line.type !== "addition") {
       continue;
     }
 
     const deletions = [];
     const additions = [];
 
-    while (index < lines.length && lines[index].type === 'deletion') {
+    while (index < lines.length && lines[index].type === "deletion") {
       deletions.push(lines[index]);
       index += 1;
     }
 
-    while (index < lines.length && lines[index].type === 'addition') {
+    while (index < lines.length && lines[index].type === "addition") {
       additions.push(lines[index]);
       index += 1;
     }
@@ -88,10 +99,11 @@ function createPairedBlocks(lines = []) {
 }
 
 function renderUnifiedLine(line, prefix, contentHtml) {
-  const oldLine = Number.isInteger(line.oldLine) ? line.oldLine : '';
-  const newLine = Number.isInteger(line.newLine) ? line.newLine : '';
-  const lineClass = line.type === 'note' ? 'note' : line.type;
-  const renderedPrefix = line.type === 'context' || line.type === 'note' ? ' ' : prefix;
+  const oldLine = Number.isInteger(line.oldLine) ? line.oldLine : "";
+  const newLine = Number.isInteger(line.newLine) ? line.newLine : "";
+  const lineClass = line.type === "note" ? "note" : line.type;
+  const renderedPrefix =
+    line.type === "context" || line.type === "note" ? " " : prefix;
 
   return `
     <div class="diff-line ${lineClass}">
@@ -106,10 +118,15 @@ function renderUnifiedLine(line, prefix, contentHtml) {
 }
 
 function renderSplitRow(leftLine, rightLine) {
-  let leftHtml = leftLine ? escapeHtml(leftLine.content) : '';
-  let rightHtml = rightLine ? escapeHtml(rightLine.content) : '';
+  let leftHtml = leftLine ? escapeHtml(leftLine.content) : "";
+  let rightHtml = rightLine ? escapeHtml(rightLine.content) : "";
 
-  if (leftLine && rightLine && leftLine.type === 'deletion' && rightLine.type === 'addition') {
+  if (
+    leftLine &&
+    rightLine &&
+    leftLine.type === "deletion" &&
+    rightLine.type === "addition"
+  ) {
     const highlighted = highlightPair(leftLine.content, rightLine.content);
     leftHtml = highlighted.leftHtml;
     rightHtml = highlighted.rightHtml;
@@ -117,12 +134,12 @@ function renderSplitRow(leftLine, rightLine) {
 
   return `
     <div class="diff-split-row">
-      <div class="diff-split-line ${leftLine?.type || 'empty'}">
-        <span class="diff-split-num">${Number.isInteger(leftLine?.oldLine) ? leftLine.oldLine : ''}</span>
+      <div class="diff-split-line ${leftLine?.type || "empty"}">
+        <span class="diff-split-num">${Number.isInteger(leftLine?.oldLine) ? leftLine.oldLine : ""}</span>
         <span class="diff-split-content">${leftHtml}</span>
       </div>
-      <div class="diff-split-line ${rightLine?.type || 'empty'}">
-        <span class="diff-split-num">${Number.isInteger(rightLine?.newLine) ? rightLine.newLine : ''}</span>
+      <div class="diff-split-line ${rightLine?.type || "empty"}">
+        <span class="diff-split-num">${Number.isInteger(rightLine?.newLine) ? rightLine.newLine : ""}</span>
         <span class="diff-split-content">${rightHtml}</span>
       </div>
     </div>
@@ -142,31 +159,33 @@ export class GitDiffViewController {
     this.onStageFile = onStageFile;
     this.onUnstageFile = onUnstageFile;
     this.toastController = toastController;
-    this.page = document.getElementById('diff-page');
-    this.content = document.getElementById('diffContent');
-    this.scrollContainer = document.getElementById('diffScroll');
-    this.fileIndicator = document.getElementById('diffFileIndicator');
-    this.openEditorButton = document.getElementById('diffOpenEditorBtn');
-    this.primaryActionButton = document.getElementById('diffPrimaryActionBtn');
-    this.commitButton = document.getElementById('diffCommitBtn');
-    this.stats = document.getElementById('diffStats');
-    this.prevButton = document.getElementById('diffPrevBtn');
-    this.nextButton = document.getElementById('diffNextBtn');
-    this.modeButtons = Array.from(document.querySelectorAll('[data-diff-mode]'));
-    this.mode = 'unified';
+    this.page = document.getElementById("diff-page");
+    this.content = document.getElementById("diffContent");
+    this.scrollContainer = document.getElementById("diffScroll");
+    this.fileIndicator = document.getElementById("diffFileIndicator");
+    this.openEditorButton = document.getElementById("diffOpenEditorBtn");
+    this.primaryActionButton = document.getElementById("diffPrimaryActionBtn");
+    this.commitButton = document.getElementById("diffCommitBtn");
+    this.stats = document.getElementById("diffStats");
+    this.prevButton = document.getElementById("diffPrevBtn");
+    this.nextButton = document.getElementById("diffNextBtn");
+    this.modeButtons = Array.from(
+      document.querySelectorAll("[data-diff-mode]"),
+    );
+    this.mode = "unified";
     this.data = null;
     this.currentIndex = 0;
     this.fileCache = new Map();
     this.loadingFilePath = null;
-    this.requestScope = 'all';
+    this.requestScope = "all";
     this.pendingAction = null;
     this.repoStatus = null;
   }
 
   initialize() {
-    this.prevButton?.addEventListener('click', () => this.navigateFile(-1));
-    this.nextButton?.addEventListener('click', () => this.navigateFile(1));
-    this.openEditorButton?.addEventListener('click', () => {
+    this.prevButton?.addEventListener("click", () => this.navigateFile(-1));
+    this.nextButton?.addEventListener("click", () => this.navigateFile(1));
+    this.openEditorButton?.addEventListener("click", () => {
       const currentFile = this.getCurrentFile();
       if (!currentFile?.path) {
         return;
@@ -174,7 +193,7 @@ export class GitDiffViewController {
 
       this.onOpenFile?.(currentFile.path);
     });
-    this.primaryActionButton?.addEventListener('click', () => {
+    this.primaryActionButton?.addEventListener("click", () => {
       const action = this.getPrimaryAction();
       if (!action) {
         return;
@@ -182,20 +201,21 @@ export class GitDiffViewController {
 
       void this.handleFileAction(action);
     });
-    this.commitButton?.addEventListener('click', () => {
-      void this.handleFileAction('commit');
+    this.commitButton?.addEventListener("click", () => {
+      void this.handleFileAction("commit");
     });
-    this.content?.addEventListener('click', (event) => {
-      const loadButton = event.target instanceof Element
-        ? event.target.closest('[data-load-full-diff]')
-        : null;
+    this.content?.addEventListener("click", (event) => {
+      const loadButton =
+        event.target instanceof Element
+          ? event.target.closest("[data-load-full-diff]")
+          : null;
       if (loadButton) {
         void this.loadCurrentFile({ forceFullPatch: true });
       }
     });
     this.modeButtons.forEach((button) => {
-      button.addEventListener('click', () => {
-        const nextMode = button.getAttribute('data-diff-mode');
+      button.addEventListener("click", () => {
+        const nextMode = button.getAttribute("data-diff-mode");
         if (!nextMode || nextMode === this.mode) {
           return;
         }
@@ -206,9 +226,9 @@ export class GitDiffViewController {
   }
 
   hide() {
-    this.page?.classList.add('hidden');
+    this.page?.classList.add("hidden");
     if (this.content) {
-      this.content.innerHTML = '';
+      this.content.innerHTML = "";
     }
     this.data = null;
     this.currentIndex = 0;
@@ -219,29 +239,34 @@ export class GitDiffViewController {
     this.syncToolbar();
   }
 
-  async open({ filePath = null, scope = 'all' } = {}) {
+  async open({ filePath = null, scope = "all" } = {}) {
     this.fileCache.clear();
     this.loadingFilePath = null;
     this.requestScope = scope;
-    this.renderLoading('Loading diff summary...');
+    this.renderLoading("Loading diff summary...");
 
     try {
       const query = new URLSearchParams();
-      query.set('scope', scope);
+      query.set("scope", scope);
       if (filePath) {
-        query.set('path', filePath);
+        query.set("path", filePath);
       }
-      query.set('metaOnly', 'true');
+      query.set("metaOnly", "true");
 
-      const response = await fetch(resolveApiUrl(`/git/diff?${query.toString()}`));
+      const response = await fetch(
+        resolveApiUrl(`/git/diff?${query.toString()}`),
+      );
       const data = await response.json();
       if (!response.ok) {
-        throw new Error(data.error || 'Failed to load git diff');
+        throw new Error(data.error || "Failed to load git diff");
       }
 
       this.data = data;
       const initialIndex = filePath
-        ? Math.max(0, data.files.findIndex((file) => file.path === filePath))
+        ? Math.max(
+            0,
+            data.files.findIndex((file) => file.path === filePath),
+          )
         : 0;
       this.currentIndex = initialIndex;
       if ((data.files?.length ?? 0) === 0) {
@@ -252,14 +277,14 @@ export class GitDiffViewController {
       await this.loadCurrentFile();
       return data;
     } catch (error) {
-      console.error('[git-diff] Failed to load diff:', error);
-      this.toastController?.show('Failed to load git diff');
+      console.error("[git-diff] Failed to load diff:", error);
+      this.toastController?.show("Failed to load git diff");
       this.data = {
         files: [],
         metaOnly: false,
         summary: { additions: 0, deletions: 0, filesChanged: 0 },
       };
-      this.renderEmpty('Failed to load git diff');
+      this.renderEmpty("Failed to load git diff");
       return this.data;
     }
   }
@@ -269,18 +294,21 @@ export class GitDiffViewController {
       return;
     }
 
-    const nextIndex = Math.max(0, Math.min(this.currentIndex + direction, this.data.files.length - 1));
+    const nextIndex = Math.max(
+      0,
+      Math.min(this.currentIndex + direction, this.data.files.length - 1),
+    );
     if (nextIndex === this.currentIndex) {
       return;
     }
 
     this.currentIndex = nextIndex;
-    this.scrollContainer?.scrollTo({ top: 0, behavior: 'auto' });
+    this.scrollContainer?.scrollTo({ top: 0, behavior: "auto" });
     void this.loadCurrentFile();
   }
 
-  renderLoading(message = 'Loading git diff...') {
-    this.page?.classList.remove('hidden');
+  renderLoading(message = "Loading git diff...") {
+    this.page?.classList.remove("hidden");
     if (this.content) {
       this.content.innerHTML = `<div class="diff-empty-state">${escapeHtml(message)}</div>`;
     }
@@ -289,7 +317,7 @@ export class GitDiffViewController {
   }
 
   renderEmpty(message) {
-    this.page?.classList.remove('hidden');
+    this.page?.classList.remove("hidden");
     if (this.content) {
       this.content.innerHTML = `<div class="diff-empty-state">${escapeHtml(message)}</div>`;
     }
@@ -301,32 +329,48 @@ export class GitDiffViewController {
     for (const block of createPairedBlocks(hunk.lines)) {
       if (block.context.length > 0) {
         for (const line of block.context) {
-          markup.push(renderUnifiedLine(line, ' ', escapeHtml(line.content)));
+          markup.push(renderUnifiedLine(line, " ", escapeHtml(line.content)));
         }
         continue;
       }
 
-      const pairCount = Math.max(block.deletions.length, block.additions.length);
+      const pairCount = Math.max(
+        block.deletions.length,
+        block.additions.length,
+      );
       for (let index = 0; index < pairCount; index += 1) {
         const deletion = block.deletions[index] ?? null;
         const addition = block.additions[index] ?? null;
-        const highlighted = deletion && addition
-          ? highlightPair(deletion.content, addition.content)
-          : null;
+        const highlighted =
+          deletion && addition
+            ? highlightPair(deletion.content, addition.content)
+            : null;
 
         if (deletion) {
-          markup.push(renderUnifiedLine(deletion, '-', highlighted?.leftHtml ?? escapeHtml(deletion.content)));
+          markup.push(
+            renderUnifiedLine(
+              deletion,
+              "-",
+              highlighted?.leftHtml ?? escapeHtml(deletion.content),
+            ),
+          );
         }
 
         if (addition) {
-          markup.push(renderUnifiedLine(addition, '+', highlighted?.rightHtml ?? escapeHtml(addition.content)));
+          markup.push(
+            renderUnifiedLine(
+              addition,
+              "+",
+              highlighted?.rightHtml ?? escapeHtml(addition.content),
+            ),
+          );
         }
       }
     }
 
     return `
       <div class="diff-hunk-header">${escapeHtml(hunk.header)}</div>
-      ${markup.join('')}
+      ${markup.join("")}
     `;
   }
 
@@ -338,34 +382,44 @@ export class GitDiffViewController {
           <span class="git-status-badge ${badgeClass(file.status)}">${escapeHtml(file.status)}</span>
           <span class="diff-file-header-stats"><span class="diff-stats-add">+${file.stats?.additions ?? 0}</span><span class="diff-stats-del">-${file.stats?.deletions ?? 0}</span></span>
         </div>
-        ${file.isBinary ? `<div class="diff-binary-message">${escapeHtml(file.binaryMessage || 'Binary file changed')}</div>` : ''}
-        ${file.hunks.map((hunk) => this.renderUnifiedHunk(hunk)).join('')}
+        ${file.isBinary ? `<div class="diff-binary-message">${escapeHtml(file.binaryMessage || "Binary file changed")}</div>` : ""}
+        ${file.hunks.map((hunk) => this.renderUnifiedHunk(hunk)).join("")}
       </section>
     `;
   }
 
   renderSplitFile(file, index) {
-    const hunks = file.hunks.map((hunk) => {
-      const rows = [];
-      for (const block of createPairedBlocks(hunk.lines)) {
-        if (block.context.length > 0) {
-          for (const line of block.context) {
-            rows.push(renderSplitRow(line, line));
+    const hunks = file.hunks
+      .map((hunk) => {
+        const rows = [];
+        for (const block of createPairedBlocks(hunk.lines)) {
+          if (block.context.length > 0) {
+            for (const line of block.context) {
+              rows.push(renderSplitRow(line, line));
+            }
+            continue;
           }
-          continue;
+
+          const count = Math.max(
+            block.deletions.length,
+            block.additions.length,
+          );
+          for (let rowIndex = 0; rowIndex < count; rowIndex += 1) {
+            rows.push(
+              renderSplitRow(
+                block.deletions[rowIndex] ?? null,
+                block.additions[rowIndex] ?? null,
+              ),
+            );
+          }
         }
 
-        const count = Math.max(block.deletions.length, block.additions.length);
-        for (let rowIndex = 0; rowIndex < count; rowIndex += 1) {
-          rows.push(renderSplitRow(block.deletions[rowIndex] ?? null, block.additions[rowIndex] ?? null));
-        }
-      }
-
-      return `
+        return `
         <div class="diff-split-hunk">${escapeHtml(hunk.header)}</div>
-        ${rows.join('')}
+        ${rows.join("")}
       `;
-    }).join('');
+      })
+      .join("");
 
     return `
       <section class="diff-file-block" data-diff-file-index="${index}">
@@ -395,7 +449,9 @@ export class GitDiffViewController {
 
   getCurrentCacheKey() {
     const currentFile = this.getCurrentFile();
-    return currentFile?.path ? `${this.requestScope}:${currentFile.path}` : null;
+    return currentFile?.path
+      ? `${this.requestScope}:${currentFile.path}`
+      : null;
   }
 
   getCurrentFileDetail() {
@@ -417,7 +473,9 @@ export class GitDiffViewController {
 
     return {
       canCommit: stagedCount > 0,
-      canStage: Boolean(detail.hasWorkingTreeChanges || detail.hasUntrackedChanges),
+      canStage: Boolean(
+        detail.hasWorkingTreeChanges || detail.hasUntrackedChanges,
+      ),
       canUnstage: Boolean(detail.hasStagedChanges),
     };
   }
@@ -425,19 +483,19 @@ export class GitDiffViewController {
   getPrimaryAction() {
     const actionState = this.getCurrentActionState();
     if (actionState.canStage && !actionState.canUnstage) {
-      return 'stage';
+      return "stage";
     }
     if (actionState.canUnstage && !actionState.canStage) {
-      return 'unstage';
+      return "unstage";
     }
-    if (this.requestScope === 'staged' && actionState.canUnstage) {
-      return 'unstage';
+    if (this.requestScope === "staged" && actionState.canUnstage) {
+      return "unstage";
     }
     if (actionState.canStage) {
-      return 'stage';
+      return "stage";
     }
     if (actionState.canUnstage) {
-      return 'unstage';
+      return "unstage";
     }
     return null;
   }
@@ -452,11 +510,15 @@ export class GitDiffViewController {
     this.syncToolbar();
 
     try {
-      if (action === 'stage') {
-        await this.onStageFile?.(currentFile.path, { scope: this.requestScope });
-      } else if (action === 'unstage') {
-        await this.onUnstageFile?.(currentFile.path, { scope: this.requestScope });
-      } else if (action === 'commit') {
+      if (action === "stage") {
+        await this.onStageFile?.(currentFile.path, {
+          scope: this.requestScope,
+        });
+      } else if (action === "unstage") {
+        await this.onUnstageFile?.(currentFile.path, {
+          scope: this.requestScope,
+        });
+      } else if (action === "commit") {
         await this.onCommitStaged?.();
       }
     } finally {
@@ -490,16 +552,18 @@ export class GitDiffViewController {
 
     try {
       const query = new URLSearchParams();
-      query.set('scope', this.requestScope);
-      query.set('path', currentFile.path);
+      query.set("scope", this.requestScope);
+      query.set("path", currentFile.path);
       if (forceFullPatch) {
-        query.set('allowLargePatch', 'true');
+        query.set("allowLargePatch", "true");
       }
 
-      const response = await fetch(resolveApiUrl(`/git/diff?${query.toString()}`));
+      const response = await fetch(
+        resolveApiUrl(`/git/diff?${query.toString()}`),
+      );
       const data = await response.json();
       if (!response.ok) {
-        throw new Error(data.error || 'Failed to load file diff');
+        throw new Error(data.error || "Failed to load file diff");
       }
 
       const detail = {
@@ -513,8 +577,8 @@ export class GitDiffViewController {
       this.render();
       return detail;
     } catch (error) {
-      console.error('[git-diff] Failed to load file diff:', error);
-      this.toastController?.show('Failed to load file diff');
+      console.error("[git-diff] Failed to load file diff:", error);
+      this.toastController?.show("Failed to load file diff");
       this.loadingFilePath = null;
       this.render();
       return null;
@@ -569,7 +633,7 @@ export class GitDiffViewController {
       `;
     }
 
-    return this.mode === 'split'
+    return this.mode === "split"
       ? this.renderSplitFile(detail, this.currentIndex)
       : this.renderUnifiedFile(detail, this.currentIndex);
   }
@@ -578,9 +642,10 @@ export class GitDiffViewController {
     const totalFiles = this.data?.files?.length ?? 0;
     const visibleIndex = totalFiles === 0 ? 0 : this.currentIndex + 1;
     if (this.fileIndicator) {
-      this.fileIndicator.textContent = totalFiles > 0
-        ? `${visibleIndex} / ${totalFiles} files`
-        : '0 / 0 files';
+      this.fileIndicator.textContent =
+        totalFiles > 0
+          ? `${visibleIndex} / ${totalFiles} files`
+          : "0 / 0 files";
     }
 
     if (this.stats) {
@@ -593,40 +658,48 @@ export class GitDiffViewController {
     }
 
     this.modeButtons.forEach((button) => {
-      button.classList.toggle('active', button.getAttribute('data-diff-mode') === this.mode);
+      button.classList.toggle(
+        "active",
+        button.getAttribute("data-diff-mode") === this.mode,
+      );
     });
     const hasCurrentFile = Boolean(this.getCurrentFile()?.path);
     const actionState = this.getCurrentActionState();
     const primaryAction = this.getPrimaryAction();
-    this.openEditorButton?.toggleAttribute('disabled', !hasCurrentFile);
+    this.openEditorButton?.toggleAttribute("disabled", !hasCurrentFile);
     if (this.primaryActionButton) {
-      this.primaryActionButton.textContent = this.pendingAction === primaryAction
-        ? 'Working...'
-        : primaryAction === 'unstage'
-          ? 'Unstage'
-          : 'Stage';
+      this.primaryActionButton.textContent =
+        this.pendingAction === primaryAction
+          ? "Working..."
+          : primaryAction === "unstage"
+            ? "Unstage"
+            : "Stage";
       this.primaryActionButton.toggleAttribute(
-        'disabled',
+        "disabled",
         !hasCurrentFile || !primaryAction || Boolean(this.pendingAction),
       );
     }
     if (this.commitButton) {
-      this.commitButton.textContent = this.pendingAction === 'commit' ? 'Working...' : 'Commit Staged';
+      this.commitButton.textContent =
+        this.pendingAction === "commit" ? "Working..." : "Commit Staged";
     }
     this.commitButton?.toggleAttribute(
-      'disabled',
+      "disabled",
       !actionState.canCommit || Boolean(this.pendingAction),
     );
-    this.prevButton?.toggleAttribute('disabled', this.currentIndex <= 0);
-    this.nextButton?.toggleAttribute('disabled', totalFiles === 0 || this.currentIndex >= totalFiles - 1);
+    this.prevButton?.toggleAttribute("disabled", this.currentIndex <= 0);
+    this.nextButton?.toggleAttribute(
+      "disabled",
+      totalFiles === 0 || this.currentIndex >= totalFiles - 1,
+    );
   }
 
   render() {
-    this.page?.classList.remove('hidden');
+    this.page?.classList.remove("hidden");
 
     const files = this.data?.files ?? [];
     if (files.length === 0) {
-      this.renderEmpty('No changes to display.');
+      this.renderEmpty("No changes to display.");
       return;
     }
 
@@ -638,19 +711,19 @@ export class GitDiffViewController {
     this.syncToolbar();
   }
 
-  getToolbarTitle({ filePath = null, scope = 'all' } = {}) {
+  getToolbarTitle({ filePath = null, scope = "all" } = {}) {
     if (filePath) {
       return getPathLeaf(filePath);
     }
 
-    if (scope === 'staged') {
-      return 'Staged Changes';
+    if (scope === "staged") {
+      return "Staged Changes";
     }
 
-    if (scope === 'working-tree') {
-      return 'Working Tree Changes';
+    if (scope === "working-tree") {
+      return "Working Tree Changes";
     }
 
-    return 'All Changes';
+    return "All Changes";
   }
 }

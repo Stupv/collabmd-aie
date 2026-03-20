@@ -1,5 +1,8 @@
-import { createMarkdownStarter, normalizeVaultPathInput } from '../domain/vault-paths.js';
-import { resolveWikiTarget } from '../domain/vault-utils.js';
+import {
+  createMarkdownStarter,
+  normalizeVaultPathInput,
+} from "../domain/vault-paths.js";
+import { resolveWikiTarget } from "../domain/vault-utils.js";
 
 export class WikiLinkFileController {
   constructor({
@@ -26,7 +29,7 @@ export class WikiLinkFileController {
 
     const normalizedPath = this.normalizeNewWikiFilePath(target);
     if (!normalizedPath) {
-      this.toastController.show('Cannot create an empty wiki-link target');
+      this.toastController.show("Cannot create an empty wiki-link target");
       return;
     }
 
@@ -40,7 +43,7 @@ export class WikiLinkFileController {
       return null;
     }
 
-    return normalized.endsWith('.md') ? normalized : `${normalized}.md`;
+    return normalized.endsWith(".md") ? normalized : `${normalized}.md`;
   }
 
   async createAndOpenFile(filePath, displayName) {

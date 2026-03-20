@@ -1,31 +1,38 @@
-import markdownIt from 'markdown-it';
-import hljs from 'highlight.js';
+import markdownIt from "markdown-it";
+import hljs from "highlight.js";
 
-import { isImageAttachmentFilePath } from '../../domain/file-kind.js';
-import { escapeHtml, resolveVaultRelativePath, resolveWikiTarget } from '../domain/vault-utils.js';
-import { analyzeMarkdownComplexity } from './preview-render-profile.js';
+import { isImageAttachmentFilePath } from "../../domain/file-kind.js";
+import {
+  escapeHtml,
+  resolveVaultRelativePath,
+  resolveWikiTarget,
+} from "../domain/vault-utils.js";
+import { analyzeMarkdownComplexity } from "./preview-render-profile.js";
 
 const DIRECT_VIDEO_MIME_TYPES = Object.freeze({
-  '.mp4': 'video/mp4',
-  '.ogg': 'video/ogg',
-  '.webm': 'video/webm',
+  ".mp4": "video/mp4",
+  ".ogg": "video/ogg",
+  ".webm": "video/webm",
 });
 
 const YOUTUBE_HOSTS = new Set([
-  'youtube.com',
-  'www.youtube.com',
-  'm.youtube.com',
-  'youtu.be',
-  'www.youtu.be',
-  'youtube-nocookie.com',
-  'www.youtube-nocookie.com',
+  "youtube.com",
+  "www.youtube.com",
+  "m.youtube.com",
+  "youtu.be",
+  "www.youtu.be",
+  "youtube-nocookie.com",
+  "www.youtube-nocookie.com",
 ]);
 
 function renderToken(renderer, tokens, index, options, env, self) {
-  return renderer?.(tokens, index, options, env, self) ?? self.renderToken(tokens, index, options);
+  return (
+    renderer?.(tokens, index, options, env, self) ??
+    self.renderToken(tokens, index, options)
+  );
 }
 
-function hashString(source = '') {
+function hashString(source = "") {
   let hash = 2166136261;
   for (let index = 0; index < source.length; index += 1) {
     hash ^= source.charCodeAt(index);
@@ -35,31 +42,34 @@ function hashString(source = '') {
   return (hash >>> 0).toString(36);
 }
 
-function normalizePreviewTypography(content = '') {
+function normalizePreviewTypography(content = "") {
   return String(content)
-    .replace(/<->/g, '↔')
-    .replace(/<=>/g, '⇔')
-    .replace(/->/g, '→')
-    .replace(/<-/g, '←')
-    .replace(/=>/g, '⇒');
+    .replace(/<->/g, "↔")
+    .replace(/<=>/g, "⇔")
+    .replace(/->/g, "→")
+    .replace(/<-/g, "←")
+    .replace(/=>/g, "⇒");
 }
 
-function escapePreviewText(content = '') {
+function escapePreviewText(content = "") {
   return escapeHtml(normalizePreviewTypography(content));
 }
 
-function renderSafeInlineBreaks(content = '') {
+function renderSafeInlineBreaks(content = "") {
   const parts = String(content).split(/<br\s*\/?>/i);
   if (parts.length === 1) {
     return escapePreviewText(content);
   }
 
-  return parts
-    .map((part) => escapePreviewText(part))
-    .join('<br>');
+  return parts.map((part) => escapePreviewText(part)).join("<br>");
 }
 
-function createMermaidPlaceholder({ key, sourceAttributes, sourceHash, sourceText }) {
+function createMermaidPlaceholder({
+  key,
+  sourceAttributes,
+  sourceHash,
+  sourceText,
+}) {
   return `<div class="mermaid-shell diagram-preview-shell"${sourceAttributes} data-mermaid-key="${escapeHtml(key)}" data-mermaid-source-hash="${escapeHtml(sourceHash)}"><div class="mermaid-placeholder-card diagram-preview-placeholder-card"><div class="mermaid-placeholder-copy diagram-preview-placeholder-copy"><strong>Mermaid diagram</strong><span>Loads when visible</span></div><button type="button" class="mermaid-placeholder-btn diagram-preview-placeholder-btn" data-mermaid-key="${escapeHtml(key)}">Render</button></div><pre class="mermaid-source" hidden>${escapeHtml(sourceText)}</pre></div>`;
 }
 
@@ -67,7 +77,12 @@ function createMermaidEmbedShell({ embedKey, label, target }) {
   return `<span class="mermaid-shell diagram-preview-shell" data-mermaid-key="${escapeHtml(embedKey)}" data-mermaid-target="${escapeHtml(target)}" data-mermaid-label="${escapeHtml(label)}"><span class="mermaid-placeholder-card diagram-preview-placeholder-card"><span class="mermaid-placeholder-copy diagram-preview-placeholder-copy"><strong>${escapeHtml(label)}</strong><span>Loads when visible</span></span><button type="button" class="mermaid-placeholder-btn diagram-preview-placeholder-btn" data-mermaid-key="${escapeHtml(embedKey)}">Render</button></span><span class="mermaid-source" hidden></span></span>`;
 }
 
-function createPlantUmlPlaceholder({ key, sourceAttributes, sourceHash, sourceText }) {
+function createPlantUmlPlaceholder({
+  key,
+  sourceAttributes,
+  sourceHash,
+  sourceText,
+}) {
   return `<div class="plantuml-shell diagram-preview-shell"${sourceAttributes} data-plantuml-key="${escapeHtml(key)}" data-plantuml-source-hash="${escapeHtml(sourceHash)}"><div class="plantuml-placeholder-card diagram-preview-placeholder-card"><div class="plantuml-placeholder-copy diagram-preview-placeholder-copy"><strong>PlantUML diagram</strong><span>Renders server-side when visible</span></div><button type="button" class="plantuml-placeholder-btn diagram-preview-placeholder-btn" data-plantuml-key="${escapeHtml(key)}">Render</button></div><pre class="plantuml-source" hidden>${escapeHtml(sourceText)}</pre></div>`;
 }
 
@@ -79,7 +94,7 @@ function createExcalidrawPlaceholder({ embedKey, label, target }) {
   return `<span class="excalidraw-embed-placeholder diagram-preview-shell" data-embed-key="${escapeHtml(embedKey)}" data-embed-target="${escapeHtml(target)}" data-embed-label="${escapeHtml(label)}"><span class="excalidraw-embed-placeholder-card diagram-preview-placeholder-card"><span class="excalidraw-embed-placeholder-copy diagram-preview-placeholder-copy"><strong>${escapeHtml(label)}</strong><span>Loads when visible</span></span><button type="button" class="excalidraw-embed-placeholder-btn diagram-preview-placeholder-btn" data-embed-key="${escapeHtml(embedKey)}">Load diagram</button></span></span>`;
 }
 
-function getDirectVideoMimeType(pathname = '') {
+function getDirectVideoMimeType(pathname = "") {
   const match = pathname.toLowerCase().match(/\.(mp4|ogg|webm)$/i);
   if (!match) {
     return null;
@@ -88,8 +103,8 @@ function getDirectVideoMimeType(pathname = '') {
   return DIRECT_VIDEO_MIME_TYPES[`.${match[1].toLowerCase()}`] || null;
 }
 
-function normalizeYouTubeVideoId(candidate = '') {
-  const normalized = String(candidate || '').trim();
+function normalizeYouTubeVideoId(candidate = "") {
+  const normalized = String(candidate || "").trim();
   return /^[A-Za-z0-9_-]{11}$/.test(normalized) ? normalized : null;
 }
 
@@ -97,13 +112,17 @@ function getCanonicalYouTubeEmbedUrl(url) {
   const host = url.hostname.toLowerCase();
   let videoId = null;
 
-  if (host === 'youtu.be' || host === 'www.youtu.be') {
-    videoId = normalizeYouTubeVideoId(url.pathname.split('/').filter(Boolean)[0] || '');
-  } else if (host.includes('youtube') || host.includes('youtube-nocookie')) {
-    if (url.pathname === '/watch') {
-      videoId = normalizeYouTubeVideoId(url.searchParams.get('v') || '');
-    } else if (url.pathname.startsWith('/embed/')) {
-      videoId = normalizeYouTubeVideoId(url.pathname.split('/').filter(Boolean)[1] || '');
+  if (host === "youtu.be" || host === "www.youtu.be") {
+    videoId = normalizeYouTubeVideoId(
+      url.pathname.split("/").filter(Boolean)[0] || "",
+    );
+  } else if (host.includes("youtube") || host.includes("youtube-nocookie")) {
+    if (url.pathname === "/watch") {
+      videoId = normalizeYouTubeVideoId(url.searchParams.get("v") || "");
+    } else if (url.pathname.startsWith("/embed/")) {
+      videoId = normalizeYouTubeVideoId(
+        url.pathname.split("/").filter(Boolean)[1] || "",
+      );
     }
   }
 
@@ -114,16 +133,16 @@ function getCanonicalYouTubeEmbedUrl(url) {
   return `https://www.youtube-nocookie.com/embed/${videoId}`;
 }
 
-function classifyPublicVideoEmbed(source = '') {
+function classifyPublicVideoEmbed(source = "") {
   let url;
 
   try {
-    url = new URL(String(source || '').trim());
+    url = new URL(String(source || "").trim());
   } catch {
     return null;
   }
 
-  if (url.protocol !== 'https:') {
+  if (url.protocol !== "https:") {
     return null;
   }
 
@@ -136,7 +155,7 @@ function classifyPublicVideoEmbed(source = '') {
 
     return {
       embedUrl,
-      type: 'youtube',
+      type: "youtube",
     };
   }
 
@@ -148,7 +167,7 @@ function classifyPublicVideoEmbed(source = '') {
   return {
     mimeType,
     sourceUrl: url.toString(),
-    type: 'direct-video',
+    type: "direct-video",
   };
 }
 
@@ -156,26 +175,31 @@ function createVideoEmbedPlaceholder({
   embedKey,
   kind,
   label,
-  mimeType = '',
+  mimeType = "",
   source,
   url,
 }) {
-  const subtitle = kind === 'youtube' ? 'YouTube video' : 'Video file';
-  const mimeTypeAttribute = mimeType ? ` data-video-embed-mime-type="${escapeHtml(mimeType)}"` : '';
+  const subtitle = kind === "youtube" ? "YouTube video" : "Video file";
+  const mimeTypeAttribute = mimeType
+    ? ` data-video-embed-mime-type="${escapeHtml(mimeType)}"`
+    : "";
   return `<span class="video-embed-placeholder video-embed-shell diagram-preview-shell" data-video-embed-key="${escapeHtml(embedKey)}" data-video-embed-kind="${escapeHtml(kind)}" data-video-embed-label="${escapeHtml(label)}" data-video-embed-source="${escapeHtml(source)}" data-video-embed-url="${escapeHtml(url)}"${mimeTypeAttribute}><span class="video-embed-placeholder-card diagram-preview-placeholder-card"><span class="video-embed-placeholder-copy diagram-preview-placeholder-copy"><strong>${escapeHtml(label)}</strong><span>${escapeHtml(subtitle)}</span></span></span></span>`;
 }
 
 function renderVideoEmbed(token, videoEmbedCounts) {
-  const source = token.attrGet('src') || '';
+  const source = token.attrGet("src") || "";
   const classification = classifyPublicVideoEmbed(source);
   if (!classification) {
     return null;
   }
 
-  const title = normalizePreviewTypography(token.content || token.attrGet('title') || '');
-  const preserveSource = classification.type === 'youtube'
-    ? classification.embedUrl
-    : classification.sourceUrl;
+  const title = normalizePreviewTypography(
+    token.content || token.attrGet("title") || "",
+  );
+  const preserveSource =
+    classification.type === "youtube"
+      ? classification.embedUrl
+      : classification.sourceUrl;
   const occurrenceIndex = videoEmbedCounts.get(preserveSource) ?? 0;
   videoEmbedCounts.set(preserveSource, occurrenceIndex + 1);
   const embedKey = `video-${hashString(preserveSource)}-${occurrenceIndex}`;
@@ -183,30 +207,33 @@ function renderVideoEmbed(token, videoEmbedCounts) {
   return createVideoEmbedPlaceholder({
     embedKey,
     kind: classification.type,
-    label: title || 'Embedded video',
+    label: title || "Embedded video",
     mimeType: classification.mimeType,
     source: preserveSource,
-    url: classification.type === 'youtube' ? classification.embedUrl : classification.sourceUrl,
+    url:
+      classification.type === "youtube"
+        ? classification.embedUrl
+        : classification.sourceUrl,
   });
 }
 
-function isAbsoluteOrExternalUrl(source = '') {
-  const normalized = String(source ?? '').trim();
+function isAbsoluteOrExternalUrl(source = "") {
+  const normalized = String(source ?? "").trim();
   return (
-    !normalized
-    || normalized.startsWith('data:')
-    || normalized.startsWith('blob:')
-    || normalized.startsWith('#')
-    || normalized.startsWith('//')
-    || /^[a-zA-Z][a-zA-Z\d+.-]*:/u.test(normalized)
-    || normalized.startsWith('/')
+    !normalized ||
+    normalized.startsWith("data:") ||
+    normalized.startsWith("blob:") ||
+    normalized.startsWith("#") ||
+    normalized.startsWith("//") ||
+    /^[a-zA-Z][a-zA-Z\d+.-]*:/u.test(normalized) ||
+    normalized.startsWith("/")
   );
 }
 
-function resolveLocalAttachmentUrl(source = '', {
-  attachmentApiPath,
-  sourceFilePath,
-} = {}) {
+function resolveLocalAttachmentUrl(
+  source = "",
+  { attachmentApiPath, sourceFilePath } = {},
+) {
   if (!sourceFilePath || isAbsoluteOrExternalUrl(source)) {
     return null;
   }
@@ -219,15 +246,14 @@ function resolveLocalAttachmentUrl(source = '', {
   return `${attachmentApiPath}?path=${encodeURIComponent(resolvedPath)}`;
 }
 
-function renderInlineWikiText(content, {
-  excalidrawEmbedCounts,
-  fileList,
-  mermaidEmbedCounts,
-  plantUmlEmbedCounts,
-}) {
-  const regex = /!\[\[([^\]|]+\.(?:excalidraw|mmd|mermaid|puml|plantuml))(?:\|([^\]]+))?\]\]|\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/gi;
+function renderInlineWikiText(
+  content,
+  { excalidrawEmbedCounts, fileList, mermaidEmbedCounts, plantUmlEmbedCounts },
+) {
+  const regex =
+    /!\[\[([^\]|]+\.(?:excalidraw|mmd|mermaid|puml|plantuml))(?:\|([^\]]+))?\]\]|\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/gi;
   let lastIndex = 0;
-  let html = '';
+  let html = "";
   let match;
 
   while ((match = regex.exec(content)) !== null) {
@@ -244,7 +270,9 @@ function renderInlineWikiText(content, {
         excalidrawEmbedCounts.set(target, occurrenceIndex + 1);
         html += createExcalidrawPlaceholder({
           embedKey: `${target}#${occurrenceIndex}`,
-          label: normalizePreviewTypography(label.replace(/\.excalidraw$/i, '')),
+          label: normalizePreviewTypography(
+            label.replace(/\.excalidraw$/i, ""),
+          ),
           target,
         });
       } else if (/\.(?:mmd|mermaid)$/i.test(target)) {
@@ -252,7 +280,9 @@ function renderInlineWikiText(content, {
         mermaidEmbedCounts.set(target, occurrenceIndex + 1);
         html += createMermaidEmbedShell({
           embedKey: `${target}#${occurrenceIndex}`,
-          label: normalizePreviewTypography(label.replace(/\.(?:mmd|mermaid)$/i, '')),
+          label: normalizePreviewTypography(
+            label.replace(/\.(?:mmd|mermaid)$/i, ""),
+          ),
           target,
         });
       } else {
@@ -260,7 +290,9 @@ function renderInlineWikiText(content, {
         plantUmlEmbedCounts.set(target, occurrenceIndex + 1);
         html += createPlantUmlEmbedShell({
           embedKey: `${target}#${occurrenceIndex}`,
-          label: normalizePreviewTypography(label.replace(/\.(?:puml|plantuml)$/i, '')),
+          label: normalizePreviewTypography(
+            label.replace(/\.(?:puml|plantuml)$/i, ""),
+          ),
           target,
         });
       }
@@ -268,8 +300,10 @@ function renderInlineWikiText(content, {
       const target = match[3].trim();
       const display = (match[4] || match[3]).trim();
       const resolved = resolveWikiTarget(target, fileList);
-      const classes = resolved ? 'wiki-link' : 'wiki-link wiki-link-new';
-      const title = resolved ? normalizePreviewTypography(display) : `Create "${target}"`;
+      const classes = resolved ? "wiki-link" : "wiki-link wiki-link-new";
+      const title = resolved
+        ? normalizePreviewTypography(display)
+        : `Create "${target}"`;
       html += `<a class="${classes}" href="#" data-wiki-target="${escapeHtml(target)}" title="${escapeHtml(title)}">${escapePreviewText(display)}</a>`;
     }
 
@@ -283,14 +317,18 @@ function renderInlineWikiText(content, {
   return html;
 }
 
-function createMarkdownRenderer(fileList = [], {
-  attachmentApiPath = '/api/attachment',
-  sourceFilePath = '',
-} = {}) {
+function createMarkdownRenderer(
+  fileList = [],
+  { attachmentApiPath = "/api/attachment", sourceFilePath = "" } = {},
+) {
   const markdown = markdownIt({
     highlight(source, language) {
-      if (language === 'mermaid' || language === 'plantuml' || language === 'puml') {
-        return '';
+      if (
+        language === "mermaid" ||
+        language === "plantuml" ||
+        language === "puml"
+      ) {
+        return "";
       }
 
       try {
@@ -300,7 +338,7 @@ function createMarkdownRenderer(fileList = [], {
 
         return hljs.highlightAuto(source).value;
       } catch {
-        return '';
+        return "";
       }
     },
     html: false,
@@ -308,7 +346,7 @@ function createMarkdownRenderer(fileList = [], {
     typographer: true,
   });
 
-  markdown.core.ruler.push('collabmd-source-lines', (state) => {
+  markdown.core.ruler.push("collabmd-source-lines", (state) => {
     state.tokens.forEach((token) => {
       if (!token.map) {
         return;
@@ -318,9 +356,14 @@ function createMarkdownRenderer(fileList = [], {
       const sourceStart = start + 1;
       const sourceEnd = Math.max(end, start + 1);
 
-      if (token.nesting === 1 || token.type === 'fence' || token.type === 'code_block' || token.type === 'html_block') {
-        token.attrSet('data-source-line', String(sourceStart));
-        token.attrSet('data-source-line-end', String(sourceEnd));
+      if (
+        token.nesting === 1 ||
+        token.type === "fence" ||
+        token.type === "code_block" ||
+        token.type === "html_block"
+      ) {
+        token.attrSet("data-source-line", String(sourceStart));
+        token.attrSet("data-source-line-end", String(sourceEnd));
       }
     });
   });
@@ -340,14 +383,14 @@ function createMarkdownRenderer(fileList = [], {
 
   markdown.renderer.rules.fence = (tokens, index, options, env, self) => {
     const token = tokens[index];
-    const info = token.info ? token.info.trim().toLowerCase() : '';
-    const sourceLine = token.attrGet('data-source-line');
-    const sourceLineEnd = token.attrGet('data-source-line-end');
+    const info = token.info ? token.info.trim().toLowerCase() : "";
+    const sourceLine = token.attrGet("data-source-line");
+    const sourceLineEnd = token.attrGet("data-source-line-end");
     const sourceAttributes = sourceLine
       ? ` data-source-line="${sourceLine}" data-source-line-end="${sourceLineEnd}"`
-      : '';
+      : "";
 
-    if (info === 'mermaid') {
+    if (info === "mermaid") {
       const sourceHash = hashString(token.content);
       const occurrenceIndex = mermaidCounts.get(sourceHash) ?? 0;
       mermaidCounts.set(sourceHash, occurrenceIndex + 1);
@@ -359,7 +402,7 @@ function createMarkdownRenderer(fileList = [], {
       });
     }
 
-    if (info === 'plantuml' || info === 'puml') {
+    if (info === "plantuml" || info === "puml") {
       const sourceHash = hashString(token.content);
       const occurrenceIndex = plantUmlCounts.get(sourceHash) ?? 0;
       plantUmlCounts.set(sourceHash, occurrenceIndex + 1);
@@ -371,7 +414,14 @@ function createMarkdownRenderer(fileList = [], {
       });
     }
 
-    const rendered = renderToken(fallbackFence, tokens, index, options, env, self);
+    const rendered = renderToken(
+      fallbackFence,
+      tokens,
+      index,
+      options,
+      env,
+      self,
+    );
     if (!sourceLine) {
       return rendered;
     }
@@ -382,12 +432,22 @@ function createMarkdownRenderer(fileList = [], {
     );
   };
 
-  markdown.renderer.rules.list_item_open = (tokens, index, options, env, self) => {
+  markdown.renderer.rules.list_item_open = (
+    tokens,
+    index,
+    options,
+    env,
+    self,
+  ) => {
     const inlineToken = tokens[index + 2];
-    const content = inlineToken?.content ?? '';
+    const content = inlineToken?.content ?? "";
 
-    if (content.startsWith('[ ] ') || content.startsWith('[x] ') || content.startsWith('[X] ')) {
-      tokens[index].attrJoin('class', 'task-list-item');
+    if (
+      content.startsWith("[ ] ") ||
+      content.startsWith("[x] ") ||
+      content.startsWith("[X] ")
+    ) {
+      tokens[index].attrJoin("class", "task-list-item");
     }
 
     return self.renderToken(tokens, index, options);
@@ -396,22 +456,28 @@ function createMarkdownRenderer(fileList = [], {
   markdown.renderer.rules.text = (tokens, index) => {
     const content = tokens[index].content;
 
-    if (content.startsWith('[x] ') || content.startsWith('[X] ')) {
-      return `<input type="checkbox" checked disabled> ${renderInlineWikiText(content.slice(4), {
-        excalidrawEmbedCounts,
-        fileList,
-        mermaidEmbedCounts,
-        plantUmlEmbedCounts,
-      })}`;
+    if (content.startsWith("[x] ") || content.startsWith("[X] ")) {
+      return `<input type="checkbox" checked disabled> ${renderInlineWikiText(
+        content.slice(4),
+        {
+          excalidrawEmbedCounts,
+          fileList,
+          mermaidEmbedCounts,
+          plantUmlEmbedCounts,
+        },
+      )}`;
     }
 
-    if (content.startsWith('[ ] ')) {
-      return `<input type="checkbox" disabled> ${renderInlineWikiText(content.slice(4), {
-        excalidrawEmbedCounts,
-        fileList,
-        mermaidEmbedCounts,
-        plantUmlEmbedCounts,
-      })}`;
+    if (content.startsWith("[ ] ")) {
+      return `<input type="checkbox" disabled> ${renderInlineWikiText(
+        content.slice(4),
+        {
+          excalidrawEmbedCounts,
+          fileList,
+          mermaidEmbedCounts,
+          plantUmlEmbedCounts,
+        },
+      )}`;
     }
 
     return renderInlineWikiText(content, {
@@ -423,19 +489,22 @@ function createMarkdownRenderer(fileList = [], {
   };
 
   markdown.renderer.rules.link_open = (tokens, index, options, env, self) => {
-    tokens[index].attrSet('target', '_blank');
-    tokens[index].attrSet('rel', 'noopener noreferrer');
+    tokens[index].attrSet("target", "_blank");
+    tokens[index].attrSet("rel", "noopener noreferrer");
     return renderToken(fallbackLinkOpen, tokens, index, options, env, self);
   };
 
   markdown.renderer.rules.image = (tokens, index, options, env, self) => {
     const token = tokens[index];
-    const localAttachmentUrl = resolveLocalAttachmentUrl(token.attrGet('src') || '', {
-      attachmentApiPath,
-      sourceFilePath,
-    });
+    const localAttachmentUrl = resolveLocalAttachmentUrl(
+      token.attrGet("src") || "",
+      {
+        attachmentApiPath,
+        sourceFilePath,
+      },
+    );
     if (localAttachmentUrl) {
-      token.attrSet('src', localAttachmentUrl);
+      token.attrSet("src", localAttachmentUrl);
     }
 
     const renderedVideo = renderVideoEmbed(token, videoEmbedCounts);
@@ -446,22 +515,20 @@ function createMarkdownRenderer(fileList = [], {
     return renderToken(fallbackImage, tokens, index, options, env, self);
   };
 
-  markdown.renderer.rules.table_open = (tokens, index, options, env, self) => (
-    `<div class="table-wrapper">${renderToken(fallbackTableOpen, tokens, index, options, env, self)}`
-  );
+  markdown.renderer.rules.table_open = (tokens, index, options, env, self) =>
+    `<div class="table-wrapper">${renderToken(fallbackTableOpen, tokens, index, options, env, self)}`;
 
-  markdown.renderer.rules.table_close = (tokens, index, options, env, self) => (
-    `${renderToken(fallbackTableClose, tokens, index, options, env, self)}</div>`
-  );
+  markdown.renderer.rules.table_close = (tokens, index, options, env, self) =>
+    `${renderToken(fallbackTableClose, tokens, index, options, env, self)}</div>`;
 
   return markdown;
 }
 
 export function compilePreviewDocument({
-  attachmentApiPath = '/api/attachment',
+  attachmentApiPath = "/api/attachment",
   fileList = [],
-  markdownText = '',
-  sourceFilePath = '',
+  markdownText = "",
+  sourceFilePath = "",
 } = {}) {
   const normalizedMarkdown = String(markdownText);
   const renderer = createMarkdownRenderer(fileList, {

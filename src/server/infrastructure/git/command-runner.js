@@ -1,7 +1,7 @@
-import { execFile as execFileCallback } from 'node:child_process';
-import { access } from 'node:fs/promises';
-import { join } from 'node:path';
-import { promisify } from 'node:util';
+import { execFile as execFileCallback } from "node:child_process";
+import { access } from "node:fs/promises";
+import { join } from "node:path";
+import { promisify } from "node:util";
 
 const execFile = promisify(execFileCallback);
 
@@ -24,7 +24,7 @@ export class GitCommandRunner {
     }
 
     try {
-      await access(join(this.vaultDir, '.git'));
+      await access(join(this.vaultDir, ".git"));
       return true;
     } catch {
       return false;
@@ -32,18 +32,22 @@ export class GitCommandRunner {
   }
 
   async execGit(args, { env = null } = {}) {
-    const result = await this.execFileImpl('git', ['-c', 'core.quotepath=false', ...args], {
-      cwd: this.vaultDir,
-      encoding: 'utf8',
-      env: {
-        ...process.env,
-        ...(this.commandEnv ?? {}),
-        ...(env ?? {}),
+    const result = await this.execFileImpl(
+      "git",
+      ["-c", "core.quotepath=false", ...args],
+      {
+        cwd: this.vaultDir,
+        encoding: "utf8",
+        env: {
+          ...process.env,
+          ...(this.commandEnv ?? {}),
+          ...(env ?? {}),
+        },
+        maxBuffer: 5 * 1024 * 1024,
+        timeout: 10_000,
       },
-      maxBuffer: 5 * 1024 * 1024,
-      timeout: 10_000,
-    });
+    );
 
-    return String(result.stdout ?? '');
+    return String(result.stdout ?? "");
   }
 }

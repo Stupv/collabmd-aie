@@ -1,5 +1,5 @@
-import { escapeHtml } from '../domain/vault-utils.js';
-import { resolveApiUrl } from '../domain/runtime-paths.js';
+import { escapeHtml } from "../domain/vault-utils.js";
+import { resolveApiUrl } from "../domain/runtime-paths.js";
 
 /**
  * BacklinksPanel — renders "Linked Mentions" for the current file.
@@ -24,7 +24,9 @@ export class BacklinksPanel {
     this._fetchController = null;
     this._backlinks = [];
 
-    const desktopPanel = this.panelRoot?.querySelector('[data-backlinks-variant="dock"]') ?? this.panelRoot;
+    const desktopPanel =
+      this.panelRoot?.querySelector('[data-backlinks-variant="dock"]') ??
+      this.panelRoot;
     this.panels = [
       this._createPanelRef(desktopPanel),
       this._createPanelRef(this.inlinePanel),
@@ -36,7 +38,10 @@ export class BacklinksPanel {
       }
 
       const target = event?.target;
-      if (target && this.panels.some(({ panel }) => panel?.contains?.(target))) {
+      if (
+        target &&
+        this.panels.some(({ panel }) => panel?.contains?.(target))
+      ) {
         return;
       }
 
@@ -44,7 +49,7 @@ export class BacklinksPanel {
     };
 
     this.handleDocumentKeyDown = (event) => {
-      if (!this._expanded || event?.key !== 'Escape') {
+      if (!this._expanded || event?.key !== "Escape") {
         return;
       }
 
@@ -57,14 +62,14 @@ export class BacklinksPanel {
 
   bindEvents() {
     this.panels.forEach((refs) => {
-      refs.header?.addEventListener('click', () => {
+      refs.header?.addEventListener("click", () => {
         if (this._backlinks.length === 0) return;
         this._expanded = !this._expanded;
         this._applyExpandState();
       });
 
-      refs.header?.addEventListener('keydown', (event) => {
-        if (event.key !== 'Enter' && event.key !== ' ') {
+      refs.header?.addEventListener("keydown", (event) => {
+        if (event.key !== "Enter" && event.key !== " ") {
           return;
         }
 
@@ -73,8 +78,11 @@ export class BacklinksPanel {
       });
     });
 
-    this.documentRef?.addEventListener?.('pointerdown', this.handleDocumentPointerDown);
-    this.documentRef?.addEventListener?.('keydown', this.handleDocumentKeyDown);
+    this.documentRef?.addEventListener?.(
+      "pointerdown",
+      this.handleDocumentPointerDown,
+    );
+    this.documentRef?.addEventListener?.("keydown", this.handleDocumentKeyDown);
   }
 
   async load(filePath) {
@@ -105,8 +113,8 @@ export class BacklinksPanel {
 
       this._backlinks = data.backlinks ?? [];
     } catch (error) {
-      if (error.name === 'AbortError') return;
-      console.warn('[backlinks] Failed to load:', error.message);
+      if (error.name === "AbortError") return;
+      console.warn("[backlinks] Failed to load:", error.message);
       this._backlinks = [];
     }
 
@@ -136,33 +144,33 @@ export class BacklinksPanel {
 
     return {
       panel,
-      header: panel.querySelector('.backlinks-header'),
-      toggle: panel.querySelector('.backlinks-toggle'),
-      countBadge: panel.querySelector('.backlinks-count'),
-      body: panel.querySelector('.backlinks-body'),
-      list: panel.querySelector('.backlinks-list'),
+      header: panel.querySelector(".backlinks-header"),
+      toggle: panel.querySelector(".backlinks-toggle"),
+      countBadge: panel.querySelector(".backlinks-count"),
+      body: panel.querySelector(".backlinks-body"),
+      list: panel.querySelector(".backlinks-list"),
     };
   }
 
   _render() {
     const count = this._backlinks.length;
-    const label = count === 1 ? 'Linked Mention' : 'Linked Mentions';
+    const label = count === 1 ? "Linked Mention" : "Linked Mentions";
     const shouldShow = Boolean(this._currentFile) && count > 0;
 
-    this.panelRoot?.classList?.toggle('hidden', !shouldShow);
-    this.inlinePanel?.classList?.toggle('hidden', !shouldShow);
+    this.panelRoot?.classList?.toggle("hidden", !shouldShow);
+    this.inlinePanel?.classList?.toggle("hidden", !shouldShow);
 
     if (!shouldShow) {
       this._expanded = false;
     }
 
     this.panels.forEach((refs) => {
-      refs.countBadge.textContent = shouldShow ? String(count) : '';
+      refs.countBadge.textContent = shouldShow ? String(count) : "";
       refs.toggle.textContent = label;
-      refs.header?.classList.toggle('backlinks-header-empty', !shouldShow);
+      refs.header?.classList.toggle("backlinks-header-empty", !shouldShow);
 
       if (!shouldShow) {
-        refs.list.innerHTML = '';
+        refs.list.innerHTML = "";
       } else {
         this._renderList(refs.list);
       }
@@ -173,7 +181,7 @@ export class BacklinksPanel {
 
   _renderList(listElement) {
     if (!listElement) return;
-    listElement.innerHTML = '';
+    listElement.innerHTML = "";
 
     const fragment = this.documentRef?.createDocumentFragment?.();
     const target = fragment ?? listElement;
@@ -188,41 +196,41 @@ export class BacklinksPanel {
   }
 
   _createBacklinkItem(backlink) {
-    const fileName = backlink.file.replace(/\.md$/i, '').split('/').pop();
-    const dirPath = backlink.file.includes('/')
-      ? backlink.file.substring(0, backlink.file.lastIndexOf('/'))
-      : '';
+    const fileName = backlink.file.replace(/\.md$/i, "").split("/").pop();
+    const dirPath = backlink.file.includes("/")
+      ? backlink.file.substring(0, backlink.file.lastIndexOf("/"))
+      : "";
 
-    const item = this.documentRef.createElement('button');
-    item.type = 'button';
-    item.className = 'backlink-item';
-    item.addEventListener('click', () => {
+    const item = this.documentRef.createElement("button");
+    item.type = "button";
+    item.className = "backlink-item";
+    item.addEventListener("click", () => {
       this.close();
       this.onFileSelect?.(backlink.file);
     });
 
-    const nameRow = this.documentRef.createElement('div');
-    nameRow.className = 'backlink-file-name';
+    const nameRow = this.documentRef.createElement("div");
+    nameRow.className = "backlink-file-name";
     nameRow.innerHTML = `
       <svg class="backlink-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
         <polyline points="14 2 14 8 20 8"/>
       </svg>
       <span>${escapeHtml(fileName)}</span>
-      ${dirPath ? `<span class="backlink-dir">${escapeHtml(dirPath)}</span>` : ''}
+      ${dirPath ? `<span class="backlink-dir">${escapeHtml(dirPath)}</span>` : ""}
     `;
     item.appendChild(nameRow);
 
     backlink.contexts.slice(0, 3).forEach((ctx) => {
-      const contextElement = this.documentRef.createElement('div');
-      contextElement.className = 'backlink-context';
+      const contextElement = this.documentRef.createElement("div");
+      contextElement.className = "backlink-context";
       contextElement.textContent = ctx;
       item.appendChild(contextElement);
     });
 
     if (backlink.contexts.length > 3) {
-      const moreElement = this.documentRef.createElement('div');
-      moreElement.className = 'backlink-context backlink-more';
+      const moreElement = this.documentRef.createElement("div");
+      moreElement.className = "backlink-context backlink-more";
       moreElement.textContent = `+${backlink.contexts.length - 3} more`;
       item.appendChild(moreElement);
     }
@@ -234,11 +242,14 @@ export class BacklinksPanel {
     const expanded = this._expanded && this._backlinks.length > 0;
 
     this.panels.forEach((refs) => {
-      refs.panel.classList.toggle('expanded', expanded);
-      refs.header?.setAttribute('aria-expanded', String(expanded));
-      refs.header?.setAttribute('aria-disabled', String(this._backlinks.length === 0));
-      refs.body?.setAttribute('aria-hidden', String(!expanded));
-      refs.body?.toggleAttribute('inert', !expanded);
+      refs.panel.classList.toggle("expanded", expanded);
+      refs.header?.setAttribute("aria-expanded", String(expanded));
+      refs.header?.setAttribute(
+        "aria-disabled",
+        String(this._backlinks.length === 0),
+      );
+      refs.body?.setAttribute("aria-hidden", String(!expanded));
+      refs.body?.toggleAttribute("inert", !expanded);
     });
   }
 }

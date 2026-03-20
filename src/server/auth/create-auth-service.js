@@ -1,12 +1,15 @@
-import { createHash, randomBytes, timingSafeEqual } from 'node:crypto';
+import { createHash, randomBytes, timingSafeEqual } from "node:crypto";
 
-import * as oidc from 'openid-client';
+import * as oidc from "openid-client";
 
-import { createSessionCookieManager, createSignedCookieManager } from './session-cookie.js';
+import {
+  createSessionCookieManager,
+  createSignedCookieManager,
+} from "./session-cookie.js";
 
-export const AUTH_STRATEGY_NONE = 'none';
-export const AUTH_STRATEGY_PASSWORD = 'password';
-export const AUTH_STRATEGY_OIDC = 'oidc';
+export const AUTH_STRATEGY_NONE = "none";
+export const AUTH_STRATEGY_PASSWORD = "password";
+export const AUTH_STRATEGY_OIDC = "oidc";
 
 export const SUPPORTED_AUTH_STRATEGIES = new Set([
   AUTH_STRATEGY_NONE,
@@ -15,12 +18,12 @@ export const SUPPORTED_AUTH_STRATEGIES = new Set([
 ]);
 
 const OIDC_FLOW_TTL_MS = 10 * 60 * 1000;
-const OIDC_PROVIDER_GOOGLE = 'google';
+const OIDC_PROVIDER_GOOGLE = "google";
 
 export function createRandomAuthPassword(length = 18) {
-  const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789';
+  const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789";
   const bytes = randomBytes(length);
-  let password = '';
+  let password = "";
 
   for (let index = 0; index < length; index += 1) {
     password += alphabet[bytes[index] % alphabet.length];
@@ -30,27 +33,29 @@ export function createRandomAuthPassword(length = 18) {
 }
 
 export function createRandomSessionSecret() {
-  return randomBytes(32).toString('base64url');
+  return randomBytes(32).toString("base64url");
 }
 
 function hashPassword(value) {
-  return createHash('sha256').update(String(value ?? ''), 'utf8').digest();
+  return createHash("sha256")
+    .update(String(value ?? ""), "utf8")
+    .digest();
 }
 
 function createResponse(statusCode, body, options = {}) {
   return {
     body,
-    kind: options.kind || 'response',
-    redirectTo: options.redirectTo || '',
+    kind: options.kind || "response",
+    redirectTo: options.redirectTo || "",
     setCookie: options.setCookie || null,
     statusCode,
   };
 }
 
-function createUnauthorizedBody(clientConfig, {
-  error = 'Authentication required',
-  code = 'AUTH_REQUIRED',
-} = {}) {
+function createUnauthorizedBody(
+  clientConfig,
+  { error = "Authentication required", code = "AUTH_REQUIRED" } = {},
+) {
   return {
     auth: clientConfig,
     code,
@@ -63,37 +68,49 @@ function prependBasePath(basePath, pathname) {
     return pathname;
   }
 
-  return pathname === '/' ? basePath : `${basePath}${pathname}`;
+  return pathname === "/" ? basePath : `${basePath}${pathname}`;
 }
 
 function appendHashParam(path, key, value, publicBaseUrl) {
   const url = new URL(path, publicBaseUrl);
-  const hashParams = new URLSearchParams(url.hash.startsWith('#') ? url.hash.slice(1) : url.hash);
+  const hashParams = new URLSearchParams(
+    url.hash.startsWith("#") ? url.hash.slice(1) : url.hash,
+  );
   hashParams.set(key, value);
   url.hash = hashParams.toString();
   return `${url.pathname}${url.search}${url.hash}`;
 }
 
 function getDefaultReturnTo(basePath) {
-  return basePath ? `${basePath}/` : '/';
+  return basePath ? `${basePath}/` : "/";
 }
 
-function sanitizeReturnTo(rawValue, { basePath = '', publicBaseUrl = '' } = {}) {
+function sanitizeReturnTo(
+  rawValue,
+  { basePath = "", publicBaseUrl = "" } = {},
+) {
   const fallback = getDefaultReturnTo(basePath);
-  const candidate = String(rawValue ?? '').trim();
+  const candidate = String(rawValue ?? "").trim();
   if (!candidate) {
     return fallback;
   }
 
   try {
-    const resolved = new URL(candidate, `${publicBaseUrl || 'http://localhost'}/`);
-    const publicOrigin = publicBaseUrl ? new URL(publicBaseUrl).origin : resolved.origin;
+    const resolved = new URL(
+      candidate,
+      `${publicBaseUrl || "http://localhost"}/`,
+    );
+    const publicOrigin = publicBaseUrl
+      ? new URL(publicBaseUrl).origin
+      : resolved.origin;
     if (resolved.origin !== publicOrigin) {
       return fallback;
     }
 
     if (basePath) {
-      const withinBasePath = resolved.pathname === basePath || resolved.pathname.startsWith(`${basePath}/`);
+      const withinBasePath =
+        resolved.pathname === basePath ||
+        resolved.pathname.startsWith(`${basePath}/`);
       if (!withinBasePath) {
         return fallback;
       }
@@ -106,18 +123,20 @@ function sanitizeReturnTo(rawValue, { basePath = '', publicBaseUrl = '' } = {}) 
 }
 
 function isNonEmptyString(value) {
-  return typeof value === 'string' && value.trim().length > 0;
+  return typeof value === "string" && value.trim().length > 0;
 }
 
 function normalizeEmailAddress(value) {
-  return String(value ?? '').trim().toLowerCase();
+  return String(value ?? "")
+    .trim()
+    .toLowerCase();
 }
 
 function getEmailDomain(email) {
   const normalized = normalizeEmailAddress(email);
-  const atIndex = normalized.lastIndexOf('@');
+  const atIndex = normalized.lastIndexOf("@");
   if (atIndex <= 0 || atIndex === normalized.length - 1) {
-    return '';
+    return "";
   }
 
   return normalized.slice(atIndex + 1);
@@ -126,28 +145,33 @@ function getEmailDomain(email) {
 function isOidcUserAllowed(oidcConfig, email) {
   const normalizedEmail = normalizeEmailAddress(email);
   const emailDomain = getEmailDomain(normalizedEmail);
-  const allowedEmails = Array.isArray(oidcConfig?.allowedEmails) ? oidcConfig.allowedEmails : [];
-  const allowedDomains = Array.isArray(oidcConfig?.allowedDomains) ? oidcConfig.allowedDomains : [];
+  const allowedEmails = Array.isArray(oidcConfig?.allowedEmails)
+    ? oidcConfig.allowedEmails
+    : [];
+  const allowedDomains = Array.isArray(oidcConfig?.allowedDomains)
+    ? oidcConfig.allowedDomains
+    : [];
 
   if (allowedEmails.length === 0 && allowedDomains.length === 0) {
     return { allowed: true };
   }
 
   if (allowedEmails.includes(normalizedEmail)) {
-    return { allowed: true, reason: 'email' };
+    return { allowed: true, reason: "email" };
   }
 
   if (allowedDomains.includes(emailDomain)) {
-    return { allowed: true, reason: 'domain' };
+    return { allowed: true, reason: "domain" };
   }
 
   return {
     allowed: false,
-    error: allowedEmails.length > 0 && allowedDomains.length > 0
-      ? 'This Google account is not in the allowed email or domain list.'
-      : allowedEmails.length > 0
-        ? 'This Google account is not in the allowed email list.'
-        : 'This Google account is not in an allowed domain.',
+    error:
+      allowedEmails.length > 0 && allowedDomains.length > 0
+        ? "This Google account is not in the allowed email or domain list."
+        : allowedEmails.length > 0
+          ? "This Google account is not in the allowed email list."
+          : "This Google account is not in an allowed domain.",
   };
 }
 
@@ -159,11 +183,11 @@ function readAuthenticatedOidcSession(sessionCookieManager, req) {
 
   const user = session.user;
   if (
-    !user
-    || typeof user !== 'object'
-    || !isNonEmptyString(user.sub)
-    || !isNonEmptyString(user.email)
-    || !isNonEmptyString(user.name)
+    !user ||
+    typeof user !== "object" ||
+    !isNonEmptyString(user.sub) ||
+    !isNonEmptyString(user.email) ||
+    !isNonEmptyString(user.name)
   ) {
     return null;
   }
@@ -179,16 +203,16 @@ function readAuthenticatedOidcSession(sessionCookieManager, req) {
       email: user.email,
       emailVerified: user.emailVerified === true,
       name: user.name,
-      picture: typeof user.picture === 'string' ? user.picture : '',
+      picture: typeof user.picture === "string" ? user.picture : "",
       sub: user.sub,
     },
   };
 }
 
-function buildClientConfig(authConfig, { basePath = '' } = {}) {
-  const loginEndpoint = prependBasePath(basePath, '/api/auth/oidc/login');
-  const sessionEndpoint = prependBasePath(basePath, '/api/auth/session');
-  const statusEndpoint = prependBasePath(basePath, '/api/auth/status');
+function buildClientConfig(authConfig, { basePath = "" } = {}) {
+  const loginEndpoint = prependBasePath(basePath, "/api/auth/oidc/login");
+  const sessionEndpoint = prependBasePath(basePath, "/api/auth/session");
+  const statusEndpoint = prependBasePath(basePath, "/api/auth/status");
 
   if (authConfig.strategy === AUTH_STRATEGY_NONE) {
     return {
@@ -205,12 +229,12 @@ function buildClientConfig(authConfig, { basePath = '' } = {}) {
     return {
       enabled: true,
       implemented: true,
-      passwordLabel: 'Host password',
+      passwordLabel: "Host password",
       requiresLogin: true,
       sessionEndpoint,
       statusEndpoint,
       strategy: AUTH_STRATEGY_PASSWORD,
-      submitLabel: 'Join session',
+      submitLabel: "Join session",
     };
   }
 
@@ -223,11 +247,15 @@ function buildClientConfig(authConfig, { basePath = '' } = {}) {
     sessionEndpoint,
     statusEndpoint,
     strategy: AUTH_STRATEGY_OIDC,
-    submitLabel: 'Continue with Google',
+    submitLabel: "Continue with Google",
   };
 }
 
-function createPasswordStrategy(authConfig, sessionCookieManager, clientConfig) {
+function createPasswordStrategy(
+  authConfig,
+  sessionCookieManager,
+  clientConfig,
+) {
   const expectedPasswordHash = hashPassword(authConfig.password);
 
   function hasValidSession(req) {
@@ -237,41 +265,58 @@ function createPasswordStrategy(authConfig, sessionCookieManager, clientConfig) 
 
   return {
     clearSession(req) {
-      return createResponse(200, { ok: true }, {
-        kind: 'logout_ok',
-        setCookie: sessionCookieManager.clearSession(req),
-      });
+      return createResponse(
+        200,
+        { ok: true },
+        {
+          kind: "logout_ok",
+          setCookie: sessionCookieManager.clearSession(req),
+        },
+      );
     },
 
     createSession(req, body = {}) {
-      if (typeof body.password !== 'string' || !body.password) {
-        return createResponse(400, { error: 'Missing password' }, { kind: 'invalid_request' });
+      if (typeof body.password !== "string" || !body.password) {
+        return createResponse(
+          400,
+          { error: "Missing password" },
+          { kind: "invalid_request" },
+        );
       }
 
       const submittedPasswordHash = hashPassword(body.password);
-      const isValidPassword = submittedPasswordHash.length === expectedPasswordHash.length
-        && timingSafeEqual(submittedPasswordHash, expectedPasswordHash);
+      const isValidPassword =
+        submittedPasswordHash.length === expectedPasswordHash.length &&
+        timingSafeEqual(submittedPasswordHash, expectedPasswordHash);
 
       if (!isValidPassword) {
-        return createResponse(401, {
-          auth: clientConfig,
-          code: 'AUTH_INVALID_CREDENTIALS',
-          error: 'Incorrect password',
-        }, { kind: 'invalid_credentials' });
+        return createResponse(
+          401,
+          {
+            auth: clientConfig,
+            code: "AUTH_INVALID_CREDENTIALS",
+            error: "Incorrect password",
+          },
+          { kind: "invalid_credentials" },
+        );
       }
 
-      return createResponse(200, {
-        auth: clientConfig,
-        authenticated: true,
-        ok: true,
-        user: null,
-      }, {
-        kind: 'session_created',
-        setCookie: sessionCookieManager.createSessionCookie(req, {
-          authenticatedAt: Date.now(),
-          strategy: AUTH_STRATEGY_PASSWORD,
-        }),
-      });
+      return createResponse(
+        200,
+        {
+          auth: clientConfig,
+          authenticated: true,
+          ok: true,
+          user: null,
+        },
+        {
+          kind: "session_created",
+          setCookie: sessionCookieManager.createSessionCookie(req, {
+            authenticatedAt: Date.now(),
+            strategy: AUTH_STRATEGY_PASSWORD,
+          }),
+        },
+      );
     },
 
     getAuthenticatedUser() {
@@ -279,11 +324,15 @@ function createPasswordStrategy(authConfig, sessionCookieManager, clientConfig) 
     },
 
     getStatus(req) {
-      return createResponse(200, {
-        authenticated: hasValidSession(req),
-        auth: clientConfig,
-        user: null,
-      }, { kind: 'status' });
+      return createResponse(
+        200,
+        {
+          authenticated: hasValidSession(req),
+          auth: clientConfig,
+          user: null,
+        },
+        { kind: "status" },
+      );
     },
 
     isAuthenticated(req) {
@@ -295,11 +344,19 @@ function createPasswordStrategy(authConfig, sessionCookieManager, clientConfig) 
 function createNoneStrategy(clientConfig) {
   return {
     clearSession() {
-      return createResponse(200, { ok: true, user: null }, { kind: 'logout_ok' });
+      return createResponse(
+        200,
+        { ok: true, user: null },
+        { kind: "logout_ok" },
+      );
     },
 
     createSession() {
-      return createResponse(405, { error: 'Authentication is disabled' }, { kind: 'disabled' });
+      return createResponse(
+        405,
+        { error: "Authentication is disabled" },
+        { kind: "disabled" },
+      );
     },
 
     getAuthenticatedUser() {
@@ -307,11 +364,15 @@ function createNoneStrategy(clientConfig) {
     },
 
     getStatus() {
-      return createResponse(200, {
-        authenticated: true,
-        auth: clientConfig,
-        user: null,
-      }, { kind: 'status' });
+      return createResponse(
+        200,
+        {
+          authenticated: true,
+          auth: clientConfig,
+          user: null,
+        },
+        { kind: "status" },
+      );
     },
 
     isAuthenticated() {
@@ -320,7 +381,13 @@ function createNoneStrategy(clientConfig) {
   };
 }
 
-function createOidcStrategy(authConfig, sessionCookieManager, flowCookieManager, clientConfig, { basePath = '' } = {}) {
+function createOidcStrategy(
+  authConfig,
+  sessionCookieManager,
+  flowCookieManager,
+  clientConfig,
+  { basePath = "" } = {},
+) {
   let oidcConfigPromise = null;
 
   function clearOidcCookies(req, includeSession = true) {
@@ -337,27 +404,35 @@ function createOidcStrategy(authConfig, sessionCookieManager, flowCookieManager,
       publicBaseUrl: authConfig.oidc.publicBaseUrl,
     });
     return createResponse(302, null, {
-      kind: 'redirect',
-      redirectTo: appendHashParam(returnTo, 'auth_error', message, authConfig.oidc.publicBaseUrl),
+      kind: "redirect",
+      redirectTo: appendHashParam(
+        returnTo,
+        "auth_error",
+        message,
+        authConfig.oidc.publicBaseUrl,
+      ),
       setCookie: clearOidcCookies(req),
     });
   }
 
   async function getOidcConfiguration() {
     if (!oidcConfigPromise) {
-      const allowInsecureRequests = new URL(authConfig.oidc.issuer).protocol !== 'https:';
-      oidcConfigPromise = oidc.discovery(
-        new URL(authConfig.oidc.issuer),
-        authConfig.oidc.clientId,
-        authConfig.oidc.clientSecret,
-        undefined,
-        allowInsecureRequests
-          ? { execute: [oidc.allowInsecureRequests] }
-          : undefined,
-      ).catch((error) => {
-        oidcConfigPromise = null;
-        throw error;
-      });
+      const allowInsecureRequests =
+        new URL(authConfig.oidc.issuer).protocol !== "https:";
+      oidcConfigPromise = oidc
+        .discovery(
+          new URL(authConfig.oidc.issuer),
+          authConfig.oidc.clientId,
+          authConfig.oidc.clientSecret,
+          undefined,
+          allowInsecureRequests
+            ? { execute: [oidc.allowInsecureRequests] }
+            : undefined,
+        )
+        .catch((error) => {
+          oidcConfigPromise = null;
+          throw error;
+        });
     }
 
     return oidcConfigPromise;
@@ -374,59 +449,76 @@ function createOidcStrategy(authConfig, sessionCookieManager, flowCookieManager,
   return {
     async beginLogin(req, requestUrl) {
       const config = await getOidcConfiguration();
-      const returnTo = sanitizeReturnTo(requestUrl.searchParams.get('returnTo'), {
-        basePath,
-        publicBaseUrl: authConfig.oidc.publicBaseUrl,
-      });
+      const returnTo = sanitizeReturnTo(
+        requestUrl.searchParams.get("returnTo"),
+        {
+          basePath,
+          publicBaseUrl: authConfig.oidc.publicBaseUrl,
+        },
+      );
       const codeVerifier = oidc.randomPKCECodeVerifier();
       const codeChallenge = await oidc.calculatePKCECodeChallenge(codeVerifier);
       const nonce = oidc.randomNonce();
       const state = oidc.randomState();
       const redirectTo = oidc.buildAuthorizationUrl(config, {
         code_challenge: codeChallenge,
-        code_challenge_method: 'S256',
-        ...(authConfig.oidc.allowedDomains.length === 1 ? { hd: authConfig.oidc.allowedDomains[0] } : {}),
+        code_challenge_method: "S256",
+        ...(authConfig.oidc.allowedDomains.length === 1
+          ? { hd: authConfig.oidc.allowedDomains[0] }
+          : {}),
         nonce,
         redirect_uri: authConfig.oidc.callbackUrl,
-        response_type: 'code',
-        scope: 'openid email profile',
+        response_type: "code",
+        scope: "openid email profile",
         state,
       });
 
       return createResponse(302, null, {
-        kind: 'redirect',
+        kind: "redirect",
         redirectTo: redirectTo.href,
-        setCookie: flowCookieManager.create(req, {
-          createdAt: Date.now(),
-          nonce,
-          pkceCodeVerifier: codeVerifier,
-          returnTo,
-          state,
-        }, {
-          expires: new Date(Date.now() + OIDC_FLOW_TTL_MS),
-        }),
+        setCookie: flowCookieManager.create(
+          req,
+          {
+            createdAt: Date.now(),
+            nonce,
+            pkceCodeVerifier: codeVerifier,
+            returnTo,
+            state,
+          },
+          {
+            expires: new Date(Date.now() + OIDC_FLOW_TTL_MS),
+          },
+        ),
       });
     },
 
     async completeLogin(req, requestUrl) {
       const flowPayload = flowCookieManager.read(req);
       if (!flowPayload) {
-        return createErrorRedirect(req, 'Authentication session expired. Try again.');
+        return createErrorRedirect(
+          req,
+          "Authentication session expired. Try again.",
+        );
       }
 
-      if (requestUrl.searchParams.get('error')) {
-        const errorMessage = requestUrl.searchParams.get('error_description')
-          || requestUrl.searchParams.get('error')
-          || 'Authentication failed';
+      if (requestUrl.searchParams.get("error")) {
+        const errorMessage =
+          requestUrl.searchParams.get("error_description") ||
+          requestUrl.searchParams.get("error") ||
+          "Authentication failed";
         return createErrorRedirect(req, errorMessage, flowPayload);
       }
 
       if (
-        !isNonEmptyString(flowPayload.state)
-        || !isNonEmptyString(flowPayload.nonce)
-        || !isNonEmptyString(flowPayload.pkceCodeVerifier)
+        !isNonEmptyString(flowPayload.state) ||
+        !isNonEmptyString(flowPayload.nonce) ||
+        !isNonEmptyString(flowPayload.pkceCodeVerifier)
       ) {
-        return createErrorRedirect(req, 'Authentication session expired. Try again.', flowPayload);
+        return createErrorRedirect(
+          req,
+          "Authentication session expired. Try again.",
+          flowPayload,
+        );
       }
 
       try {
@@ -442,13 +534,17 @@ function createOidcStrategy(authConfig, sessionCookieManager, flowCookieManager,
         const claims = tokens.claims();
 
         if (
-          !claims
-          || !isNonEmptyString(claims.sub)
-          || !isNonEmptyString(claims.email)
-          || claims.email_verified !== true
-          || !isNonEmptyString(claims.name)
+          !claims ||
+          !isNonEmptyString(claims.sub) ||
+          !isNonEmptyString(claims.email) ||
+          claims.email_verified !== true ||
+          !isNonEmptyString(claims.name)
         ) {
-          return createErrorRedirect(req, 'Google account is missing a verified email or name.', flowPayload);
+          return createErrorRedirect(
+            req,
+            "Google account is missing a verified email or name.",
+            flowPayload,
+          );
         }
 
         const accessDecision = isOidcUserAllowed(authConfig.oidc, claims.email);
@@ -458,7 +554,7 @@ function createOidcStrategy(authConfig, sessionCookieManager, flowCookieManager,
 
         const expiresAt = Number.isFinite(claims.exp)
           ? claims.exp * 1000
-          : Date.now() + (Math.max(Number(tokens.expires_in) || 3600, 1) * 1000);
+          : Date.now() + Math.max(Number(tokens.expires_in) || 3600, 1) * 1000;
         const returnTo = sanitizeReturnTo(flowPayload.returnTo, {
           basePath,
           publicBaseUrl: authConfig.oidc.publicBaseUrl,
@@ -467,12 +563,12 @@ function createOidcStrategy(authConfig, sessionCookieManager, flowCookieManager,
           email: claims.email,
           emailVerified: true,
           name: claims.name,
-          picture: typeof claims.picture === 'string' ? claims.picture : '',
+          picture: typeof claims.picture === "string" ? claims.picture : "",
           sub: claims.sub,
         };
 
         return createResponse(302, null, {
-          kind: 'redirect',
+          kind: "redirect",
           redirectTo: returnTo,
           setCookie: [
             sessionCookieManager.createSessionCookie(req, {
@@ -485,35 +581,51 @@ function createOidcStrategy(authConfig, sessionCookieManager, flowCookieManager,
           ],
         });
       } catch (error) {
-        console.error('[auth] OIDC callback failed:', error.message);
-        return createErrorRedirect(req, 'Google sign-in failed. Try again.', flowPayload);
+        console.error("[auth] OIDC callback failed:", error.message);
+        return createErrorRedirect(
+          req,
+          "Google sign-in failed. Try again.",
+          flowPayload,
+        );
       }
     },
 
     clearSession(req) {
-      return createResponse(200, { ok: true, user: null }, {
-        kind: 'logout_ok',
-        setCookie: clearOidcCookies(req),
-      });
+      return createResponse(
+        200,
+        { ok: true, user: null },
+        {
+          kind: "logout_ok",
+          setCookie: clearOidcCookies(req),
+        },
+      );
     },
 
     createSession() {
-      return createResponse(405, {
-        auth: clientConfig,
-        code: 'AUTH_LOGIN_REDIRECT_REQUIRED',
-        error: 'Use the OIDC login endpoint to authenticate.',
-      }, { kind: 'invalid_request' });
+      return createResponse(
+        405,
+        {
+          auth: clientConfig,
+          code: "AUTH_LOGIN_REDIRECT_REQUIRED",
+          error: "Use the OIDC login endpoint to authenticate.",
+        },
+        { kind: "invalid_request" },
+      );
     },
 
     getAuthenticatedUser,
 
     getStatus(req) {
       const user = getAuthenticatedUser(req);
-      return createResponse(200, {
-        authenticated: Boolean(user),
-        auth: clientConfig,
-        user,
-      }, { kind: 'status' });
+      return createResponse(
+        200,
+        {
+          authenticated: Boolean(user),
+          auth: clientConfig,
+          user,
+        },
+        { kind: "status" },
+      );
     },
 
     isAuthenticated(req) {
@@ -525,21 +637,25 @@ function createOidcStrategy(authConfig, sessionCookieManager, flowCookieManager,
 export function createAuthService(config) {
   const authConfig = config.auth ?? { strategy: AUTH_STRATEGY_NONE };
   const clientConfig = buildClientConfig(authConfig, {
-    basePath: config.basePath ?? '',
+    basePath: config.basePath ?? "",
   });
   const sessionCookieManager = createSessionCookieManager({
     cookieName: authConfig.sessionCookieName,
-    cookiePath: config.basePath || '/',
+    cookiePath: config.basePath || "/",
     secret: authConfig.sessionSecret,
   });
 
   let strategy;
   if (authConfig.strategy === AUTH_STRATEGY_PASSWORD) {
-    strategy = createPasswordStrategy(authConfig, sessionCookieManager, clientConfig);
+    strategy = createPasswordStrategy(
+      authConfig,
+      sessionCookieManager,
+      clientConfig,
+    );
   } else if (authConfig.strategy === AUTH_STRATEGY_OIDC) {
     const flowCookieManager = createSignedCookieManager({
       cookieName: authConfig.oidc.flowCookieName,
-      cookiePath: config.basePath || '/',
+      cookiePath: config.basePath || "/",
       secret: authConfig.sessionSecret,
     });
     strategy = createOidcStrategy(
@@ -547,7 +663,7 @@ export function createAuthService(config) {
       sessionCookieManager,
       flowCookieManager,
       clientConfig,
-      { basePath: config.basePath ?? '' },
+      { basePath: config.basePath ?? "" },
     );
   } else {
     strategy = createNoneStrategy(clientConfig);
@@ -572,19 +688,26 @@ export function createAuthService(config) {
       }
 
       return {
-        body: 'Authentication required',
+        body: "Authentication required",
         headers: {
-          'Content-Type': 'text/plain; charset=utf-8',
+          "Content-Type": "text/plain; charset=utf-8",
         },
         ok: false,
         statusCode: 401,
-        statusMessage: 'Unauthorized',
+        statusMessage: "Unauthorized",
       };
     },
 
     beginOidcLogin(req, requestUrl) {
-      if (authConfig.strategy !== AUTH_STRATEGY_OIDC || typeof strategy.beginLogin !== 'function') {
-        return createResponse(404, { error: 'OIDC endpoint not found' }, { kind: 'not_found' });
+      if (
+        authConfig.strategy !== AUTH_STRATEGY_OIDC ||
+        typeof strategy.beginLogin !== "function"
+      ) {
+        return createResponse(
+          404,
+          { error: "OIDC endpoint not found" },
+          { kind: "not_found" },
+        );
       }
 
       return strategy.beginLogin(req, requestUrl);
@@ -595,8 +718,15 @@ export function createAuthService(config) {
     },
 
     completeOidcLogin(req, requestUrl) {
-      if (authConfig.strategy !== AUTH_STRATEGY_OIDC || typeof strategy.completeLogin !== 'function') {
-        return createResponse(404, { error: 'OIDC endpoint not found' }, { kind: 'not_found' });
+      if (
+        authConfig.strategy !== AUTH_STRATEGY_OIDC ||
+        typeof strategy.completeLogin !== "function"
+      ) {
+        return createResponse(
+          404,
+          { error: "OIDC endpoint not found" },
+          { kind: "not_found" },
+        );
       }
 
       return strategy.completeLogin(req, requestUrl);
@@ -616,8 +746,8 @@ export function createAuthService(config) {
 
     getStartupInfo() {
       return {
-        generatedPassword: authConfig.generatedPassword || '',
-        password: authConfig.password || '',
+        generatedPassword: authConfig.generatedPassword || "",
+        password: authConfig.password || "",
         passwordWasGenerated: Boolean(authConfig.passwordWasGenerated),
         strategy: authConfig.strategy,
       };

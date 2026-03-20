@@ -1,7 +1,7 @@
-import test from 'node:test';
-import assert from 'node:assert/strict';
+import test from "node:test";
+import assert from "node:assert/strict";
 
-import { LayoutController } from '../../src/client/presentation/layout-controller.js';
+import { LayoutController } from "../../src/client/presentation/layout-controller.js";
 
 function createClassList() {
   const tokens = new Set();
@@ -44,7 +44,7 @@ function createButton(view) {
       listeners.set(type, handler);
     },
     click() {
-      listeners.get('click')?.();
+      listeners.get("click")?.();
     },
     getAttribute(name) {
       return attributes.get(name) ?? null;
@@ -60,7 +60,7 @@ function createElement({ width = 0 } = {}) {
   const attributes = new Map();
   return {
     classList: createClassList(),
-    innerHTML: '',
+    innerHTML: "",
     offsetWidth: width,
     style: {},
     addEventListener(type, handler) {
@@ -86,21 +86,21 @@ function withDom({ isMobile = false } = {}, run) {
   const editorPane = createElement({ width: 500 });
   const previewPane = createElement({ width: 500 });
   const mobileToggleButton = createElement();
-  const viewButtons = ['split', 'editor', 'preview'].map(createButton);
+  const viewButtons = ["split", "editor", "preview"].map(createButton);
 
   globalThis.document = {
     body: { style: {} },
     addEventListener() {},
     getElementById(id) {
-      if (id === 'editorLayout') return editorLayout;
-      if (id === 'editorPane') return editorPane;
-      if (id === 'previewPane') return previewPane;
-      if (id === 'mobileViewToggle') return mobileToggleButton;
-      if (id === 'resizer') return null;
+      if (id === "editorLayout") return editorLayout;
+      if (id === "editorPane") return editorPane;
+      if (id === "previewPane") return previewPane;
+      if (id === "mobileViewToggle") return mobileToggleButton;
+      if (id === "resizer") return null;
       return null;
     },
     querySelectorAll(selector) {
-      if (selector === '.view-btn') {
+      if (selector === ".view-btn") {
         return viewButtons;
       }
       return [];
@@ -122,7 +122,7 @@ function withDom({ isMobile = false } = {}, run) {
   }
 }
 
-test('LayoutController reset restores the last desktop view after a temporary preview override', () => {
+test("LayoutController reset restores the last desktop view after a temporary preview override", () => {
   withDom({ isMobile: false }, ({ editorLayout, viewButtons }) => {
     const controller = new LayoutController({
       mobileBreakpointQuery: { matches: false },
@@ -130,17 +130,27 @@ test('LayoutController reset restores the last desktop view after a temporary pr
     });
 
     controller.initialize();
-    viewButtons.find((button) => button.dataset.view === 'editor')?.click();
-    controller.setView('preview', { persist: false });
+    viewButtons.find((button) => button.dataset.view === "editor")?.click();
+    controller.setView("preview", { persist: false });
     controller.reset();
 
-    assert.equal(editorLayout.getAttribute('data-view'), 'editor');
-    assert.equal(viewButtons.find((button) => button.dataset.view === 'editor')?.getAttribute('aria-pressed'), 'true');
-    assert.equal(viewButtons.find((button) => button.dataset.view === 'preview')?.getAttribute('aria-pressed'), 'false');
+    assert.equal(editorLayout.getAttribute("data-view"), "editor");
+    assert.equal(
+      viewButtons
+        .find((button) => button.dataset.view === "editor")
+        ?.getAttribute("aria-pressed"),
+      "true",
+    );
+    assert.equal(
+      viewButtons
+        .find((button) => button.dataset.view === "preview")
+        ?.getAttribute("aria-pressed"),
+      "false",
+    );
   });
 });
 
-test('LayoutController reset preserves the mobile editor toggle after a temporary preview override', () => {
+test("LayoutController reset preserves the mobile editor toggle after a temporary preview override", () => {
   withDom({ isMobile: true }, ({ editorLayout, mobileToggleButton }) => {
     const controller = new LayoutController({
       mobileBreakpointQuery: { matches: true },
@@ -149,10 +159,10 @@ test('LayoutController reset preserves the mobile editor toggle after a temporar
 
     controller.initialize();
     controller.toggleMobileView();
-    controller.setView('preview', { persist: false });
+    controller.setView("preview", { persist: false });
     controller.reset();
 
-    assert.equal(editorLayout.getAttribute('data-view'), 'split');
+    assert.equal(editorLayout.getAttribute("data-view"), "split");
     assert.match(mobileToggleButton.innerHTML, /Preview/);
   });
 });

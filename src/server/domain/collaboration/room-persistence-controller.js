@@ -1,9 +1,5 @@
 export class RoomPersistenceController {
-  constructor({
-    idleGraceMs = 0,
-    onDestroy = null,
-    onPersist = null,
-  }) {
+  constructor({ idleGraceMs = 0, onDestroy = null, onPersist = null }) {
     this.idleGraceMs = idleGraceMs;
     this.onDestroy = onDestroy;
     this.onPersist = onPersist;

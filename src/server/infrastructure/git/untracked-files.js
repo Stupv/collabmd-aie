@@ -1,19 +1,19 @@
-import { createReadStream } from 'node:fs';
-import { readFile } from 'node:fs/promises';
-import { join } from 'node:path';
+import { createReadStream } from "node:fs";
+import { readFile } from "node:fs/promises";
+import { join } from "node:path";
 
-import { mapWithConcurrency } from './concurrency.js';
-import { createEmptyStats } from './responses.js';
-import { splitContentLines } from './parsers.js';
+import { mapWithConcurrency } from "./concurrency.js";
+import { createEmptyStats } from "./responses.js";
+import { splitContentLines } from "./parsers.js";
 
 async function countFileLines(filePath) {
   return new Promise((resolve, reject) => {
-    const stream = createReadStream(filePath, { encoding: 'utf8' });
+    const stream = createReadStream(filePath, { encoding: "utf8" });
     let lineCount = 0;
     let sawData = false;
-    let lastCharacter = '\n';
+    let lastCharacter = "\n";
 
-    stream.on('data', (chunk) => {
+    stream.on("data", (chunk) => {
       if (!chunk) {
         return;
       }
@@ -22,9 +22,9 @@ async function countFileLines(filePath) {
       lastCharacter = chunk[chunk.length - 1];
       lineCount += chunk.match(/\n/gu)?.length ?? 0;
     });
-    stream.on('error', reject);
-    stream.on('end', () => {
-      if (sawData && lastCharacter !== '\n') {
+    stream.on("error", reject);
+    stream.on("end", () => {
+      if (sawData && lastCharacter !== "\n") {
         lineCount += 1;
       }
       resolve(lineCount);
@@ -33,15 +33,15 @@ async function countFileLines(filePath) {
 }
 
 function buildSyntheticAddedFileDiff(pathValue, content) {
-  const normalizedContent = String(content ?? '').replace(/\r\n/g, '\n');
+  const normalizedContent = String(content ?? "").replace(/\r\n/g, "\n");
   const file = {
-    code: 'U',
+    code: "U",
     hunks: [],
     isBinary: false,
     oldPath: null,
     path: pathValue,
     stats: createEmptyStats(),
-    status: 'untracked',
+    status: "untracked",
     synthetic: true,
   };
   const lines = splitContentLines(normalizedContent);
@@ -57,13 +57,13 @@ function buildSyntheticAddedFileDiff(pathValue, content) {
       content: line,
       newLine: index + 1,
       oldLine: null,
-      type: 'addition',
+      type: "addition",
     })),
     newLines: lines.length,
     newStart: 1,
     oldLines: 0,
     oldStart: 0,
-    section: '',
+    section: "",
   });
 
   return file;
@@ -89,7 +89,7 @@ export class GitUntrackedFileService {
   async buildSyntheticDiffs(files = []) {
     const results = await mapWithConcurrency(files, 2, async (file) => {
       try {
-        const content = await readFile(join(this.vaultDir, file.path), 'utf8');
+        const content = await readFile(join(this.vaultDir, file.path), "utf8");
         return buildSyntheticAddedFileDiff(file.path, content);
       } catch {
         return null;

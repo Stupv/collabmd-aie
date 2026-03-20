@@ -1,5 +1,5 @@
-import { stripVaultFileExtension } from '../../domain/file-kind.js';
-import { escapeHtml } from '../domain/vault-utils.js';
+import { stripVaultFileExtension } from "../../domain/file-kind.js";
+import { escapeHtml } from "../domain/vault-utils.js";
 
 const MAX_VISIBLE_RESULTS = 12;
 
@@ -12,10 +12,10 @@ export class QuickSwitcherController {
     this.getFileList = getFileList;
     this.onFileSelect = onFileSelect;
 
-    this.overlay = document.getElementById('quickSwitcher');
-    this.input = document.getElementById('quickSwitcherInput');
-    this.resultsList = document.getElementById('quickSwitcherResults');
-    this.hint = document.getElementById('quickSwitcherHint');
+    this.overlay = document.getElementById("quickSwitcher");
+    this.input = document.getElementById("quickSwitcherInput");
+    this.resultsList = document.getElementById("quickSwitcherResults");
+    this.hint = document.getElementById("quickSwitcherHint");
 
     this.filteredFiles = [];
     this.selectedIndex = 0;
@@ -25,33 +25,33 @@ export class QuickSwitcherController {
   }
 
   bindEvents() {
-    this.overlay?.addEventListener('mousedown', (e) => {
+    this.overlay?.addEventListener("mousedown", (e) => {
       if (e.target === this.overlay) this.close();
     });
 
-    this.input?.addEventListener('input', () => {
+    this.input?.addEventListener("input", () => {
       this.filterFiles();
     });
 
-    this.input?.addEventListener('keydown', (e) => {
+    this.input?.addEventListener("keydown", (e) => {
       switch (e.key) {
-        case 'ArrowDown':
+        case "ArrowDown":
           e.preventDefault();
           this.moveSelection(1);
           break;
-        case 'ArrowUp':
+        case "ArrowUp":
           e.preventDefault();
           this.moveSelection(-1);
           break;
-        case 'Enter':
+        case "Enter":
           e.preventDefault();
           this.confirmSelection();
           break;
-        case 'Escape':
+        case "Escape":
           e.preventDefault();
           this.close();
           break;
-        case 'Tab':
+        case "Tab":
           e.preventDefault();
           this.moveSelection(e.shiftKey ? -1 : 1);
           break;
@@ -63,9 +63,9 @@ export class QuickSwitcherController {
     if (!this.overlay) return;
 
     this.isOpen = true;
-    this.input.value = '';
+    this.input.value = "";
     this.selectedIndex = 0;
-    this.overlay.classList.add('visible');
+    this.overlay.classList.add("visible");
     this.filterFiles();
 
     // The overlay transitions visibility hidden→visible over 120ms.
@@ -90,23 +90,23 @@ export class QuickSwitcherController {
 
     // Primary: listen for transitionend on the overlay
     const onEnd = (e) => {
-      if (e.propertyName === 'visibility' || e.propertyName === 'opacity') {
-        this.overlay.removeEventListener('transitionend', onEnd);
+      if (e.propertyName === "visibility" || e.propertyName === "opacity") {
+        this.overlay.removeEventListener("transitionend", onEnd);
         clearTimeout(fallbackTimer);
         tryFocus();
       }
     };
-    this.overlay.addEventListener('transitionend', onEnd);
+    this.overlay.addEventListener("transitionend", onEnd);
 
     // Fallback: if transitionend never fires (e.g. transition skipped),
     // focus after a delay that exceeds the 120ms CSS transition.
     const fallbackTimer = setTimeout(() => {
-      this.overlay.removeEventListener('transitionend', onEnd);
+      this.overlay.removeEventListener("transitionend", onEnd);
       tryFocus();
     }, 160);
 
     this._focusCleanup = () => {
-      this.overlay.removeEventListener('transitionend', onEnd);
+      this.overlay.removeEventListener("transitionend", onEnd);
       clearTimeout(fallbackTimer);
     };
   }
@@ -123,9 +123,9 @@ export class QuickSwitcherController {
 
     this._cancelPendingFocus();
     this.isOpen = false;
-    this.overlay.classList.remove('visible');
-    this.input.value = '';
-    this.resultsList.innerHTML = '';
+    this.overlay.classList.remove("visible");
+    this.input.value = "";
+    this.resultsList.innerHTML = "";
   }
 
   toggle() {
@@ -137,7 +137,7 @@ export class QuickSwitcherController {
   }
 
   filterFiles() {
-    const query = this.input?.value.trim().toLowerCase() ?? '';
+    const query = this.input?.value.trim().toLowerCase() ?? "";
     const allFiles = this.getFileList?.() ?? [];
 
     if (!query) {
@@ -160,13 +160,13 @@ export class QuickSwitcherController {
 
   fuzzyScore(text, query) {
     const name = stripDisplayExtension(text);
-    const nameOnly = name.split('/').pop();
+    const nameOnly = name.split("/").pop();
 
     // Exact substring match in filename gets highest score
-    if (nameOnly.includes(query)) return 100 + (1 / nameOnly.length);
+    if (nameOnly.includes(query)) return 100 + 1 / nameOnly.length;
 
     // Exact substring in full path
-    if (name.includes(query)) return 50 + (1 / name.length);
+    if (name.includes(query)) return 50 + 1 / name.length;
 
     // Fuzzy character-by-character match
     let queryIndex = 0;
@@ -180,7 +180,13 @@ export class QuickSwitcherController {
         score += consecutiveBonus;
 
         // Bonus for matching at word boundaries
-        if (i === 0 || name[i - 1] === '/' || name[i - 1] === '-' || name[i - 1] === '_' || name[i - 1] === ' ') {
+        if (
+          i === 0 ||
+          name[i - 1] === "/" ||
+          name[i - 1] === "-" ||
+          name[i - 1] === "_" ||
+          name[i - 1] === " "
+        ) {
           score += 5;
         }
       } else {
@@ -193,47 +199,49 @@ export class QuickSwitcherController {
 
   renderResults(query) {
     if (!this.resultsList) return;
-    this.resultsList.innerHTML = '';
+    this.resultsList.innerHTML = "";
 
     if (this.filteredFiles.length === 0) {
       if (this.hint) {
-        this.hint.textContent = query ? 'No files found' : 'No files in vault';
-        this.hint.classList.remove('hidden');
+        this.hint.textContent = query ? "No files found" : "No files in vault";
+        this.hint.classList.remove("hidden");
       }
       return;
     }
 
     if (this.hint) {
-      this.hint.classList.add('hidden');
+      this.hint.classList.add("hidden");
     }
 
     const fragment = document.createDocumentFragment();
 
     this.filteredFiles.forEach((filePath, index) => {
-      const item = document.createElement('button');
-      item.type = 'button';
-      item.className = 'qs-result-item';
+      const item = document.createElement("button");
+      item.type = "button";
+      item.className = "qs-result-item";
       if (index === this.selectedIndex) {
-        item.classList.add('selected');
+        item.classList.add("selected");
       }
       item.dataset.index = String(index);
 
       const displayName = stripDisplayExtension(filePath);
-      const fileName = displayName.split('/').pop();
-      const dirPath = displayName.includes('/') ? displayName.substring(0, displayName.lastIndexOf('/')) : '';
+      const fileName = displayName.split("/").pop();
+      const dirPath = displayName.includes("/")
+        ? displayName.substring(0, displayName.lastIndexOf("/"))
+        : "";
 
       item.innerHTML = `
         <svg class="qs-result-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
         <span class="qs-result-name">${this.highlightMatch(fileName, query)}</span>
-        ${dirPath ? `<span class="qs-result-path">${escapeHtml(dirPath)}</span>` : ''}
+        ${dirPath ? `<span class="qs-result-path">${escapeHtml(dirPath)}</span>` : ""}
       `;
 
-      item.addEventListener('click', () => {
+      item.addEventListener("click", () => {
         this.selectedIndex = index;
         this.confirmSelection();
       });
 
-      item.addEventListener('mouseenter', () => {
+      item.addEventListener("mouseenter", () => {
         this.selectedIndex = index;
         this.updateSelection();
       });
@@ -258,10 +266,13 @@ export class QuickSwitcherController {
     }
 
     // Fuzzy highlight
-    let result = '';
+    let result = "";
     let queryIdx = 0;
     for (let i = 0; i < text.length; i++) {
-      if (queryIdx < query.length && text[i].toLowerCase() === query[queryIdx]) {
+      if (
+        queryIdx < query.length &&
+        text[i].toLowerCase() === query[queryIdx]
+      ) {
         result += `<mark>${escapeHtml(text[i])}</mark>`;
         queryIdx++;
       } else {
@@ -273,21 +284,23 @@ export class QuickSwitcherController {
 
   moveSelection(delta) {
     if (this.filteredFiles.length === 0) return;
-    this.selectedIndex = (this.selectedIndex + delta + this.filteredFiles.length) % this.filteredFiles.length;
+    this.selectedIndex =
+      (this.selectedIndex + delta + this.filteredFiles.length) %
+      this.filteredFiles.length;
     this.updateSelection();
   }
 
   updateSelection() {
     if (!this.resultsList) return;
 
-    const items = this.resultsList.querySelectorAll('.qs-result-item');
+    const items = this.resultsList.querySelectorAll(".qs-result-item");
     items.forEach((item, i) => {
-      item.classList.toggle('selected', i === this.selectedIndex);
+      item.classList.toggle("selected", i === this.selectedIndex);
     });
 
     // Scroll selected item into view
     const selectedItem = items[this.selectedIndex];
-    selectedItem?.scrollIntoView({ block: 'nearest' });
+    selectedItem?.scrollIntoView({ block: "nearest" });
   }
 
   confirmSelection() {

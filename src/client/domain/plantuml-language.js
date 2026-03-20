@@ -1,128 +1,125 @@
-import { LanguageDescription, LanguageSupport, StreamLanguage } from '@codemirror/language';
+import {
+  LanguageDescription,
+  LanguageSupport,
+  StreamLanguage,
+} from "@codemirror/language";
 
 const DIRECTIVES = new Set([
-  '@startuml',
-  '@enduml',
-  '@startmindmap',
-  '@endmindmap',
-  '@startwbs',
-  '@endwbs',
-  '@startgantt',
-  '@endgantt',
-  '@startjson',
-  '@endjson',
-  '@startyaml',
-  '@endyaml',
-  '@startsalt',
-  '@endsalt',
+  "@startuml",
+  "@enduml",
+  "@startmindmap",
+  "@endmindmap",
+  "@startwbs",
+  "@endwbs",
+  "@startgantt",
+  "@endgantt",
+  "@startjson",
+  "@endjson",
+  "@startyaml",
+  "@endyaml",
+  "@startsalt",
+  "@endsalt",
 ]);
 
 const KEYWORDS = new Set([
-  'activate',
-  'actor',
-  'agent',
-  'allowmixing',
-  'alt',
-  'annotation',
-  'artifact',
-  'as',
-  'autonumber',
-  'boundary',
-  'box',
-  'break',
-  'caption',
-  'card',
-  'case',
-  'circle',
-  'class',
-  'cloud',
-  'collections',
-  'component',
-  'control',
-  'create',
-  'critical',
-  'database',
-  'deactivate',
-  'destroy',
-  'detach',
-  'else',
-  'elseif',
-  'end',
-  'endlegend',
-  'endif',
-  'endwhile',
-  'entity',
-  'enum',
-  'exception',
-  'file',
-  'folder',
-  'footer',
-  'fork',
-  'frame',
-  'group',
-  'header',
-  'hide',
-  'hnote',
-  'if',
-  'interface',
-  'json',
-  'kill',
-  'label',
-  'legend',
-  'loop',
-  'map',
-  'namespace',
-  'newpage',
-  'node',
-  'note',
-  'object',
-  'of',
-  'opt',
-  'order',
-  'over',
-  'package',
-  'page',
-  'par',
-  'participant',
-  'partition',
-  'person',
-  'port',
-  'protocol',
-  'queue',
-  'rectangle',
-  'ref',
-  'repeat',
-  'return',
-  'rnote',
-  'show',
-  'skinparam',
-  'split',
-  'stack',
-  'start',
-  'state',
-  'stop',
-  'storage',
-  'struct',
-  'switch',
-  'then',
-  'title',
-  'usecase',
-  'while',
+  "activate",
+  "actor",
+  "agent",
+  "allowmixing",
+  "alt",
+  "annotation",
+  "artifact",
+  "as",
+  "autonumber",
+  "boundary",
+  "box",
+  "break",
+  "caption",
+  "card",
+  "case",
+  "circle",
+  "class",
+  "cloud",
+  "collections",
+  "component",
+  "control",
+  "create",
+  "critical",
+  "database",
+  "deactivate",
+  "destroy",
+  "detach",
+  "else",
+  "elseif",
+  "end",
+  "endlegend",
+  "endif",
+  "endwhile",
+  "entity",
+  "enum",
+  "exception",
+  "file",
+  "folder",
+  "footer",
+  "fork",
+  "frame",
+  "group",
+  "header",
+  "hide",
+  "hnote",
+  "if",
+  "interface",
+  "json",
+  "kill",
+  "label",
+  "legend",
+  "loop",
+  "map",
+  "namespace",
+  "newpage",
+  "node",
+  "note",
+  "object",
+  "of",
+  "opt",
+  "order",
+  "over",
+  "package",
+  "page",
+  "par",
+  "participant",
+  "partition",
+  "person",
+  "port",
+  "protocol",
+  "queue",
+  "rectangle",
+  "ref",
+  "repeat",
+  "return",
+  "rnote",
+  "show",
+  "skinparam",
+  "split",
+  "stack",
+  "start",
+  "state",
+  "stop",
+  "storage",
+  "struct",
+  "switch",
+  "then",
+  "title",
+  "usecase",
+  "while",
 ]);
 
-const BOOLEAN_LITERALS = new Set([
-  'false',
-  'no',
-  'off',
-  'on',
-  'true',
-  'yes',
-]);
+const BOOLEAN_LITERALS = new Set(["false", "no", "off", "on", "true", "yes"]);
 
 function readWord(stream) {
   const match = stream.match(/[@!A-Za-z_][\w.-]*/u, false);
   if (!match) {
-    return '';
+    return "";
   }
 
   stream.match(/[@!A-Za-z_][\w.-]*/u);
@@ -150,7 +147,7 @@ const plantUmlStreamLanguage = StreamLanguage.define({
         stream.skipToEnd();
       }
 
-      return 'comment';
+      return "comment";
     }
 
     if (stream.eatSpace()) {
@@ -159,56 +156,67 @@ const plantUmlStreamLanguage = StreamLanguage.define({
 
     if (stream.match("/'")) {
       state.inBlockComment = true;
-      return 'comment';
+      return "comment";
     }
 
-    const previousCharacter = stream.pos === 0 ? ' ' : stream.string.charAt(stream.pos - 1);
-    if (stream.peek() === "'" && (stream.sol() || /\s/u.test(previousCharacter))) {
+    const previousCharacter =
+      stream.pos === 0 ? " " : stream.string.charAt(stream.pos - 1);
+    if (
+      stream.peek() === "'" &&
+      (stream.sol() || /\s/u.test(previousCharacter))
+    ) {
       stream.skipToEnd();
-      return 'comment';
+      return "comment";
     }
 
     if (stream.match(/"(?:[^"\\]|\\.)*"?/u)) {
-      return 'string';
+      return "string";
     }
 
-    if (stream.match(/#[0-9a-f]{3,8}\b/iu) || stream.match(/#[A-Za-z][\w-]*/u)) {
-      return 'atom';
+    if (
+      stream.match(/#[0-9a-f]{3,8}\b/iu) ||
+      stream.match(/#[A-Za-z][\w-]*/u)
+    ) {
+      return "atom";
     }
 
     if (stream.match(/\b\d+(?:\.\d+)?\b/u)) {
-      return 'number';
+      return "number";
     }
 
     if (stream.match(/[<>{}[\]():,]/u)) {
-      return 'punctuation';
+      return "punctuation";
     }
 
-    if (stream.match(/[ox*+<#]?[-=.\\/]+(?:left|right|up|down)?[-=.\\/]*[ox*+>#]?/iu)) {
-      return 'operator';
+    if (
+      stream.match(
+        /[ox*+<#]?[-=.\\/]+(?:left|right|up|down)?[-=.\\/]*[ox*+>#]?/iu,
+      )
+    ) {
+      return "operator";
     }
 
     const word = readWord(stream);
     if (word) {
       const normalized = word.toLowerCase();
 
-      if (normalized.startsWith('!') || DIRECTIVES.has(normalized)) {
-        return 'meta';
+      if (normalized.startsWith("!") || DIRECTIVES.has(normalized)) {
+        return "meta";
       }
 
       if (KEYWORDS.has(normalized)) {
-        return 'keyword';
+        return "keyword";
       }
 
       if (BOOLEAN_LITERALS.has(normalized)) {
-        return 'bool';
+        return "bool";
       }
 
       if (/^[A-Z][A-Z0-9_]*$/u.test(word)) {
-        return 'typeName';
+        return "typeName";
       }
 
-      return 'variableName';
+      return "variableName";
     }
 
     stream.next();
@@ -219,8 +227,8 @@ const plantUmlStreamLanguage = StreamLanguage.define({
 export const plantUmlLanguage = new LanguageSupport(plantUmlStreamLanguage);
 
 export const plantUmlLanguageDescription = LanguageDescription.of({
-  alias: ['plantuml', 'puml'],
-  extensions: ['plantuml', 'puml'],
-  name: 'PlantUML',
+  alias: ["plantuml", "puml"],
+  extensions: ["plantuml", "puml"],
+  name: "PlantUML",
   support: plantUmlLanguage,
 });

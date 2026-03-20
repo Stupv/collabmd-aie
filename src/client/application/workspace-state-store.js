@@ -1,17 +1,17 @@
 export class WorkspaceStateStore {
   constructor(initialState = {}) {
     this.state = {
-      activeSidebarTab: 'files',
+      activeSidebarTab: "files",
       chatInitialSyncComplete: false,
       chatIsOpen: false,
       chatMessageIds: new Set(),
       chatMessages: [],
       chatUnreadCount: 0,
       connectionHelpShown: false,
-      connectionState: { status: 'disconnected', unreachable: false },
+      connectionState: { status: "disconnected", unreachable: false },
       currentFilePath: null,
       fileExplorerReady: false,
-      followedCursorSignature: '',
+      followedCursorSignature: "",
       followedUserClientId: null,
       gitRepoAvailable: false,
       globalUsers: [],
@@ -36,9 +36,16 @@ export class WorkspaceStateStore {
     return nextToken;
   }
 
-  replaceChatState({ initialSyncComplete, isOpen, messageIds, messages, unreadCount }) {
+  replaceChatState({
+    initialSyncComplete,
+    isOpen,
+    messageIds,
+    messages,
+    unreadCount,
+  }) {
     this.state.chatMessages = Array.isArray(messages) ? messages : [];
-    this.state.chatMessageIds = messageIds instanceof Set ? messageIds : new Set();
+    this.state.chatMessageIds =
+      messageIds instanceof Set ? messageIds : new Set();
     this.state.chatUnreadCount = Number.isFinite(unreadCount) ? unreadCount : 0;
     this.state.chatIsOpen = Boolean(isOpen);
     this.state.chatInitialSyncComplete = Boolean(initialSyncComplete);

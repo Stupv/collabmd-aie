@@ -41,7 +41,8 @@
     "test:e2e:headed": "playwright test --headed",
     "test:guardrails": "node --test tests/node/architecture-boundaries.test.js tests/node/facade-structure.test.js",
     "test:unit": "npm run build && node --test --test-force-exit tests/node/*.test.js",
-    "tunnel": "node scripts/cloudflare-tunnel.mjs"
+    "tunnel": "node scripts/cloudflare-tunnel.mjs",
+    "format:check": "prettier --check ."
   },
   "keywords": [
     "markdown",

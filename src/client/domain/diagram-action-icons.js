@@ -31,11 +31,11 @@ export function setDiagramActionButtonIcon(button, iconName) {
 
   const markup = DIAGRAM_ACTION_ICONS[iconName];
   if (!markup) {
-    button.classList.remove('is-icon-only');
+    button.classList.remove("is-icon-only");
     return;
   }
 
-  button.classList.add('is-icon-only');
+  button.classList.add("is-icon-only");
   button.dataset.icon = iconName;
   button.innerHTML = markup.trim();
 }

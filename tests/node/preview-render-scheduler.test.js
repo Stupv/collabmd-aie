@@ -1,9 +1,9 @@
-import test from 'node:test';
-import assert from 'node:assert/strict';
+import test from "node:test";
+import assert from "node:assert/strict";
 
-import { PreviewRenderScheduler } from '../../src/client/application/preview-render-scheduler.js';
+import { PreviewRenderScheduler } from "../../src/client/application/preview-render-scheduler.js";
 
-test('PreviewRenderScheduler debounces and schedules immediate frame renders', () => {
+test("PreviewRenderScheduler debounces and schedules immediate frame renders", () => {
   const timeouts = [];
   const frames = [];
   const idle = [];
@@ -28,7 +28,7 @@ test('PreviewRenderScheduler debounces and schedules immediate frame renders', (
   });
 
   scheduler.queue({
-    markdownText: '# Preview',
+    markdownText: "# Preview",
     onRenderRequested: (markdownText, renderVersion) => {
       calls.push({ markdownText, renderVersion });
     },
@@ -44,10 +44,10 @@ test('PreviewRenderScheduler debounces and schedules immediate frame renders', (
   assert.equal(idle.length, 0);
 
   frames[0]();
-  assert.deepEqual(calls, [{ markdownText: '# Preview', renderVersion: 4 }]);
+  assert.deepEqual(calls, [{ markdownText: "# Preview", renderVersion: 4 }]);
 });
 
-test('PreviewRenderScheduler defers idle renders before the animation frame', () => {
+test("PreviewRenderScheduler defers idle renders before the animation frame", () => {
   const timeouts = [];
   const frames = [];
   const idle = [];
@@ -72,7 +72,7 @@ test('PreviewRenderScheduler defers idle renders before the animation frame', ()
   });
 
   scheduler.queue({
-    markdownText: 'large doc',
+    markdownText: "large doc",
     onRenderRequested: (markdownText, renderVersion) => {
       calls.push({ markdownText, renderVersion });
     },
@@ -87,26 +87,26 @@ test('PreviewRenderScheduler defers idle renders before the animation frame', ()
   assert.equal(frames.length, 1);
   frames[0]();
 
-  assert.deepEqual(calls, [{ markdownText: 'large doc', renderVersion: 9 }]);
+  assert.deepEqual(calls, [{ markdownText: "large doc", renderVersion: 9 }]);
 });
 
-test('PreviewRenderScheduler cancels timeout, idle, and frame work together', () => {
+test("PreviewRenderScheduler cancels timeout, idle, and frame work together", () => {
   const cancelled = [];
   let timeoutCallback = null;
   const scheduler = new PreviewRenderScheduler({
     cancelAnimationFrameFn: (frameId) => {
       if (frameId !== null) {
-        cancelled.push(['frame', frameId]);
+        cancelled.push(["frame", frameId]);
       }
     },
     cancelIdleRenderFn: (idleId) => {
       if (idleId !== null) {
-        cancelled.push(['idle', idleId]);
+        cancelled.push(["idle", idleId]);
       }
     },
     clearTimeoutFn: (timeoutId) => {
       if (timeoutId !== null) {
-        cancelled.push(['timeout', timeoutId]);
+        cancelled.push(["timeout", timeoutId]);
       }
     },
     getRenderProfileFn: () => ({ debounceMs: 1, deferUntilIdle: true }),
@@ -119,7 +119,7 @@ test('PreviewRenderScheduler cancels timeout, idle, and frame work together', ()
   });
 
   scheduler.queue({
-    markdownText: 'cancel me',
+    markdownText: "cancel me",
     onRenderRequested() {},
     renderVersion: 1,
   });
@@ -128,7 +128,7 @@ test('PreviewRenderScheduler cancels timeout, idle, and frame work together', ()
   scheduler.cancel();
 
   assert.deepEqual(cancelled, [
-    ['timeout', 33],
-    ['idle', 11],
+    ["timeout", 33],
+    ["idle", 11],
   ]);
 });

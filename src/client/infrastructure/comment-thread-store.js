@@ -1,4 +1,4 @@
-import * as Y from 'yjs';
+import * as Y from "yjs";
 
 import {
   createCommentId,
@@ -8,17 +8,17 @@ import {
   normalizeCommentQuote,
   serializeCommentThreads,
   summarizeCommentExcerpt,
-} from '../../domain/comment-threads.js';
+} from "../../domain/comment-threads.js";
 
 function createCommentMessage({ body, user }) {
   return {
     body,
     createdAt: Date.now(),
-    id: createCommentId('comment'),
-    peerId: user?.peerId ?? '',
+    id: createCommentId("comment"),
+    peerId: user?.peerId ?? "",
     reactions: [],
-    userColor: user?.color ?? '',
-    userName: user?.name ?? 'Anonymous',
+    userColor: user?.color ?? "",
+    userName: user?.name ?? "Anonymous",
   };
 }
 
@@ -32,17 +32,27 @@ function readRecordValue(record, key) {
 
 function cloneReactionGroups(source = []) {
   return Array.isArray(source)
-    ? source.map((group) => ({
-      emoji: typeof group?.emoji === 'string' ? group.emoji : '',
-      users: Array.isArray(group?.users)
-        ? group.users.map((user) => ({
-          reactedAt: Number.isFinite(user?.reactedAt) ? user.reactedAt : Date.now(),
-          userColor: typeof user?.userColor === 'string' ? user.userColor : '',
-          userId: typeof user?.userId === 'string' ? user.userId : '',
-          userName: typeof user?.userName === 'string' && user.userName ? user.userName : 'Anonymous',
-        })).filter((user) => user.userId)
-        : [],
-    })).filter((group) => group.emoji && group.users.length > 0)
+    ? source
+        .map((group) => ({
+          emoji: typeof group?.emoji === "string" ? group.emoji : "",
+          users: Array.isArray(group?.users)
+            ? group.users
+                .map((user) => ({
+                  reactedAt: Number.isFinite(user?.reactedAt)
+                    ? user.reactedAt
+                    : Date.now(),
+                  userColor:
+                    typeof user?.userColor === "string" ? user.userColor : "",
+                  userId: typeof user?.userId === "string" ? user.userId : "",
+                  userName:
+                    typeof user?.userName === "string" && user.userName
+                      ? user.userName
+                      : "Anonymous",
+                }))
+                .filter((user) => user.userId)
+            : [],
+        }))
+        .filter((group) => group.emoji && group.users.length > 0)
     : [];
 }
 
@@ -53,9 +63,12 @@ function normalizeSelectionAnchorPayload(payload, state) {
   }
 
   const anchor = payload?.anchor ?? payload;
-  const anchorKind = anchor?.anchorKind === 'text' ? 'text' : 'line';
+  const anchorKind = anchor?.anchorKind === "text" ? "text" : "line";
   const lineCount = doc.lines;
-  const startLine = Math.min(Math.max(Math.round(anchor?.startLine ?? 1), 1), lineCount);
+  const startLine = Math.min(
+    Math.max(Math.round(anchor?.startLine ?? 1), 1),
+    lineCount,
+  );
   const endLine = Math.min(
     Math.max(Math.round(anchor?.endLine ?? startLine), startLine),
     lineCount,
@@ -74,7 +87,9 @@ function normalizeSelectionAnchorPayload(payload, state) {
   return {
     anchorEndLine: endLine,
     anchorKind,
-    anchorQuote: normalizeCommentQuote(anchor?.anchorQuote || doc.sliceString(startIndex, endIndex)),
+    anchorQuote: normalizeCommentQuote(
+      anchor?.anchorQuote || doc.sliceString(startIndex, endIndex),
+    ),
     anchorStartLine: startLine,
     endIndex,
     startIndex,
@@ -158,24 +173,32 @@ export class CommentThreadStore {
 
     const thread = createCommentThreadSharedType({
       anchorEnd: Y.relativePositionToJSON(
-        Y.createRelativePositionFromTypeIndex(this.ytext, normalizedAnchor.endIndex),
+        Y.createRelativePositionFromTypeIndex(
+          this.ytext,
+          normalizedAnchor.endIndex,
+        ),
       ),
       anchorEndLine: normalizedAnchor.anchorEndLine,
       anchorKind: normalizedAnchor.anchorKind,
       anchorQuote: normalizedAnchor.anchorQuote,
       anchorStart: Y.relativePositionToJSON(
-        Y.createRelativePositionFromTypeIndex(this.ytext, normalizedAnchor.startIndex),
+        Y.createRelativePositionFromTypeIndex(
+          this.ytext,
+          normalizedAnchor.startIndex,
+        ),
       ),
       anchorStartLine: normalizedAnchor.anchorStartLine,
       createdAt: Date.now(),
-      createdByColor: this.getLocalUser()?.color ?? '',
-      createdByName: this.getLocalUser()?.name ?? 'Anonymous',
-      createdByPeerId: this.getLocalUser()?.peerId ?? '',
-      id: createCommentId('thread'),
-      messages: [createCommentMessage({
-        body: normalizedBody,
-        user: this.getLocalUser(),
-      })],
+      createdByColor: this.getLocalUser()?.color ?? "",
+      createdByName: this.getLocalUser()?.name ?? "Anonymous",
+      createdByPeerId: this.getLocalUser()?.peerId ?? "",
+      id: createCommentId("thread"),
+      messages: [
+        createCommentMessage({
+          body: normalizedBody,
+          user: this.getLocalUser(),
+        }),
+      ],
     });
 
     if (!thread) {
@@ -184,9 +207,9 @@ export class CommentThreadStore {
 
     this.ydoc.transact(() => {
       this.commentThreads.push([thread]);
-    }, 'comment-thread-create');
+    }, "comment-thread-create");
 
-    return thread.get('id');
+    return thread.get("id");
   }
 
   replyToCommentThread(threadId, body) {
@@ -196,7 +219,7 @@ export class CommentThreadStore {
     }
 
     const thread = this.findSharedCommentThread(threadId);
-    const messages = thread?.get('messages');
+    const messages = thread?.get("messages");
     if (!(messages instanceof Y.Array)) {
       return null;
     }
@@ -208,48 +231,62 @@ export class CommentThreadStore {
 
     this.ydoc.transact(() => {
       messages.push([message]);
-    }, 'comment-thread-reply');
+    }, "comment-thread-reply");
 
     return message.id;
   }
 
   toggleCommentReaction(threadId, messageId, emoji) {
-    if (!this.ydoc || !threadId || !messageId || typeof emoji !== 'string' || !emoji.trim()) {
+    if (
+      !this.ydoc ||
+      !threadId ||
+      !messageId ||
+      typeof emoji !== "string" ||
+      !emoji.trim()
+    ) {
       return false;
     }
 
     const localUser = this.getLocalUser?.();
-    const localUserId = typeof localUser?.userId === 'string' ? localUser.userId : '';
+    const localUserId =
+      typeof localUser?.userId === "string" ? localUser.userId : "";
     if (!localUserId) {
       return false;
     }
 
     const thread = this.findSharedCommentThread(threadId);
-    const messages = thread?.get('messages');
+    const messages = thread?.get("messages");
     if (!(messages instanceof Y.Array)) {
       return false;
     }
 
     const items = messages.toArray();
-    const messageIndex = items.findIndex((message) => readRecordValue(message, 'id') === messageId);
+    const messageIndex = items.findIndex(
+      (message) => readRecordValue(message, "id") === messageId,
+    );
     if (messageIndex < 0) {
       return false;
     }
 
-    const messageRecord = items[messageIndex] instanceof Y.Map
-      ? items[messageIndex].toJSON()
-      : { ...items[messageIndex] };
+    const messageRecord =
+      items[messageIndex] instanceof Y.Map
+        ? items[messageIndex].toJSON()
+        : { ...items[messageIndex] };
     const reactions = cloneReactionGroups(messageRecord.reactions);
-    const reactionIndex = reactions.findIndex((reaction) => reaction.emoji === emoji);
+    const reactionIndex = reactions.findIndex(
+      (reaction) => reaction.emoji === emoji,
+    );
 
     if (reactionIndex >= 0) {
-      const nextUsers = reactions[reactionIndex].users.filter((user) => user.userId !== localUserId);
+      const nextUsers = reactions[reactionIndex].users.filter(
+        (user) => user.userId !== localUserId,
+      );
       if (nextUsers.length === reactions[reactionIndex].users.length) {
         nextUsers.push({
           reactedAt: Date.now(),
-          userColor: localUser?.color ?? '',
+          userColor: localUser?.color ?? "",
           userId: localUserId,
-          userName: localUser?.name ?? 'Anonymous',
+          userName: localUser?.name ?? "Anonymous",
         });
       }
 
@@ -264,12 +301,14 @@ export class CommentThreadStore {
     } else {
       reactions.push({
         emoji,
-        users: [{
-          reactedAt: Date.now(),
-          userColor: localUser?.color ?? '',
-          userId: localUserId,
-          userName: localUser?.name ?? 'Anonymous',
-        }],
+        users: [
+          {
+            reactedAt: Date.now(),
+            userColor: localUser?.color ?? "",
+            userId: localUserId,
+            userName: localUser?.name ?? "Anonymous",
+          },
+        ],
       });
     }
 
@@ -281,7 +320,7 @@ export class CommentThreadStore {
     this.ydoc.transact(() => {
       messages.delete(messageIndex, 1);
       messages.insert(messageIndex, [nextMessage]);
-    }, 'comment-reaction-toggle');
+    }, "comment-reaction-toggle");
 
     return true;
   }
@@ -298,7 +337,7 @@ export class CommentThreadStore {
 
     this.ydoc.transact(() => {
       this.commentThreads.delete(threadIndex, 1);
-    }, 'comment-thread-resolve');
+    }, "comment-thread-resolve");
 
     return true;
   }
@@ -308,9 +347,13 @@ export class CommentThreadStore {
       return null;
     }
 
-    return this.commentThreads.toArray().find((thread) => (
-      thread instanceof Y.Map && thread.get('id') === threadId
-    )) ?? null;
+    return (
+      this.commentThreads
+        .toArray()
+        .find(
+          (thread) => thread instanceof Y.Map && thread.get("id") === threadId,
+        ) ?? null
+    );
   }
 
   findSharedCommentThreadIndex(threadId) {
@@ -318,9 +361,11 @@ export class CommentThreadStore {
       return -1;
     }
 
-    return this.commentThreads.toArray().findIndex((thread) => (
-      thread instanceof Y.Map && thread.get('id') === threadId
-    ));
+    return this.commentThreads
+      .toArray()
+      .findIndex(
+        (thread) => thread instanceof Y.Map && thread.get("id") === threadId,
+      );
   }
 
   resolveCommentThread(thread) {
@@ -334,22 +379,35 @@ export class CommentThreadStore {
       return null;
     }
 
-    const anchorStart = this.resolveCommentPosition(normalizedAnchor.anchorStart);
+    const anchorStart = this.resolveCommentPosition(
+      normalizedAnchor.anchorStart,
+    );
     const anchorEnd = this.resolveCommentPosition(normalizedAnchor.anchorEnd);
-    const startIndex = anchorStart?.index ?? state.doc.line(normalizedAnchor.anchorStartLine).from;
+    const startIndex =
+      anchorStart?.index ??
+      state.doc.line(normalizedAnchor.anchorStartLine).from;
     const fallbackEndLine = Math.min(
-      Math.max(normalizedAnchor.anchorEndLine ?? normalizedAnchor.anchorStartLine, normalizedAnchor.anchorStartLine),
+      Math.max(
+        normalizedAnchor.anchorEndLine ?? normalizedAnchor.anchorStartLine,
+        normalizedAnchor.anchorStartLine,
+      ),
       state.doc.lines,
     );
     const endIndex = anchorEnd?.index ?? state.doc.line(fallbackEndLine).to;
     const startLine = state.doc.lineAt(startIndex).number;
-    const safeEndIndex = Math.min(Math.max(endIndex, startIndex), state.doc.length);
+    const safeEndIndex = Math.min(
+      Math.max(endIndex, startIndex),
+      state.doc.length,
+    );
     const endLine = state.doc.lineAt(safeEndIndex).number;
     const rawExcerpt = state.doc.sliceString(
       startIndex,
-      normalizedAnchor.anchorKind === 'text' ? Math.max(endIndex, startIndex) : state.doc.line(endLine).to,
+      normalizedAnchor.anchorKind === "text"
+        ? Math.max(endIndex, startIndex)
+        : state.doc.line(endLine).to,
     );
-    const excerpt = summarizeCommentExcerpt(rawExcerpt) || normalizedAnchor.anchorQuote;
+    const excerpt =
+      summarizeCommentExcerpt(rawExcerpt) || normalizedAnchor.anchorQuote;
 
     return {
       ...thread,
@@ -378,7 +436,10 @@ export class CommentThreadStore {
 
     try {
       const position = Y.createRelativePositionFromJSON(positionJson);
-      const absolute = Y.createAbsolutePositionFromRelativePosition(position, this.ydoc);
+      const absolute = Y.createAbsolutePositionFromRelativePosition(
+        position,
+        this.ydoc,
+      );
       if (!absolute || absolute.type !== this.ytext) {
         return null;
       }

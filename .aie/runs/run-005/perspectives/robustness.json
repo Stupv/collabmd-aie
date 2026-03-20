@@ -1,0 +1,74 @@
+{
+  "perspective_name": "robustness",
+  "raw_output": {
+    "findings": [
+      {
+        "id": "R-001",
+        "severity": "warning",
+        "title": "Toast elements leak permanently if CSS animation never fires",
+        "description": "In `ToastController.show()`, after `duration` ms a `leaving` CSS class is added and a `animationend` listener is registered to call `toast.remove()`. If the CSS animation never fires — which happens under `prefers-reduced-motion`, when animations are overridden by a host page stylesheet, when the element is detached from the DOM before the animation starts, or when the browser throttles animations in background tabs — `animationend` is never dispatched. The `toast` element then stays permanently in `this.container`, and each call to `show()` accumulates one more orphaned element. On long-running sessions with frequent notifications this is an unbounded DOM/memory leak.",
+        "affected_files": ["src/client/presentation/toast-controller.js"],
+        "affected_symbols": ["ToastController.show"],
+        "recommendation": "Add a fallback `setTimeout` that calls `toast.remove()` if the animation has not yet fired. For example, after adding the `leaving` class, also schedule `setTimeout(() => toast.remove(), animationDurationMs + 200)` and cancel it inside the `animationend` handler. Alternatively, use the `Web Animations API` (`toast.animate(...)`) which returns a `finished` promise that always resolves.",
+        "effort_to_fix": "trivial"
+      },
+      {
+        "id": "R-002",
+        "severity": "warning",
+        "title": "`deflateRawSync` blocks the Node.js event loop on every PlantUML encode",
+        "description": "`encodePlantUmlText` in `plantuml-encoder.js` calls `deflateRawSync`, which is a synchronous zlib operation that runs entirely on the main Node.js thread. Every incoming PlantUML render request (preview hydration in the client triggers server-side SVG generation) will block the event loop for the full duration of the compression. For large or complex PlantUML diagrams — which can easily reach tens of kilobytes of source text — this introduces multi-millisecond stalls that degrade all concurrent request latency. Under moderate load from multiple editors this becomes a latency cliff.",
+        "affected_files": ["src/server/domain/plantuml-encoder.js"],
+        "affected_symbols": ["encodePlantUmlText"],
+        "recommendation": "Replace `deflateRawSync` with the async `deflateRaw` (callback) or `zlib.deflateRaw` wrapped with `util.promisify`, and make `encodePlantUmlText` async. This offloads the compression to libuv's thread pool, keeping the event loop free during compression.",
+        "effort_to_fix": "small"
+      },
+      {
+        "id": "R-003",
+        "severity": "warning",
+        "title": "`stopReconnectOnControlledClose` accumulates duplicate `connection-close` listeners",
+        "description": "`stopReconnectOnControlledClose` in `yjs-provider-reset-guard.js` unconditionally calls `provider.on('connection-close', handler)` with no guard against being called multiple times on the same provider instance. If the surrounding code re-initialises a collaboration session (e.g., on reconnect or room reset) and calls this helper again with the same provider, each call registers an additional handler. On a controlled close, all registered handlers fire and each one calls `provider.disconnect()` redundantly. In the worst case this can trigger state corruption in the provider, repeated disconnect events, or mask subsequent reconnect attempts.",
+        "affected_files": [
+          "src/client/infrastructure/yjs-provider-reset-guard.js"
+        ],
+        "affected_symbols": ["stopReconnectOnControlledClose"],
+        "recommendation": "Track whether the guard has already been installed using a WeakSet or a property on the provider itself (e.g., `if (provider.__resetGuardInstalled) return; provider.__resetGuardInstalled = true;`). Alternatively, use `provider.once` if the provider exposes it, so the listener self-removes after the first event.",
+        "effort_to_fix": "trivial"
+      },
+      {
+        "id": "R-004",
+        "severity": "warning",
+        "title": "`reconcileEmbedEntries` mutates live entry objects while caller still holds references",
+        "description": "In `excalidraw-embed-reconciler.js`, `reconcileEmbedEntries` iterates over `currentEntries` and, for any entry that is being kept, directly mutates its properties in-place (`entry.filePath = ...`, `entry.key = ...`, `entry.label = ...`, `entry.placeholder = ...`) before the new `nextEntries` Map is returned to the caller. The caller (`ExcalidrawEmbedController`) continues to hold references to the same objects throughout this process. Any code that reads from an entry object while reconciliation is in progress (e.g., an async hydration callback that started before `reconcileEmbedEntries` was called) will silently observe the mutated state rather than the state it started with. This creates a time-of-check-to-time-of-use hazard for fields like `filePath` and `placeholder` that drive iframe URLs and DOM mounting decisions.",
+        "affected_files": [
+          "src/client/presentation/excalidraw-embed-reconciler.js"
+        ],
+        "affected_symbols": ["reconcileEmbedEntries"],
+        "recommendation": "Avoid mutating entries that come from `currentEntries`. Instead, create a shallow clone of each kept entry and apply the descriptor fields to the clone: `const entry = { ...(existing ?? defaultEntry), filePath: descriptor.filePath, key: descriptor.key, label: descriptor.label, placeholder: descriptor.placeholder };`. This ensures in-flight async operations that captured the old object reference observe stable data.",
+        "effort_to_fix": "small"
+      },
+      {
+        "id": "R-005",
+        "severity": "warning",
+        "title": "Preview render worker has no guard against unbounded input size",
+        "description": "In `preview-render-worker.js`, the `onmessage` handler passes `markdownText` directly into `compilePreviewDocument` with no size check. A malicious or accidental extremely large document (e.g., a multi-megabyte markdown file or one with deeply nested structures) can cause the worker to consume excessive CPU and memory, potentially hanging or crashing it entirely. When the worker crashes the browser typically fires a silent `error` event; the `PreviewRenderExecutor` has a `reset` and `cancelWorkerJob` mechanism but these are driven by explicit calls rather than worker health monitoring. A hung worker that never posts a reply will leave `hasPendingJob()` returning `true` indefinitely, blocking all further preview renders for the session.",
+        "affected_files": ["src/client/application/preview-render-worker.js"],
+        "affected_symbols": [],
+        "recommendation": "Add a size guard at the top of the `onmessage` handler: if `markdownText.length` exceeds a reasonable threshold (e.g., 1 MB), immediately post back an error response without attempting compilation. In `PreviewRenderExecutor`, also handle the worker's `error` and `messageerror` events by calling `reset()` so the executor recovers automatically from a crashed worker.",
+        "effort_to_fix": "small"
+      }
+    ],
+    "summary": "Robustness review of the collabmd JavaScript codebase surfaced five concrete issues. The most impactful are: (1) a permanent DOM/memory leak in the toast system when CSS animations do not fire, which accumulates silently over long sessions; (2) a synchronous `deflateRawSync` call on the server that blocks the Node.js event loop for every PlantUML render request, degrading all concurrent request throughput under load; (3) a Yjs provider guard that stacks duplicate event listeners each time it is called, risking redundant disconnects and masked reconnections; (4) in-place mutation of live embed-entry objects during reconciliation, creating a TOCTOU hazard for concurrent async hydration callbacks; and (5) no input-size ceiling or worker crash-recovery path in the preview render worker, meaning a sufficiently large or pathological document can permanently stall preview rendering for the session. None of these require architectural changes; all are small, focused fixes."
+  },
+  "metadata": {
+    "model": "claude-sonnet-4-6",
+    "stage": "review_robustness",
+    "input_tokens": 4,
+    "output_tokens": 6205,
+    "duration_seconds": 118.01
+  },
+  "success": true,
+  "error": null,
+  "error_type": null,
+  "error_detail": null,
+  "duration_seconds": 118.01
+}

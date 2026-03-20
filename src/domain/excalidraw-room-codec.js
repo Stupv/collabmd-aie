@@ -1,16 +1,16 @@
-import * as Y from 'yjs';
+import * as Y from "yjs";
 
-const EXCALIDRAW_TYPE = 'excalidraw';
+const EXCALIDRAW_TYPE = "excalidraw";
 const EXCALIDRAW_VERSION = 2;
-const EXCALIDRAW_SOURCE = 'collabmd';
+const EXCALIDRAW_SOURCE = "collabmd";
 
-export const EXCALIDRAW_APP_STATE_KEY = 'excalidraw-app-state';
-export const EXCALIDRAW_ELEMENTS_KEY = 'excalidraw-elements';
-export const EXCALIDRAW_FILES_KEY = 'excalidraw-files';
-export const EXCALIDRAW_META_KEY = 'excalidraw-meta';
+export const EXCALIDRAW_APP_STATE_KEY = "excalidraw-app-state";
+export const EXCALIDRAW_ELEMENTS_KEY = "excalidraw-elements";
+export const EXCALIDRAW_FILES_KEY = "excalidraw-files";
+export const EXCALIDRAW_META_KEY = "excalidraw-meta";
 export const EXCALIDRAW_ROOM_SCHEMA_VERSION = 1;
-export const EXCALIDRAW_ROOM_TEXT_KEY = 'codemirror';
-export const EXCALIDRAW_SCHEMA_VERSION_KEY = 'schemaVersion';
+export const EXCALIDRAW_ROOM_TEXT_KEY = "codemirror";
+export const EXCALIDRAW_SCHEMA_VERSION_KEY = "schemaVersion";
 
 function createEmptyScene() {
   return {
@@ -20,7 +20,7 @@ function createEmptyScene() {
     elements: [],
     appState: {
       gridSize: null,
-      viewBackgroundColor: '#ffffff',
+      viewBackgroundColor: "#ffffff",
     },
     files: {},
   };
@@ -29,12 +29,12 @@ function createEmptyScene() {
 function normalizeAppState(appState = {}) {
   return {
     gridSize: appState?.gridSize ?? null,
-    viewBackgroundColor: appState?.viewBackgroundColor ?? '#ffffff',
+    viewBackgroundColor: appState?.viewBackgroundColor ?? "#ffffff",
   };
 }
 
 function normalizeScene(raw) {
-  if (!raw || typeof raw !== 'object') {
+  if (!raw || typeof raw !== "object") {
     return createEmptyScene();
   }
 
@@ -44,7 +44,7 @@ function normalizeScene(raw) {
     source: EXCALIDRAW_SOURCE,
     elements: Array.isArray(raw.elements) ? raw.elements : [],
     appState: normalizeAppState(raw.appState),
-    files: raw.files && typeof raw.files === 'object' ? raw.files : {},
+    files: raw.files && typeof raw.files === "object" ? raw.files : {},
   };
 }
 
@@ -69,9 +69,15 @@ function cloneJsonValue(value) {
 }
 
 function getRevisionKey(element) {
-  const version = Number.isFinite(Number(element?.version)) ? Number(element.version) : 0;
-  const versionNonce = Number.isFinite(Number(element?.versionNonce)) ? Number(element.versionNonce) : 0;
-  const updated = Number.isFinite(Number(element?.updated)) ? Number(element.updated) : 0;
+  const version = Number.isFinite(Number(element?.version))
+    ? Number(element.version)
+    : 0;
+  const versionNonce = Number.isFinite(Number(element?.versionNonce))
+    ? Number(element.versionNonce)
+    : 0;
+  const updated = Number.isFinite(Number(element?.updated))
+    ? Number(element.updated)
+    : 0;
   return `${version}:${versionNonce}:${updated}`;
 }
 
@@ -94,17 +100,17 @@ function compareElementVersions(left, right) {
     return leftUpdated - rightUpdated;
   }
 
-  return String(left?.id || '').localeCompare(String(right?.id || ''));
+  return String(left?.id || "").localeCompare(String(right?.id || ""));
 }
 
 function compareElementIndex(left, right) {
-  const leftIndex = left?.index ?? '';
-  const rightIndex = right?.index ?? '';
+  const leftIndex = left?.index ?? "";
+  const rightIndex = right?.index ?? "";
   if (leftIndex !== rightIndex) {
     return String(leftIndex).localeCompare(String(rightIndex));
   }
 
-  return String(left?.id || '').localeCompare(String(right?.id || ''));
+  return String(left?.id || "").localeCompare(String(right?.id || ""));
 }
 
 function getNestedMapValue(map, key, { create = false } = {}) {
@@ -123,7 +129,7 @@ function getNestedMapValue(map, key, { create = false } = {}) {
 }
 
 function readRevisionEntry(entryValue) {
-  if (typeof entryValue === 'string') {
+  if (typeof entryValue === "string") {
     try {
       return JSON.parse(entryValue);
     } catch {
@@ -131,7 +137,7 @@ function readRevisionEntry(entryValue) {
     }
   }
 
-  if (!entryValue || typeof entryValue !== 'object') {
+  if (!entryValue || typeof entryValue !== "object") {
     return null;
   }
 
@@ -150,7 +156,10 @@ function selectWinningElementFromSlot(slot) {
       return;
     }
 
-    if (!winningElement || compareElementVersions(candidate, winningElement) > 0) {
+    if (
+      !winningElement ||
+      compareElementVersions(candidate, winningElement) > 0
+    ) {
       winningElement = candidate;
     }
   });
@@ -158,15 +167,12 @@ function selectWinningElementFromSlot(slot) {
   return winningElement;
 }
 
-function writeElementSlot(slot, element, {
-  maxRevisions = 2,
-} = {}) {
+function writeElementSlot(slot, element, { maxRevisions = 2 } = {}) {
   const revisionKey = getRevisionKey(element);
   const serialized = cloneJsonValue(element);
   const previous = slot.get(revisionKey);
-  const previousSerialized = previous && typeof previous === 'object'
-    ? JSON.stringify(previous)
-    : '';
+  const previousSerialized =
+    previous && typeof previous === "object" ? JSON.stringify(previous) : "";
   const nextSerialized = JSON.stringify(serialized);
   if (previousSerialized === nextSerialized) {
     return false;
@@ -221,29 +227,33 @@ export function isExcalidrawRoomDocStructured(ydoc) {
   }
 
   const meta = ydoc.getMap(EXCALIDRAW_META_KEY);
-  if (Number(meta.get(EXCALIDRAW_SCHEMA_VERSION_KEY)) === EXCALIDRAW_ROOM_SCHEMA_VERSION) {
+  if (
+    Number(meta.get(EXCALIDRAW_SCHEMA_VERSION_KEY)) ===
+    EXCALIDRAW_ROOM_SCHEMA_VERSION
+  ) {
     return true;
   }
 
   return (
-    ydoc.getMap(EXCALIDRAW_ELEMENTS_KEY).size > 0
-    || ydoc.getMap(EXCALIDRAW_FILES_KEY).size > 0
-    || ydoc.getMap(EXCALIDRAW_APP_STATE_KEY).size > 0
+    ydoc.getMap(EXCALIDRAW_ELEMENTS_KEY).size > 0 ||
+    ydoc.getMap(EXCALIDRAW_FILES_KEY).size > 0 ||
+    ydoc.getMap(EXCALIDRAW_APP_STATE_KEY).size > 0
   );
 }
 
 export function ensureExcalidrawRoomSchema(ydoc) {
   const meta = ydoc.getMap(EXCALIDRAW_META_KEY);
-  if (Number(meta.get(EXCALIDRAW_SCHEMA_VERSION_KEY)) !== EXCALIDRAW_ROOM_SCHEMA_VERSION) {
+  if (
+    Number(meta.get(EXCALIDRAW_SCHEMA_VERSION_KEY)) !==
+    EXCALIDRAW_ROOM_SCHEMA_VERSION
+  ) {
     meta.set(EXCALIDRAW_SCHEMA_VERSION_KEY, EXCALIDRAW_ROOM_SCHEMA_VERSION);
   }
 
   return meta;
 }
 
-export function buildExcalidrawRoomScene(ydoc, {
-  includeDeleted = true,
-} = {}) {
+export function buildExcalidrawRoomScene(ydoc, { includeDeleted = true } = {}) {
   if (!ydoc) {
     return createEmptyScene();
   }
@@ -268,7 +278,7 @@ export function buildExcalidrawRoomScene(ydoc, {
 
   const files = {};
   filesMap.forEach((value, key) => {
-    if (!value || typeof value !== 'object') {
+    if (!value || typeof value !== "object") {
       return;
     }
 
@@ -277,8 +287,8 @@ export function buildExcalidrawRoomScene(ydoc, {
 
   const scene = normalizeScene({
     appState: {
-      gridSize: appStateMap.get('gridSize'),
-      viewBackgroundColor: appStateMap.get('viewBackgroundColor'),
+      gridSize: appStateMap.get("gridSize"),
+      viewBackgroundColor: appStateMap.get("viewBackgroundColor"),
     },
     elements: sortSceneElements(elements),
     files,
@@ -287,9 +297,10 @@ export function buildExcalidrawRoomScene(ydoc, {
   return scene;
 }
 
-export function serializeExcalidrawRoomScene(ydoc, {
-  includeDeleted = false,
-} = {}) {
+export function serializeExcalidrawRoomScene(
+  ydoc,
+  { includeDeleted = false } = {},
+) {
   const scene = buildExcalidrawRoomScene(ydoc, { includeDeleted });
   if (!includeDeleted) {
     scene.elements = scene.elements.filter((element) => !element.isDeleted);
@@ -297,9 +308,11 @@ export function serializeExcalidrawRoomScene(ydoc, {
   return JSON.stringify(scene);
 }
 
-export function replaceExcalidrawRoomScene(ydoc, rawScene, {
-  maxRevisionsPerElement = 2,
-} = {}) {
+export function replaceExcalidrawRoomScene(
+  ydoc,
+  rawScene,
+  { maxRevisionsPerElement = 2 } = {},
+) {
   if (!ydoc) {
     return createEmptyScene();
   }
@@ -329,15 +342,17 @@ export function replaceExcalidrawRoomScene(ydoc, rawScene, {
   });
 
   const nextAppState = normalizeAppState(scene.appState);
-  appStateMap.set('gridSize', nextAppState.gridSize);
-  appStateMap.set('viewBackgroundColor', nextAppState.viewBackgroundColor);
+  appStateMap.set("gridSize", nextAppState.gridSize);
+  appStateMap.set("viewBackgroundColor", nextAppState.viewBackgroundColor);
 
   return scene;
 }
 
-export function applySceneDiffToExcalidrawRoom(ydoc, rawScene, {
-  maxRevisionsPerElement = 2,
-} = {}) {
+export function applySceneDiffToExcalidrawRoom(
+  ydoc,
+  rawScene,
+  { maxRevisionsPerElement = 2 } = {},
+) {
   if (!ydoc) {
     return false;
   }
@@ -358,7 +373,10 @@ export function applySceneDiffToExcalidrawRoom(ydoc, rawScene, {
 
     nextElementIds.add(element.id);
     const slot = getNestedMapValue(elementsMap, element.id, { create: true });
-    changed = writeElementSlot(slot, element, { maxRevisions: maxRevisionsPerElement }) || changed;
+    changed =
+      writeElementSlot(slot, element, {
+        maxRevisions: maxRevisionsPerElement,
+      }) || changed;
   });
 
   Array.from(elementsMap.keys()).forEach((key) => {

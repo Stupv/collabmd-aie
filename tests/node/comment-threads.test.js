@@ -1,158 +1,190 @@
-import test from 'node:test';
-import assert from 'node:assert/strict';
-import * as Y from 'yjs';
+import test from "node:test";
+import assert from "node:assert/strict";
+import * as Y from "yjs";
 
 import {
   createCommentThreadSharedType,
   normalizeCommentQuote,
   normalizeCommentQuoteForComparison,
   serializeCommentThreads,
-} from '../../src/domain/comment-threads.js';
+} from "../../src/domain/comment-threads.js";
 
-test('comment thread serialization supports new line and text anchors', () => {
+test("comment thread serialization supports new line and text anchors", () => {
   const doc = new Y.Doc();
-  const threads = doc.getArray('comments');
+  const threads = doc.getArray("comments");
   const lineThread = createCommentThreadSharedType({
     anchorEnd: { assoc: 0, type: null },
     anchorEndLine: 4,
-    anchorKind: 'line',
-    anchorQuote: 'Line quote',
+    anchorKind: "line",
+    anchorQuote: "Line quote",
     anchorStart: { assoc: 0, type: null },
     anchorStartLine: 4,
-    id: 'thread-line',
-    messages: [{
-      body: 'Line thread',
-      id: 'comment-line',
-      userName: 'Tester',
-    }],
+    id: "thread-line",
+    messages: [
+      {
+        body: "Line thread",
+        id: "comment-line",
+        userName: "Tester",
+      },
+    ],
   });
   const textThread = createCommentThreadSharedType({
     anchorEnd: { assoc: 0, type: null },
     anchorEndLine: 5,
-    anchorKind: 'text',
-    anchorQuote: 'selected text',
+    anchorKind: "text",
+    anchorQuote: "selected text",
     anchorStart: { assoc: 0, type: null },
     anchorStartLine: 5,
-    id: 'thread-text',
-    messages: [{
-      body: 'Text thread',
-      id: 'comment-text',
-      userName: 'Tester',
-    }],
+    id: "thread-text",
+    messages: [
+      {
+        body: "Text thread",
+        id: "comment-text",
+        userName: "Tester",
+      },
+    ],
   });
 
   threads.push([lineThread, textThread]);
 
   const serialized = serializeCommentThreads(threads);
   assert.equal(serialized.length, 2);
-  assert.equal(serialized[0].anchorKind, 'line');
-  assert.equal(serialized[1].anchorKind, 'text');
-  assert.equal(serialized[1].anchorQuote, 'selected text');
+  assert.equal(serialized[0].anchorKind, "line");
+  assert.equal(serialized[1].anchorKind, "text");
+  assert.equal(serialized[1].anchorQuote, "selected text");
 });
 
-test('comment thread serialization ignores old-format thread records', () => {
+test("comment thread serialization ignores old-format thread records", () => {
   const doc = new Y.Doc();
-  const threads = doc.getArray('comments');
+  const threads = doc.getArray("comments");
   const legacyMessages = new Y.Array();
-  legacyMessages.push([{
-    body: 'Legacy comment',
-    id: 'comment-old',
-    userName: 'Tester',
-  }]);
+  legacyMessages.push([
+    {
+      body: "Legacy comment",
+      id: "comment-old",
+      userName: "Tester",
+    },
+  ]);
   const legacyThread = new Y.Map();
-  legacyThread.set('anchorEnd', { assoc: 0, type: null });
-  legacyThread.set('anchorEndLine', 3);
-  legacyThread.set('anchorExcerpt', 'old format');
-  legacyThread.set('anchorStart', { assoc: 0, type: null });
-  legacyThread.set('anchorStartLine', 3);
-  legacyThread.set('id', 'thread-old');
-  legacyThread.set('messages', legacyMessages);
+  legacyThread.set("anchorEnd", { assoc: 0, type: null });
+  legacyThread.set("anchorEndLine", 3);
+  legacyThread.set("anchorExcerpt", "old format");
+  legacyThread.set("anchorStart", { assoc: 0, type: null });
+  legacyThread.set("anchorStartLine", 3);
+  legacyThread.set("id", "thread-old");
+  legacyThread.set("messages", legacyMessages);
   threads.push([legacyThread]);
 
   assert.deepEqual(serializeCommentThreads(threads), []);
 });
 
-test('normalizeCommentQuote preserves source formatting while trimming edges', () => {
-  assert.equal(normalizeCommentQuote(' Hello \n   from\tcomment '), 'Hello \n   from\tcomment');
+test("normalizeCommentQuote preserves source formatting while trimming edges", () => {
+  assert.equal(
+    normalizeCommentQuote(" Hello \n   from\tcomment "),
+    "Hello \n   from\tcomment",
+  );
 });
 
-test('normalizeCommentQuoteForComparison collapses whitespace for stable preview matching', () => {
-  assert.equal(normalizeCommentQuoteForComparison(' Hello \n   from\tcomment '), 'Hello from comment');
+test("normalizeCommentQuoteForComparison collapses whitespace for stable preview matching", () => {
+  assert.equal(
+    normalizeCommentQuoteForComparison(" Hello \n   from\tcomment "),
+    "Hello from comment",
+  );
 });
 
-test('comment thread serialization preserves normalized message reactions', () => {
+test("comment thread serialization preserves normalized message reactions", () => {
   const doc = new Y.Doc();
-  const threads = doc.getArray('comments');
+  const threads = doc.getArray("comments");
   const thread = createCommentThreadSharedType({
     anchorEnd: { assoc: 0, type: null },
     anchorEndLine: 4,
-    anchorKind: 'line',
-    anchorQuote: 'Line quote',
+    anchorKind: "line",
+    anchorQuote: "Line quote",
     anchorStart: { assoc: 0, type: null },
     anchorStartLine: 4,
-    id: 'thread-reactions',
-    messages: [{
-      body: 'Line thread',
-      id: 'comment-reactions',
-      reactions: [{
-        emoji: '👍',
-        users: [{
-          reactedAt: 2,
-          userColor: '#3b82f6',
-          userId: 'user-1',
-          userName: 'Tester',
-        }, {
-          reactedAt: 3,
-          userColor: '#3b82f6',
-          userId: 'user-1',
-          userName: 'Tester updated',
-        }],
-      }],
-      userName: 'Tester',
-    }],
+    id: "thread-reactions",
+    messages: [
+      {
+        body: "Line thread",
+        id: "comment-reactions",
+        reactions: [
+          {
+            emoji: "👍",
+            users: [
+              {
+                reactedAt: 2,
+                userColor: "#3b82f6",
+                userId: "user-1",
+                userName: "Tester",
+              },
+              {
+                reactedAt: 3,
+                userColor: "#3b82f6",
+                userId: "user-1",
+                userName: "Tester updated",
+              },
+            ],
+          },
+        ],
+        userName: "Tester",
+      },
+    ],
   });
 
   threads.push([thread]);
 
   const [serialized] = serializeCommentThreads(threads);
-  assert.deepEqual(serialized.messages[0].reactions, [{
-    emoji: '👍',
-    users: [{
-      reactedAt: 3,
-      userColor: '#3b82f6',
-      userId: 'user-1',
-      userName: 'Tester updated',
-    }],
-  }]);
+  assert.deepEqual(serialized.messages[0].reactions, [
+    {
+      emoji: "👍",
+      users: [
+        {
+          reactedAt: 3,
+          userColor: "#3b82f6",
+          userId: "user-1",
+          userName: "Tester updated",
+        },
+      ],
+    },
+  ]);
 });
 
-test('comment thread serialization ignores malformed reactions', () => {
+test("comment thread serialization ignores malformed reactions", () => {
   const doc = new Y.Doc();
-  const threads = doc.getArray('comments');
+  const threads = doc.getArray("comments");
   const thread = createCommentThreadSharedType({
     anchorEnd: { assoc: 0, type: null },
     anchorEndLine: 4,
-    anchorKind: 'line',
-    anchorQuote: 'Line quote',
+    anchorKind: "line",
+    anchorQuote: "Line quote",
     anchorStart: { assoc: 0, type: null },
     anchorStartLine: 4,
-    id: 'thread-malformed-reactions',
-    messages: [{
-      body: 'Line thread',
-      id: 'comment-malformed-reactions',
-      reactions: [{
-        emoji: '',
-        users: [{
-          userId: 'user-1',
-        }],
-      }, {
-        emoji: '🎉',
-        users: [{
-          userId: '',
-        }],
-      }],
-      userName: 'Tester',
-    }],
+    id: "thread-malformed-reactions",
+    messages: [
+      {
+        body: "Line thread",
+        id: "comment-malformed-reactions",
+        reactions: [
+          {
+            emoji: "",
+            users: [
+              {
+                userId: "user-1",
+              },
+            ],
+          },
+          {
+            emoji: "🎉",
+            users: [
+              {
+                userId: "",
+              },
+            ],
+          },
+        ],
+        userName: "Tester",
+      },
+    ],
   });
 
   threads.push([thread]);

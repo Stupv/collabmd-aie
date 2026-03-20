@@ -1,15 +1,15 @@
-import test from 'node:test';
-import assert from 'node:assert/strict';
+import test from "node:test";
+import assert from "node:assert/strict";
 
-import { EditorSession } from '../../src/client/infrastructure/editor-session.js';
-import { WorkspaceCoordinator } from '../../src/client/application/workspace-coordinator.js';
+import { EditorSession } from "../../src/client/infrastructure/editor-session.js";
+import { WorkspaceCoordinator } from "../../src/client/application/workspace-coordinator.js";
 
 function createStateStore() {
   const state = new Map([
-    ['connectionState', null],
-    ['connectionHelpShown', false],
-    ['currentFilePath', null],
-    ['sessionLoadToken', 0],
+    ["connectionState", null],
+    ["connectionHelpShown", false],
+    ["currentFilePath", null],
+    ["sessionLoadToken", 0],
   ]);
 
   return {
@@ -17,8 +17,8 @@ function createStateStore() {
       return state.get(key);
     },
     nextSessionLoadToken() {
-      const nextToken = (state.get('sessionLoadToken') ?? 0) + 1;
-      state.set('sessionLoadToken', nextToken);
+      const nextToken = (state.get("sessionLoadToken") ?? 0) + 1;
+      state.set("sessionLoadToken", nextToken);
       return nextToken;
     },
     set(key, value) {
@@ -32,16 +32,16 @@ function createCoordinator(overrides = {}) {
   const stateStore = createStateStore();
   const session = overrides.session ?? {
     activateCollaborativeView() {
-      events.push('activate-collab');
+      events.push("activate-collab");
     },
     applyTheme() {
-      events.push('apply-theme');
+      events.push("apply-theme");
     },
     destroy() {
-      events.push('destroy');
+      events.push("destroy");
     },
     ensureInitialContent() {
-      events.push('ensure-content');
+      events.push("ensure-content");
     },
     getScrollContainer() {
       return null;
@@ -50,35 +50,35 @@ function createCoordinator(overrides = {}) {
       return false;
     },
     initialize: async () => {
-      events.push('initialize');
+      events.push("initialize");
     },
     requestMeasure() {
-      events.push('measure');
+      events.push("measure");
     },
     showBootstrapContent() {
-      events.push('show-bootstrap');
+      events.push("show-bootstrap");
       return true;
     },
     waitForInitialSync: async () => {
-      events.push('wait-sync');
+      events.push("wait-sync");
     },
   };
 
   const coordinator = new WorkspaceCoordinator({
     attachEditorScroller: () => {},
     beginDocumentLoad: () => {
-      events.push('begin-load');
+      events.push("begin-load");
     },
     cleanupAfterSessionDestroy: () => {
-      events.push('cleanup-session');
+      events.push("cleanup-session");
     },
     createEditorSession: () => session,
-    getDisplayName: () => 'README',
+    getDisplayName: () => "README",
     getFileList: () => [],
     getLineWrappingEnabled: () => true,
     getLocalUser: () => null,
-    getStoredUserName: () => 'Tester',
-    getTheme: () => 'light',
+    getStoredUserName: () => "Tester",
+    getTheme: () => "light",
     isExcalidrawFile: () => false,
     isMermaidFile: () => false,
     isPlantUmlFile: () => false,
@@ -86,90 +86,92 @@ function createCoordinator(overrides = {}) {
     loadBootstrapContent: async () => null,
     loadEditorSessionClass: async () => EditorSession,
     loadBacklinks: () => {
-      events.push('load-backlinks');
+      events.push("load-backlinks");
     },
     onBeforeFileOpen: () => {
-      events.push('before-open');
+      events.push("before-open");
     },
     onConnectionChange: () => {},
     onContentChange: () => {
-      events.push('content-change');
+      events.push("content-change");
     },
     onFileAwarenessChange: () => {},
     onFileOpenError: () => {
-      events.push('open-error');
+      events.push("open-error");
     },
     onFileOpenReady: () => {
-      events.push('open-ready');
+      events.push("open-ready");
     },
     onImagePaste: () => {
-      events.push('image-paste');
+      events.push("image-paste");
     },
     onRenderExcalidrawPreview: () => {
-      events.push('render-excalidraw');
+      events.push("render-excalidraw");
     },
     onRenderImagePreview: () => {
-      events.push('render-image');
+      events.push("render-image");
     },
     onSyncWrapToggle: () => {
-      events.push('sync-wrap');
+      events.push("sync-wrap");
     },
     onUpdateActiveFile: () => {},
     onUpdateCurrentFile: () => {},
     onUpdateLobbyCurrentFile: () => {},
     onUpdateVisibleChrome: () => {},
     onViewModeReset: () => {
-      events.push('reset-view');
+      events.push("reset-view");
     },
     renderPresence: () => {
-      events.push('render-presence');
+      events.push("render-presence");
     },
     scrollContainerForSession: () => null,
     showEditorLoading: () => {
-      events.push('show-loading');
+      events.push("show-loading");
     },
     stateStore,
     ...overrides,
   });
 
   coordinator.waitForNextPaint = async () => {
-    events.push('wait-next-paint');
+    events.push("wait-next-paint");
   };
 
   return { coordinator, events, session, stateStore };
 }
 
-test('EditorSession emitContentChange deduplicates repeated content', () => {
+test("EditorSession emitContentChange deduplicates repeated content", () => {
   const notifications = [];
   const session = Object.create(EditorSession.prototype);
   session.onContentChange = () => {
-    notifications.push('change');
+    notifications.push("change");
   };
-  session.getText = () => 'hello';
+  session.getText = () => "hello";
   session.hasDeliveredContent = false;
   session.lastDeliveredContent = null;
 
   assert.equal(session.emitContentChange(), true);
   assert.equal(session.emitContentChange(), false);
 
-  session.getText = () => 'hello world';
+  session.getText = () => "hello world";
   assert.equal(session.emitContentChange(), true);
-  assert.deepEqual(notifications, ['change', 'change']);
+  assert.deepEqual(notifications, ["change", "change"]);
 });
 
-test('WorkspaceCoordinator marks file open before post-paint work completes', async () => {
+test("WorkspaceCoordinator marks file open before post-paint work completes", async () => {
   const { coordinator, events } = createCoordinator();
 
-  await coordinator.openFile('README.md');
+  await coordinator.openFile("README.md");
 
-  assert.ok(events.indexOf('open-ready') >= 0);
-  assert.ok(events.indexOf('wait-next-paint') >= 0);
-  assert.ok(events.indexOf('open-ready') < events.indexOf('wait-next-paint'));
-  assert.ok(events.indexOf('ensure-content') > events.indexOf('wait-sync'));
-  assert.ok(events.indexOf('load-backlinks') > events.indexOf('wait-next-paint'));
+  assert.ok(events.indexOf("open-ready") >= 0);
+  assert.ok(events.indexOf("wait-next-paint") >= 0);
+  assert.ok(events.indexOf("open-ready") < events.indexOf("wait-next-paint"));
+  assert.ok(events.indexOf("ensure-content") > events.indexOf("wait-sync"));
+  assert.ok(
+    events.indexOf("load-backlinks") > events.indexOf("wait-next-paint"),
+  );
 });
 
-test('WorkspaceCoordinator ensures initial content after sync wait even without early content events', async () => {
+test("WorkspaceCoordinator ensures initial content after sync wait even without early content events", async () => {
   let ensureCalls = 0;
   const { coordinator } = createCoordinator({
     session: {
@@ -193,12 +195,12 @@ test('WorkspaceCoordinator ensures initial content after sync wait even without 
     },
   });
 
-  await coordinator.openFile('README.md');
+  await coordinator.openFile("README.md");
 
   assert.equal(ensureCalls, 1);
 });
 
-test('WorkspaceCoordinator forwards image paste handling into the editor session options', async () => {
+test("WorkspaceCoordinator forwards image paste handling into the editor session options", async () => {
   let sessionOptions = null;
   const { coordinator } = createCoordinator({
     createEditorSession: (_EditorSessionClass, options) => {
@@ -223,12 +225,12 @@ test('WorkspaceCoordinator forwards image paste handling into the editor session
     },
   });
 
-  await coordinator.openFile('README.md');
+  await coordinator.openFile("README.md");
 
-  assert.equal(typeof sessionOptions?.onImagePaste, 'function');
+  assert.equal(typeof sessionOptions?.onImagePaste, "function");
 });
 
-test('WorkspaceCoordinator skips creating an editor session for Excalidraw files', async () => {
+test("WorkspaceCoordinator skips creating an editor session for Excalidraw files", async () => {
   let createSessionCalls = 0;
   const { coordinator, events } = createCoordinator({
     createEditorSession: () => {
@@ -237,18 +239,18 @@ test('WorkspaceCoordinator skips creating an editor session for Excalidraw files
         destroy() {},
       };
     },
-    isExcalidrawFile: (filePath) => filePath?.endsWith('.excalidraw'),
+    isExcalidrawFile: (filePath) => filePath?.endsWith(".excalidraw"),
   });
 
-  await coordinator.openFile('vault/new-diagram.excalidraw');
+  await coordinator.openFile("vault/new-diagram.excalidraw");
 
   assert.equal(createSessionCalls, 0);
   assert.equal(coordinator.getSession(), null);
-  assert.ok(events.includes('open-ready'));
-  assert.ok(events.includes('render-excalidraw'));
+  assert.ok(events.includes("open-ready"));
+  assert.ok(events.includes("render-excalidraw"));
 });
 
-test('WorkspaceCoordinator skips creating an editor session for image attachments', async () => {
+test("WorkspaceCoordinator skips creating an editor session for image attachments", async () => {
   let createSessionCalls = 0;
   const { coordinator, events } = createCoordinator({
     createEditorSession: () => {
@@ -257,36 +259,36 @@ test('WorkspaceCoordinator skips creating an editor session for image attachment
         destroy() {},
       };
     },
-    isImageFile: (filePath) => filePath?.endsWith('.png'),
+    isImageFile: (filePath) => filePath?.endsWith(".png"),
   });
 
-  await coordinator.openFile('README.assets/diagram.png');
+  await coordinator.openFile("README.assets/diagram.png");
 
   assert.equal(createSessionCalls, 0);
   assert.equal(coordinator.getSession(), null);
-  assert.ok(events.includes('open-ready'));
-  assert.ok(events.includes('render-image'));
+  assert.ok(events.includes("open-ready"));
+  assert.ok(events.includes("render-image"));
 });
 
-test('WorkspaceCoordinator shows bootstrap content before live sync completes', async () => {
+test("WorkspaceCoordinator shows bootstrap content before live sync completes", async () => {
   let resolveInitialSync;
   const initialSyncPromise = new Promise((resolve) => {
     resolveInitialSync = resolve;
   });
   const { coordinator, events } = createCoordinator({
-    loadBootstrapContent: async () => '# Bootstrap\n',
+    loadBootstrapContent: async () => "# Bootstrap\n",
     session: {
       activateCollaborativeView() {
-        events.push('activate-collab');
+        events.push("activate-collab");
       },
       applyTheme() {
-        events.push('apply-theme');
+        events.push("apply-theme");
       },
       destroy() {
-        events.push('destroy');
+        events.push("destroy");
       },
       ensureInitialContent() {
-        events.push('ensure-content');
+        events.push("ensure-content");
       },
       getScrollContainer() {
         return null;
@@ -295,51 +297,51 @@ test('WorkspaceCoordinator shows bootstrap content before live sync completes', 
         return true;
       },
       initialize: async () => {
-        events.push('initialize');
+        events.push("initialize");
       },
       requestMeasure() {
-        events.push('measure');
+        events.push("measure");
       },
       showBootstrapContent() {
-        events.push('show-bootstrap');
+        events.push("show-bootstrap");
         return true;
       },
       waitForInitialSync: async () => {
-        events.push('wait-sync');
+        events.push("wait-sync");
         await initialSyncPromise;
       },
     },
   });
 
-  const openPromise = coordinator.openFile('README.md');
+  const openPromise = coordinator.openFile("README.md");
   await new Promise((resolve) => setTimeout(resolve, 200));
 
-  assert.ok(events.includes('show-bootstrap'));
-  assert.ok(events.includes('open-ready'));
-  assert.equal(events.includes('activate-collab'), false);
+  assert.ok(events.includes("show-bootstrap"));
+  assert.ok(events.includes("open-ready"));
+  assert.equal(events.includes("activate-collab"), false);
 
   resolveInitialSync();
   await openPromise;
 
-  assert.ok(events.includes('activate-collab'));
-  assert.ok(events.indexOf('show-bootstrap') < events.indexOf('open-ready'));
+  assert.ok(events.includes("activate-collab"));
+  assert.ok(events.indexOf("show-bootstrap") < events.indexOf("open-ready"));
 });
 
-test('WorkspaceCoordinator skips bootstrap when live sync wins the race', async () => {
+test("WorkspaceCoordinator skips bootstrap when live sync wins the race", async () => {
   const { coordinator, events } = createCoordinator({
-    loadBootstrapContent: async () => '# Bootstrap\n',
+    loadBootstrapContent: async () => "# Bootstrap\n",
     session: {
       activateCollaborativeView() {
-        events.push('activate-collab');
+        events.push("activate-collab");
       },
       applyTheme() {
-        events.push('apply-theme');
+        events.push("apply-theme");
       },
       destroy() {
-        events.push('destroy');
+        events.push("destroy");
       },
       ensureInitialContent() {
-        events.push('ensure-content');
+        events.push("ensure-content");
       },
       getScrollContainer() {
         return null;
@@ -348,23 +350,23 @@ test('WorkspaceCoordinator skips bootstrap when live sync wins the race', async 
         return false;
       },
       initialize: async () => {
-        events.push('initialize');
+        events.push("initialize");
       },
       requestMeasure() {
-        events.push('measure');
+        events.push("measure");
       },
       showBootstrapContent() {
-        events.push('show-bootstrap');
+        events.push("show-bootstrap");
         return true;
       },
       waitForInitialSync: async () => {
-        events.push('wait-sync');
+        events.push("wait-sync");
       },
     },
   });
 
-  await coordinator.openFile('README.md');
+  await coordinator.openFile("README.md");
 
-  assert.equal(events.includes('show-bootstrap'), false);
-  assert.ok(events.includes('activate-collab'));
+  assert.equal(events.includes("show-bootstrap"), false);
+  assert.ok(events.includes("activate-collab"));
 });

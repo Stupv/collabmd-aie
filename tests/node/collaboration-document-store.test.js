@@ -1,7 +1,7 @@
-import test from 'node:test';
-import assert from 'node:assert/strict';
+import test from "node:test";
+import assert from "node:assert/strict";
 
-import { CollaborationDocumentStore } from '../../src/server/domain/collaboration/collaboration-document-store.js';
+import { CollaborationDocumentStore } from "../../src/server/domain/collaboration/collaboration-document-store.js";
 
 function createDocumentStore({
   contentResult = { ok: true },
@@ -40,23 +40,24 @@ function createDocumentStore({
     calls,
     store: new CollaborationDocumentStore({
       backlinkIndex,
-      name: 'notes.md',
+      name: "notes.md",
       vaultFileStore,
     }),
   };
 }
 
-test('CollaborationDocumentStore rejects persistence when content write reports a failure result', async () => {
+test("CollaborationDocumentStore rejects persistence when content write reports a failure result", async () => {
   const { calls, store } = createDocumentStore({
-    contentResult: { ok: false, error: 'disk full' },
+    contentResult: { ok: false, error: "disk full" },
   });
 
   await assert.rejects(
-    () => store.persistState({
-      commentThreads: [{ id: 'thread-1' }],
-      content: '# Draft\n',
-      snapshot: Uint8Array.from([1, 2, 3]),
-    }),
+    () =>
+      store.persistState({
+        commentThreads: [{ id: "thread-1" }],
+        content: "# Draft\n",
+        snapshot: Uint8Array.from([1, 2, 3]),
+      }),
     /Failed to write content for "notes\.md": disk full/,
   );
 
@@ -66,17 +67,18 @@ test('CollaborationDocumentStore rejects persistence when content write reports 
   assert.equal(calls.backlinks.length, 0);
 });
 
-test('CollaborationDocumentStore rejects persistence when comment sidecar writes fail', async () => {
+test("CollaborationDocumentStore rejects persistence when comment sidecar writes fail", async () => {
   const { calls, store } = createDocumentStore({
-    commentResult: { ok: false, error: 'read only filesystem' },
+    commentResult: { ok: false, error: "read only filesystem" },
   });
 
   await assert.rejects(
-    () => store.persistState({
-      commentThreads: [{ id: 'thread-1' }],
-      content: '# Draft\n',
-      snapshot: Uint8Array.from([1, 2, 3]),
-    }),
+    () =>
+      store.persistState({
+        commentThreads: [{ id: "thread-1" }],
+        content: "# Draft\n",
+        snapshot: Uint8Array.from([1, 2, 3]),
+      }),
     /Failed to write comment threads for "notes\.md": read only filesystem/,
   );
 
@@ -86,17 +88,18 @@ test('CollaborationDocumentStore rejects persistence when comment sidecar writes
   assert.equal(calls.backlinks.length, 0);
 });
 
-test('CollaborationDocumentStore rejects persistence when snapshot writes fail', async () => {
+test("CollaborationDocumentStore rejects persistence when snapshot writes fail", async () => {
   const { calls, store } = createDocumentStore({
-    snapshotResult: { ok: false, error: 'snapshot path unavailable' },
+    snapshotResult: { ok: false, error: "snapshot path unavailable" },
   });
 
   await assert.rejects(
-    () => store.persistState({
-      commentThreads: [{ id: 'thread-1' }],
-      content: '# Draft\n',
-      snapshot: Uint8Array.from([1, 2, 3]),
-    }),
+    () =>
+      store.persistState({
+        commentThreads: [{ id: "thread-1" }],
+        content: "# Draft\n",
+        snapshot: Uint8Array.from([1, 2, 3]),
+      }),
     /Failed to write collaboration snapshot for "notes\.md": snapshot path unavailable/,
   );
 
@@ -106,7 +109,7 @@ test('CollaborationDocumentStore rejects persistence when snapshot writes fail',
   assert.equal(calls.backlinks.length, 0);
 });
 
-test('CollaborationDocumentStore prefers an atomic collaboration persist when the store provides one', async () => {
+test("CollaborationDocumentStore prefers an atomic collaboration persist when the store provides one", async () => {
   const calls = {
     atomic: [],
     backlinks: [],
@@ -118,7 +121,7 @@ test('CollaborationDocumentStore prefers an atomic collaboration persist when th
         calls.backlinks.push({ content, path });
       },
     },
-    name: 'notes.md',
+    name: "notes.md",
     vaultFileStore: {
       async persistCollaborationState(path, state) {
         calls.atomic.push({ path, state });
@@ -128,17 +131,19 @@ test('CollaborationDocumentStore prefers an atomic collaboration persist when th
   });
 
   const snapshot = Uint8Array.from([4, 5, 6]);
-  const commentThreads = [{ id: 'thread-1' }];
+  const commentThreads = [{ id: "thread-1" }];
   await store.persistState({
     commentThreads,
-    content: '# Atomic\n',
+    content: "# Atomic\n",
     snapshot,
   });
 
   assert.equal(calls.atomic.length, 1);
-  assert.equal(calls.atomic[0].path, 'notes.md');
-  assert.equal(calls.atomic[0].state.content, '# Atomic\n');
+  assert.equal(calls.atomic[0].path, "notes.md");
+  assert.equal(calls.atomic[0].state.content, "# Atomic\n");
   assert.equal(calls.atomic[0].state.commentThreads, commentThreads);
   assert.equal(calls.atomic[0].state.snapshot, snapshot);
-  assert.deepEqual(calls.backlinks, [{ content: '# Atomic\n', path: 'notes.md' }]);
+  assert.deepEqual(calls.backlinks, [
+    { content: "# Atomic\n", path: "notes.md" },
+  ]);
 });

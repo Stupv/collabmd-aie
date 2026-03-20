@@ -1,16 +1,20 @@
-import { escapeHtml } from '../domain/vault-utils.js';
-import { resolveApiUrl } from '../domain/runtime-paths.js';
+import { escapeHtml } from "../domain/vault-utils.js";
+import { resolveApiUrl } from "../domain/runtime-paths.js";
 
 const REFRESH_INTERVAL_MS = 10_000;
 
 function getPathDir(pathValue) {
-  const parts = String(pathValue ?? '').split('/');
+  const parts = String(pathValue ?? "").split("/");
   parts.pop();
-  return parts.join('/');
+  return parts.join("/");
 }
 
 function getPathLeaf(pathValue) {
-  return String(pathValue ?? '').split('/').pop() || '';
+  return (
+    String(pathValue ?? "")
+      .split("/")
+      .pop() || ""
+  );
 }
 
 function fileIconSvg() {
@@ -22,20 +26,20 @@ function branchIconSvg() {
 }
 
 function chevronSvg(collapsed) {
-  return `<svg class="git-section-chevron${collapsed ? ' collapsed' : ''}" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>`;
+  return `<svg class="git-section-chevron${collapsed ? " collapsed" : ""}" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>`;
 }
 
 function actionIconSvg(action) {
   switch (action) {
-    case 'commit':
+    case "commit":
       return '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>';
-    case 'pull':
+    case "pull":
       return '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14"/><path d="m18 13-6 6-6-6"/></svg>';
-    case 'push':
+    case "push":
       return '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5"/><path d="m6 11 6-6 6 6"/></svg>';
-    case 'unstage':
+    case "unstage":
       return '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 12H8"/><path d="m12 16-4-4 4-4"/></svg>';
-    case 'reset':
+    case "reset":
       return '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg>';
     default:
       return '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14"/><path d="M5 12h14"/></svg>';
@@ -44,16 +48,16 @@ function actionIconSvg(action) {
 
 function badgeClass(status) {
   switch (status) {
-    case 'added':
-      return 'added';
-    case 'deleted':
-      return 'deleted';
-    case 'renamed':
-      return 'renamed';
-    case 'untracked':
-      return 'untracked';
+    case "added":
+      return "added";
+    case "deleted":
+      return "deleted";
+    case "renamed":
+      return "renamed";
+    case "untracked":
+      return "untracked";
     default:
-      return 'modified';
+      return "modified";
   }
 }
 
@@ -71,7 +75,11 @@ function renderBranchMetrics(summary = {}, branch = {}) {
     `;
   }
 
-  if (branch.upstream || Number(branch.ahead || 0) > 0 || Number(branch.behind || 0) > 0) {
+  if (
+    branch.upstream ||
+    Number(branch.ahead || 0) > 0 ||
+    Number(branch.behind || 0) > 0
+  ) {
     return `
       <span class="git-sync-info" aria-label="Remote sync status">
         <span style="color: var(--color-success);">&#8593;${Number(branch.ahead || 0)}</span>
@@ -112,12 +120,12 @@ export class GitPanelController {
     this.onViewAllDiff = onViewAllDiff;
     this.searchInput = searchInput;
     this.toastController = toastController;
-    this.panel = document.getElementById('gitPanel');
+    this.panel = document.getElementById("gitPanel");
     this.pullBackups = [];
     this.status = null;
     this.active = false;
     this.refreshTimer = null;
-    this.searchQuery = '';
+    this.searchQuery = "";
     this.collapsedSections = new Set();
     this.selection = {
       path: null,
@@ -127,22 +135,25 @@ export class GitPanelController {
   }
 
   initialize() {
-    this.panel?.addEventListener('click', (event) => {
-      const toggleButton = event.target instanceof Element
-        ? event.target.closest('[data-git-section-toggle]')
-        : null;
+    this.panel?.addEventListener("click", (event) => {
+      const toggleButton =
+        event.target instanceof Element
+          ? event.target.closest("[data-git-section-toggle]")
+          : null;
       if (toggleButton) {
-        const sectionKey = toggleButton.getAttribute('data-git-section-toggle');
+        const sectionKey = toggleButton.getAttribute("data-git-section-toggle");
         this.toggleSection(sectionKey);
         return;
       }
 
-      const fileButton = event.target instanceof Element
-        ? event.target.closest('[data-git-path]')
-        : null;
-      if (fileButton && !event.target.closest('[data-git-file-action]')) {
-        const filePath = fileButton.getAttribute('data-git-path');
-        const scope = fileButton.getAttribute('data-git-scope') || 'working-tree';
+      const fileButton =
+        event.target instanceof Element
+          ? event.target.closest("[data-git-path]")
+          : null;
+      if (fileButton && !event.target.closest("[data-git-file-action]")) {
+        const filePath = fileButton.getAttribute("data-git-path");
+        const scope =
+          fileButton.getAttribute("data-git-scope") || "working-tree";
         if (!filePath) {
           return;
         }
@@ -150,11 +161,14 @@ export class GitPanelController {
         return;
       }
 
-      const pullBackupButton = event.target instanceof Element
-        ? event.target.closest('[data-git-pull-backup-path]')
-        : null;
+      const pullBackupButton =
+        event.target instanceof Element
+          ? event.target.closest("[data-git-pull-backup-path]")
+          : null;
       if (pullBackupButton) {
-        const summaryPath = pullBackupButton.getAttribute('data-git-pull-backup-path');
+        const summaryPath = pullBackupButton.getAttribute(
+          "data-git-pull-backup-path",
+        );
         if (!summaryPath) {
           return;
         }
@@ -162,13 +176,15 @@ export class GitPanelController {
         return;
       }
 
-      const actionButton = event.target instanceof Element
-        ? event.target.closest('[data-git-file-action]')
-        : null;
+      const actionButton =
+        event.target instanceof Element
+          ? event.target.closest("[data-git-file-action]")
+          : null;
       if (actionButton) {
-        const action = actionButton.getAttribute('data-git-file-action');
-        const filePath = actionButton.getAttribute('data-git-path');
-        const scope = actionButton.getAttribute('data-git-scope') || 'working-tree';
+        const action = actionButton.getAttribute("data-git-file-action");
+        const filePath = actionButton.getAttribute("data-git-path");
+        const scope =
+          actionButton.getAttribute("data-git-scope") || "working-tree";
         if (!action || !filePath) {
           return;
         }
@@ -179,35 +195,40 @@ export class GitPanelController {
         return;
       }
 
-      const viewAllButton = event.target instanceof Element
-        ? event.target.closest('[data-git-view-all]')
-        : null;
+      const viewAllButton =
+        event.target instanceof Element
+          ? event.target.closest("[data-git-view-all]")
+          : null;
       if (viewAllButton) {
         this.onViewAllDiff();
         return;
       }
 
-      const commitStagedButton = event.target instanceof Element
-        ? event.target.closest('[data-git-commit-staged]')
-        : null;
+      const commitStagedButton =
+        event.target instanceof Element
+          ? event.target.closest("[data-git-commit-staged]")
+          : null;
       if (commitStagedButton) {
         void this.handleCommitStaged();
         return;
       }
 
-      const syncButton = event.target instanceof Element
-        ? event.target.closest('[data-git-sync-action]')
-        : null;
+      const syncButton =
+        event.target instanceof Element
+          ? event.target.closest("[data-git-sync-action]")
+          : null;
       if (syncButton) {
-        const action = syncButton.getAttribute('data-git-sync-action');
-        if (action === 'pull' || action === 'push') {
+        const action = syncButton.getAttribute("data-git-sync-action");
+        if (action === "pull" || action === "push") {
           void this.handleSyncAction(action);
         }
       }
     });
 
-    this.searchInput?.addEventListener('input', (event) => {
-      this.searchQuery = String(event.target?.value ?? '').trim().toLowerCase();
+    this.searchInput?.addEventListener("input", (event) => {
+      this.searchQuery = String(event.target?.value ?? "")
+        .trim()
+        .toLowerCase();
       this.render();
     });
   }
@@ -265,32 +286,41 @@ export class GitPanelController {
     }
 
     try {
-      const response = await fetch(resolveApiUrl(`/git/status${force ? '?force=true' : ''}`));
+      const response = await fetch(
+        resolveApiUrl(`/git/status${force ? "?force=true" : ""}`),
+      );
       const data = await response.json();
       if (!response.ok) {
-        throw new Error(data.error || 'Failed to load git status');
+        throw new Error(data.error || "Failed to load git status");
       }
 
       this.status = data;
       this.pullBackups = [];
       if (data.isGitRepo) {
         try {
-          const backupResponse = await fetch(resolveApiUrl('/git/pull-backups'));
+          const backupResponse = await fetch(
+            resolveApiUrl("/git/pull-backups"),
+          );
           const backupData = await backupResponse.json();
           if (!backupResponse.ok) {
-            throw new Error(backupData.error || 'Failed to load pull backups');
+            throw new Error(backupData.error || "Failed to load pull backups");
           }
-          this.pullBackups = Array.isArray(backupData.backups) ? backupData.backups : [];
+          this.pullBackups = Array.isArray(backupData.backups)
+            ? backupData.backups
+            : [];
         } catch (backupError) {
-          console.error('[git-panel] Failed to load pull backups:', backupError);
+          console.error(
+            "[git-panel] Failed to load pull backups:",
+            backupError,
+          );
         }
       }
       this.onRepoChange(Boolean(data.isGitRepo), data);
       this.render();
       return data;
     } catch (error) {
-      console.error('[git-panel] Failed to load git status:', error);
-      this.toastController?.show('Failed to load git status');
+      console.error("[git-panel] Failed to load git status:", error);
+      this.toastController?.show("Failed to load git status");
       this.status = {
         isGitRepo: false,
         sections: [],
@@ -308,10 +338,13 @@ export class GitPanelController {
       return files;
     }
 
-    return files.filter((file) => (
-      file.path.toLowerCase().includes(this.searchQuery)
-      || String(file.oldPath || '').toLowerCase().includes(this.searchQuery)
-    ));
+    return files.filter(
+      (file) =>
+        file.path.toLowerCase().includes(this.searchQuery) ||
+        String(file.oldPath || "")
+          .toLowerCase()
+          .includes(this.searchQuery),
+    );
   }
 
   async handleFileAction(action, filePath, scope) {
@@ -324,11 +357,11 @@ export class GitPanelController {
     this.render();
 
     try {
-      if (action === 'stage') {
+      if (action === "stage") {
         await this.onStageFile(filePath, { scope });
-      } else if (action === 'unstage') {
+      } else if (action === "unstage") {
         await this.onUnstageFile(filePath, { scope });
-      } else if (action === 'reset') {
+      } else if (action === "reset") {
         await this.onResetFile(filePath, { scope });
       }
     } finally {
@@ -338,7 +371,7 @@ export class GitPanelController {
   }
 
   async handleCommitStaged() {
-    const actionKey = 'commit-staged';
+    const actionKey = "commit-staged";
     if (this.pendingActionKey === actionKey) {
       return;
     }
@@ -364,9 +397,9 @@ export class GitPanelController {
     this.render();
 
     try {
-      if (action === 'pull') {
+      if (action === "pull") {
         await this.onPullBranch();
-      } else if (action === 'push') {
+      } else if (action === "push") {
         await this.onPushBranch();
       }
     } finally {
@@ -378,7 +411,7 @@ export class GitPanelController {
   renderSection(section) {
     const files = this.filterFiles(section.files);
     if (files.length === 0) {
-      return '';
+      return "";
     }
 
     const isCollapsed = this.collapsedSections.has(section.key);
@@ -390,8 +423,8 @@ export class GitPanelController {
           ${escapeHtml(section.label)}
           <span class="git-section-count">${files.length}</span>
         </button>
-        <div class="git-file-list${isCollapsed ? ' hidden' : ''}">
-          ${files.map((file) => this.renderFile(file)).join('')}
+        <div class="git-file-list${isCollapsed ? " hidden" : ""}">
+          ${files.map((file) => this.renderFile(file)).join("")}
         </div>
       </section>
     `;
@@ -399,25 +432,27 @@ export class GitPanelController {
 
   renderPullBackupsSection() {
     if (!Array.isArray(this.pullBackups) || this.pullBackups.length === 0) {
-      return '';
+      return "";
     }
 
     return `
       <section class="git-section">
         <button class="git-section-header" type="button" data-git-section-toggle="pull-backups">
-          ${chevronSvg(this.collapsedSections.has('pull-backups'))}
+          ${chevronSvg(this.collapsedSections.has("pull-backups"))}
           Pull Backups
           <span class="git-section-count">${this.pullBackups.length}</span>
         </button>
-        <div class="git-file-list${this.collapsedSections.has('pull-backups') ? ' hidden' : ''}">
-          ${this.pullBackups.map((backup) => this.renderPullBackup(backup)).join('')}
+        <div class="git-file-list${this.collapsedSections.has("pull-backups") ? " hidden" : ""}">
+          ${this.pullBackups.map((backup) => this.renderPullBackup(backup)).join("")}
         </div>
       </section>
     `;
   }
 
   renderPullBackup(backup) {
-    const createdAt = String(backup?.createdAt || '').replace('T', ' ').replace(/\.\d+Z?$/u, 'Z');
+    const createdAt = String(backup?.createdAt || "")
+      .replace("T", " ")
+      .replace(/\.\d+Z?$/u, "Z");
     const fileCount = Number(backup?.fileCount || 0);
 
     return `
@@ -425,12 +460,12 @@ export class GitPanelController {
         <button
           class="git-file-item"
           type="button"
-          data-git-pull-backup-path="${escapeHtml(backup.summaryPath || '')}"
+          data-git-pull-backup-path="${escapeHtml(backup.summaryPath || "")}"
         >
           ${fileIconSvg()}
           <span class="git-file-copy">
-            <span class="git-file-name">Pull backup ${escapeHtml(backup.id || '')}</span>
-            <span class="git-file-path">${escapeHtml(`${createdAt} · ${backup.branch || 'HEAD'} · ${fileCount} file${fileCount === 1 ? '' : 's'}`)}</span>
+            <span class="git-file-name">Pull backup ${escapeHtml(backup.id || "")}</span>
+            <span class="git-file-path">${escapeHtml(`${createdAt} · ${backup.branch || "HEAD"} · ${fileCount} file${fileCount === 1 ? "" : "s"}`)}</span>
           </span>
           <span class="git-status-badge modified">BK</span>
         </button>
@@ -439,22 +474,24 @@ export class GitPanelController {
   }
 
   renderFile(file) {
-    const isActive = this.selection.path === file.path && this.selection.scope === file.scope;
+    const isActive =
+      this.selection.path === file.path && this.selection.scope === file.scope;
     const dirPath = getPathDir(file.path);
     const displayName = getPathLeaf(file.path);
     const statusClass = badgeClass(file.status);
-    const stageAction = file.scope === 'staged'
-      ? { label: 'Unstage', value: 'unstage' }
-      : { label: 'Stage', value: 'stage' };
+    const stageAction =
+      file.scope === "staged"
+        ? { label: "Unstage", value: "unstage" }
+        : { label: "Stage", value: "stage" };
     const actionKey = `${stageAction.value}:${file.scope}:${file.path}`;
     const isPending = this.pendingActionKey === actionKey;
     const resetActionKey = `reset:${file.scope}:${file.path}`;
     const isResetPending = this.pendingActionKey === resetActionKey;
 
     return `
-      <div class="git-file-row${isActive ? ' active' : ''}">
+      <div class="git-file-row${isActive ? " active" : ""}">
         <button
-          class="git-file-item${isActive ? ' active' : ''}"
+          class="git-file-item${isActive ? " active" : ""}"
           type="button"
           data-git-path="${escapeHtml(file.path)}"
           data-git-scope="${escapeHtml(file.scope)}"
@@ -462,7 +499,7 @@ export class GitPanelController {
           ${fileIconSvg()}
           <span class="git-file-copy">
             <span class="git-file-name">${escapeHtml(displayName)}</span>
-            ${dirPath ? `<span class="git-file-path">${escapeHtml(dirPath)}</span>` : ''}
+            ${dirPath ? `<span class="git-file-path">${escapeHtml(dirPath)}</span>` : ""}
           </span>
           <span class="git-status-badge ${statusClass}">${escapeHtml(file.code)}</span>
         </button>
@@ -475,9 +512,9 @@ export class GitPanelController {
             data-git-scope="${escapeHtml(file.scope)}"
             aria-label="Reset ${escapeHtml(displayName)}"
             title="Reset to current branch"
-            ${isResetPending ? 'disabled' : ''}
+            ${isResetPending ? "disabled" : ""}
           >
-            ${isResetPending ? '...' : actionIconSvg('reset')}
+            ${isResetPending ? "..." : actionIconSvg("reset")}
           </button>
           <button
             class="git-file-action-btn"
@@ -487,9 +524,9 @@ export class GitPanelController {
             data-git-scope="${escapeHtml(file.scope)}"
             aria-label="${escapeHtml(stageAction.label)} ${escapeHtml(displayName)}"
             title="${escapeHtml(stageAction.label)}"
-            ${isPending ? 'disabled' : ''}
+            ${isPending ? "disabled" : ""}
           >
-            ${isPending ? '...' : actionIconSvg(stageAction.value)}
+            ${isPending ? "..." : actionIconSvg(stageAction.value)}
           </button>
         </div>
       </div>
@@ -510,12 +547,12 @@ export class GitPanelController {
     }
 
     if (!this.status) {
-      this.renderEmpty('Loading git status...');
+      this.renderEmpty("Loading git status...");
       return;
     }
 
     if (!this.status.isGitRepo) {
-      this.renderEmpty('Git is unavailable for this vault.');
+      this.renderEmpty("Git is unavailable for this vault.");
       return;
     }
 
@@ -524,20 +561,20 @@ export class GitPanelController {
     const sectionMarkup = (this.status.sections ?? [])
       .map((section) => this.renderSection(section))
       .filter(Boolean)
-      .join('');
+      .join("");
     const hasChanges = Boolean(this.status.summary?.changedFiles);
     const hasStagedChanges = Number(this.status.summary?.staged || 0) > 0;
-    const isCommitPending = this.pendingActionKey === 'commit-staged';
+    const isCommitPending = this.pendingActionKey === "commit-staged";
     const hasUpstream = Boolean(branch.upstream);
-    const isPullPending = this.pendingActionKey === 'sync:pull';
-    const isPushPending = this.pendingActionKey === 'sync:push';
+    const isPullPending = this.pendingActionKey === "sync:pull";
+    const isPushPending = this.pendingActionKey === "sync:push";
 
     this.panel.innerHTML = `
       <div class="git-branch-bar">
         <div class="git-branch-meta">
           <span class="git-branch-name">
             ${branchIconSvg()}
-            ${escapeHtml(branch.name || 'HEAD')}
+            ${escapeHtml(branch.name || "HEAD")}
           </span>
           ${renderBranchMetrics(this.status.summary, branch)}
         </div>
@@ -546,27 +583,29 @@ export class GitPanelController {
             class="git-branch-action-btn"
             type="button"
             data-git-sync-action="pull"
-            title="${hasUpstream ? 'Pull remote changes (fast-forward only)' : 'No upstream branch configured'}"
+            title="${hasUpstream ? "Pull remote changes (fast-forward only)" : "No upstream branch configured"}"
             aria-label="Pull branch"
-            ${!hasUpstream || isPullPending ? 'disabled' : ''}
+            ${!hasUpstream || isPullPending ? "disabled" : ""}
           >
-            ${isPullPending ? '...' : `${actionIconSvg('pull')}<span>Pull</span>`}
+            ${isPullPending ? "..." : `${actionIconSvg("pull")}<span>Pull</span>`}
           </button>
           <button
             class="git-branch-action-btn"
             type="button"
             data-git-sync-action="push"
-            title="${hasUpstream ? 'Push local commits' : 'No upstream branch configured'}"
+            title="${hasUpstream ? "Push local commits" : "No upstream branch configured"}"
             aria-label="Push branch"
-            ${!hasUpstream || isPushPending ? 'disabled' : ''}
+            ${!hasUpstream || isPushPending ? "disabled" : ""}
           >
-            ${isPushPending ? '...' : `${actionIconSvg('push')}<span>Push</span>`}
+            ${isPushPending ? "..." : `${actionIconSvg("push")}<span>Push</span>`}
           </button>
         </div>
       </div>
       ${pullBackupsMarkup}
       ${sectionMarkup || '<div class="git-panel-empty">No local changes</div>'}
-      ${hasChanges ? `
+      ${
+        hasChanges
+          ? `
         <div class="git-panel-footer">
           <div class="git-panel-footer-actions">
             <button class="git-view-all-btn" type="button" data-git-view-all>
@@ -577,13 +616,15 @@ export class GitPanelController {
               class="git-footer-commit-btn"
               type="button"
               data-git-commit-staged
-              ${!hasStagedChanges || isCommitPending ? 'disabled' : ''}
+              ${!hasStagedChanges || isCommitPending ? "disabled" : ""}
             >
-              ${isCommitPending ? 'Working...' : 'Commit Staged'}
+              ${isCommitPending ? "Working..." : "Commit Staged"}
             </button>
           </div>
         </div>
-      ` : ''}
+      `
+          : ""
+      }
     `;
   }
 }

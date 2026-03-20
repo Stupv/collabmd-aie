@@ -1,5 +1,9 @@
-import { decodeQuotedPath, parseRenamePath, stripDiffPrefix } from './path-utils.js';
-import { createEmptyBranchStatus, createStatusInfo } from './responses.js';
+import {
+  decodeQuotedPath,
+  parseRenamePath,
+  stripDiffPrefix,
+} from "./path-utils.js";
+import { createEmptyBranchStatus, createStatusInfo } from "./responses.js";
 
 function parseBranchLine(line) {
   const result = {
@@ -7,7 +11,7 @@ function parseBranchLine(line) {
     hasCommits: true,
   };
 
-  if (!line.startsWith('## ')) {
+  if (!line.startsWith("## ")) {
     return result;
   }
 
@@ -16,36 +20,34 @@ function parseBranchLine(line) {
     return result;
   }
 
-  if (branchText.startsWith('No commits yet on ')) {
-    result.name = branchText.slice('No commits yet on '.length);
+  if (branchText.startsWith("No commits yet on ")) {
+    result.name = branchText.slice("No commits yet on ".length);
     result.hasCommits = false;
     return result;
   }
 
-  if (branchText.startsWith('HEAD (no branch)')) {
-    result.name = 'HEAD';
+  if (branchText.startsWith("HEAD (no branch)")) {
+    result.name = "HEAD";
     result.detached = true;
     return result;
   }
 
-  const metadataIndex = branchText.indexOf(' [');
-  const branchSegment = metadataIndex === -1
-    ? branchText
-    : branchText.slice(0, metadataIndex);
-  const metadataSegment = metadataIndex === -1
-    ? ''
-    : branchText.slice(metadataIndex + 2, -1);
-  const [name, upstream] = branchSegment.split('...');
+  const metadataIndex = branchText.indexOf(" [");
+  const branchSegment =
+    metadataIndex === -1 ? branchText : branchText.slice(0, metadataIndex);
+  const metadataSegment =
+    metadataIndex === -1 ? "" : branchText.slice(metadataIndex + 2, -1);
+  const [name, upstream] = branchSegment.split("...");
 
   result.name = name || null;
   result.upstream = upstream || null;
 
   if (metadataSegment) {
-    for (const token of metadataSegment.split(',')) {
+    for (const token of metadataSegment.split(",")) {
       const value = token.trim();
-      if (value.startsWith('ahead ')) {
+      if (value.startsWith("ahead ")) {
         result.ahead = Number.parseInt(value.slice(6), 10) || 0;
-      } else if (value.startsWith('behind ')) {
+      } else if (value.startsWith("behind ")) {
         result.behind = Number.parseInt(value.slice(7), 10) || 0;
       }
     }
@@ -62,11 +64,11 @@ function parseHunkHeader(line) {
 
   return {
     header: line,
-    newLines: Number.parseInt(match[4] ?? '1', 10),
+    newLines: Number.parseInt(match[4] ?? "1", 10),
     newStart: Number.parseInt(match[3], 10),
-    oldLines: Number.parseInt(match[2] ?? '1', 10),
+    oldLines: Number.parseInt(match[2] ?? "1", 10),
     oldStart: Number.parseInt(match[1], 10),
-    section: match[5]?.trim() || '',
+    section: match[5]?.trim() || "",
   };
 }
 
@@ -83,22 +85,24 @@ function finalizeFile(file) {
 }
 
 export function splitContentLines(content) {
-  const lines = String(content ?? '').replace(/\r\n/g, '\n').split('\n');
-  if (lines.length > 0 && lines[lines.length - 1] === '') {
+  const lines = String(content ?? "")
+    .replace(/\r\n/g, "\n")
+    .split("\n");
+  if (lines.length > 0 && lines[lines.length - 1] === "") {
     lines.pop();
   }
   return lines;
 }
 
 export function parseStatusOutput(output) {
-  const lines = String(output ?? '')
+  const lines = String(output ?? "")
     .split(/\r?\n/u)
     .filter(Boolean);
-  const [branchLine = '', ...statusLines] = lines;
+  const [branchLine = "", ...statusLines] = lines;
   const branch = parseBranchLine(branchLine);
   const sections = {
     staged: [],
-    'working-tree': [],
+    "working-tree": [],
     untracked: [],
   };
   const uniquePaths = new Set();
@@ -112,16 +116,16 @@ export function parseStatusOutput(output) {
     const workTreeStatus = line[1];
     const rawPath = line.slice(3);
 
-    if (indexStatus === '!' && workTreeStatus === '!') {
+    if (indexStatus === "!" && workTreeStatus === "!") {
       continue;
     }
 
-    if (indexStatus === '?' && workTreeStatus === '?') {
+    if (indexStatus === "?" && workTreeStatus === "?") {
       const file = {
-        ...createStatusInfo('?'),
+        ...createStatusInfo("?"),
         oldPath: null,
         path: decodeQuotedPath(rawPath),
-        scope: 'untracked',
+        scope: "untracked",
       };
       sections.untracked.push(file);
       uniquePaths.add(file.path);
@@ -130,25 +134,25 @@ export function parseStatusOutput(output) {
 
     const parsedPath = parseRenamePath(rawPath);
 
-    if (indexStatus !== ' ') {
+    if (indexStatus !== " ") {
       const file = {
         ...createStatusInfo(indexStatus),
         oldPath: parsedPath.oldPath,
         path: parsedPath.path,
-        scope: 'staged',
+        scope: "staged",
       };
       sections.staged.push(file);
       uniquePaths.add(file.path);
     }
 
-    if (workTreeStatus !== ' ') {
+    if (workTreeStatus !== " ") {
       const file = {
         ...createStatusInfo(workTreeStatus),
         oldPath: parsedPath.oldPath,
         path: parsedPath.path,
-        scope: 'working-tree',
+        scope: "working-tree",
       };
-      sections['working-tree'].push(file);
+      sections["working-tree"].push(file);
       uniquePaths.add(file.path);
     }
   }
@@ -160,84 +164,100 @@ export function parseStatusOutput(output) {
       changedFiles: uniquePaths.size,
       staged: sections.staged.length,
       untracked: sections.untracked.length,
-      workingTree: sections['working-tree'].length,
+      workingTree: sections["working-tree"].length,
     },
   };
 }
 
 export function parseNumstatOutput(output) {
-  return String(output ?? '')
+  return String(output ?? "")
     .split(/\r?\n/u)
     .filter(Boolean)
-    .reduce((summary, line) => {
-      const [rawAdditions = '0', rawDeletions = '0'] = line.split('\t');
-      const additions = rawAdditions === '-' ? 0 : Number.parseInt(rawAdditions, 10) || 0;
-      const deletions = rawDeletions === '-' ? 0 : Number.parseInt(rawDeletions, 10) || 0;
+    .reduce(
+      (summary, line) => {
+        const [rawAdditions = "0", rawDeletions = "0"] = line.split("\t");
+        const additions =
+          rawAdditions === "-" ? 0 : Number.parseInt(rawAdditions, 10) || 0;
+        const deletions =
+          rawDeletions === "-" ? 0 : Number.parseInt(rawDeletions, 10) || 0;
 
-      return {
-        additions: summary.additions + additions,
-        deletions: summary.deletions + deletions,
-      };
-    }, {
-      additions: 0,
-      deletions: 0,
-    });
+        return {
+          additions: summary.additions + additions,
+          deletions: summary.deletions + deletions,
+        };
+      },
+      {
+        additions: 0,
+        deletions: 0,
+      },
+    );
 }
 
 export function parseNumstatEntries(output) {
-  return String(output ?? '')
+  return String(output ?? "")
     .split(/\r?\n/u)
     .filter(Boolean)
     .map((line) => {
-      const [rawAdditions = '0', rawDeletions = '0', ...rest] = line.split('\t');
+      const [rawAdditions = "0", rawDeletions = "0", ...rest] =
+        line.split("\t");
       return {
-        additions: rawAdditions === '-' ? 0 : Number.parseInt(rawAdditions, 10) || 0,
-        deletions: rawDeletions === '-' ? 0 : Number.parseInt(rawDeletions, 10) || 0,
-        rawPath: rest.join('\t'),
+        additions:
+          rawAdditions === "-" ? 0 : Number.parseInt(rawAdditions, 10) || 0,
+        deletions:
+          rawDeletions === "-" ? 0 : Number.parseInt(rawDeletions, 10) || 0,
+        rawPath: rest.join("\t"),
       };
     });
 }
 
 export function parseNameStatusOutput(output) {
-  return String(output ?? '')
+  return String(output ?? "")
     .split(/\r?\n/u)
     .filter(Boolean)
-    .reduce((summary, line) => {
-      const [rawStatus = '', ...parts] = line.split('\t');
-      const status = rawStatus.trim().toUpperCase();
-      if (!status) {
-        return summary;
-      }
-
-      if (status.startsWith('R') || status.startsWith('C')) {
-        const [oldPath = '', newPath = ''] = parts.map((value) => decodeQuotedPath(value));
-        if (oldPath && newPath && oldPath !== newPath) {
-          summary.renamedPaths.push({ newPath, oldPath });
+    .reduce(
+      (summary, line) => {
+        const [rawStatus = "", ...parts] = line.split("\t");
+        const status = rawStatus.trim().toUpperCase();
+        if (!status) {
+          return summary;
         }
-        return summary;
-      }
 
-      const [path = ''] = parts.map((value) => decodeQuotedPath(value));
-      if (!path) {
-        return summary;
-      }
+        if (status.startsWith("R") || status.startsWith("C")) {
+          const [oldPath = "", newPath = ""] = parts.map((value) =>
+            decodeQuotedPath(value),
+          );
+          if (oldPath && newPath && oldPath !== newPath) {
+            summary.renamedPaths.push({ newPath, oldPath });
+          }
+          return summary;
+        }
 
-      if (status.startsWith('D')) {
-        summary.deletedPaths.push(path);
-        return summary;
-      }
+        const [path = ""] = parts.map((value) => decodeQuotedPath(value));
+        if (!path) {
+          return summary;
+        }
 
-      summary.changedPaths.push(path);
-      return summary;
-    }, {
-      changedPaths: [],
-      deletedPaths: [],
-      renamedPaths: [],
-    });
+        if (status.startsWith("D")) {
+          summary.deletedPaths.push(path);
+          return summary;
+        }
+
+        summary.changedPaths.push(path);
+        return summary;
+      },
+      {
+        changedPaths: [],
+        deletedPaths: [],
+        renamedPaths: [],
+      },
+    );
 }
 
 export function countPatchLines(file = null) {
-  return (file?.hunks ?? []).reduce((total, hunk) => total + (hunk.lines?.length ?? 0), 0);
+  return (file?.hunks ?? []).reduce(
+    (total, hunk) => total + (hunk.lines?.length ?? 0),
+    0,
+  );
 }
 
 export function parseUnifiedDiff(diffText) {
@@ -253,12 +273,12 @@ export function parseUnifiedDiff(diffText) {
   let newLineNumber = 0;
 
   for (const line of lines) {
-    if (line.startsWith('diff --git ')) {
-      const parts = line.split(' ');
+    if (line.startsWith("diff --git ")) {
+      const parts = line.split(" ");
       const oldPath = stripDiffPrefix(parts[2]);
       const newPath = stripDiffPrefix(parts[3]);
       currentFile = {
-        code: 'M',
+        code: "M",
         hunks: [],
         isBinary: false,
         oldPath,
@@ -267,7 +287,7 @@ export function parseUnifiedDiff(diffText) {
           additions: 0,
           deletions: 0,
         },
-        status: 'modified',
+        status: "modified",
       };
       currentHunk = null;
       files.push(currentFile);
@@ -278,54 +298,54 @@ export function parseUnifiedDiff(diffText) {
       continue;
     }
 
-    if (line.startsWith('new file mode ')) {
-      currentFile.code = 'A';
-      currentFile.status = 'added';
+    if (line.startsWith("new file mode ")) {
+      currentFile.code = "A";
+      currentFile.status = "added";
       continue;
     }
 
-    if (line.startsWith('deleted file mode ')) {
-      currentFile.code = 'D';
-      currentFile.status = 'deleted';
+    if (line.startsWith("deleted file mode ")) {
+      currentFile.code = "D";
+      currentFile.status = "deleted";
       continue;
     }
 
-    if (line.startsWith('rename from ')) {
-      currentFile.code = 'R';
-      currentFile.status = 'renamed';
-      currentFile.oldPath = line.slice('rename from '.length);
+    if (line.startsWith("rename from ")) {
+      currentFile.code = "R";
+      currentFile.status = "renamed";
+      currentFile.oldPath = line.slice("rename from ".length);
       continue;
     }
 
-    if (line.startsWith('rename to ')) {
-      currentFile.path = line.slice('rename to '.length);
+    if (line.startsWith("rename to ")) {
+      currentFile.path = line.slice("rename to ".length);
       continue;
     }
 
-    if (line.startsWith('copy from ')) {
-      currentFile.code = 'C';
-      currentFile.status = 'copied';
-      currentFile.oldPath = line.slice('copy from '.length);
+    if (line.startsWith("copy from ")) {
+      currentFile.code = "C";
+      currentFile.status = "copied";
+      currentFile.oldPath = line.slice("copy from ".length);
       continue;
     }
 
-    if (line.startsWith('copy to ')) {
-      currentFile.path = line.slice('copy to '.length);
+    if (line.startsWith("copy to ")) {
+      currentFile.path = line.slice("copy to ".length);
       continue;
     }
 
-    if (line.startsWith('Binary files ')) {
+    if (line.startsWith("Binary files ")) {
       currentFile.isBinary = true;
       currentFile.binaryMessage = line;
       continue;
     }
 
-    if (line.startsWith('--- ')) {
+    if (line.startsWith("--- ")) {
       currentFile.oldPath = stripDiffPrefix(line.slice(4));
       continue;
     }
 
-    if (line.startsWith('+++ ')) {
+    if (line.startsWith("+++ ")) {
       currentFile.path = stripDiffPrefix(line.slice(4)) ?? currentFile.path;
       continue;
     }
@@ -349,53 +369,51 @@ export function parseUnifiedDiff(diffText) {
     const prefix = line[0];
     const content = line.slice(1);
 
-    if (prefix === ' ') {
+    if (prefix === " ") {
       currentHunk.lines.push({
         content,
         newLine: newLineNumber,
         oldLine: oldLineNumber,
-        type: 'context',
+        type: "context",
       });
       oldLineNumber += 1;
       newLineNumber += 1;
       continue;
     }
 
-    if (prefix === '-') {
+    if (prefix === "-") {
       currentFile.stats.deletions += 1;
       currentHunk.lines.push({
         content,
         newLine: null,
         oldLine: oldLineNumber,
-        type: 'deletion',
+        type: "deletion",
       });
       oldLineNumber += 1;
       continue;
     }
 
-    if (prefix === '+') {
+    if (prefix === "+") {
       currentFile.stats.additions += 1;
       currentHunk.lines.push({
         content,
         newLine: newLineNumber,
         oldLine: null,
-        type: 'addition',
+        type: "addition",
       });
       newLineNumber += 1;
       continue;
     }
 
-    if (prefix === '\\') {
+    if (prefix === "\\") {
       currentHunk.lines.push({
         content: line,
         newLine: null,
         oldLine: null,
-        type: 'note',
+        type: "note",
       });
     }
   }
 
-  return files
-    .map((file) => finalizeFile(file))
-    .filter(Boolean);
+  return files.map((file) => finalizeFile(file)).filter(Boolean);
 }

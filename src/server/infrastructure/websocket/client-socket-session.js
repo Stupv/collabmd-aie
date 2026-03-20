@@ -1,10 +1,11 @@
-import * as decoding from 'lib0/decoding';
+import * as decoding from "lib0/decoding";
 
-import { MSG_SYNC } from '../../domain/collaboration/protocol.js';
+import { MSG_SYNC } from "../../domain/collaboration/protocol.js";
 
 function isSyncMessage(payload) {
   try {
-    const data = payload instanceof Uint8Array ? payload : new Uint8Array(payload);
+    const data =
+      payload instanceof Uint8Array ? payload : new Uint8Array(payload);
     const decoder = decoding.createDecoder(data);
     return decoding.readVarUint(decoder) === MSG_SYNC;
   } catch {
@@ -13,13 +14,7 @@ function isSyncMessage(payload) {
 }
 
 export class ClientSocketSession {
-  constructor({
-    onDisconnected = null,
-    onFailed = null,
-    room,
-    roomName,
-    ws,
-  }) {
+  constructor({ onDisconnected = null, onFailed = null, room, roomName, ws }) {
     this.onDisconnected = onDisconnected;
     this.onFailed = onFailed;
     this.room = room;
@@ -81,17 +76,17 @@ export class ClientSocketSession {
   }
 
   attach() {
-    this.ws.on('message', this.handleMessage);
-    this.ws.on('close', this.handleClose);
-    this.ws.on('error', this.handleError);
-    this.ws.on('pong', this.handlePong);
+    this.ws.on("message", this.handleMessage);
+    this.ws.on("close", this.handleClose);
+    this.ws.on("error", this.handleError);
+    this.ws.on("pong", this.handlePong);
   }
 
   detach() {
-    this.ws.off('message', this.handleMessage);
-    this.ws.off('close', this.handleClose);
-    this.ws.off('error', this.handleError);
-    this.ws.off('pong', this.handlePong);
+    this.ws.off("message", this.handleMessage);
+    this.ws.off("close", this.handleClose);
+    this.ws.off("error", this.handleError);
+    this.ws.off("pong", this.handlePong);
     this.clearInitialSyncTimer();
   }
 
@@ -131,9 +126,12 @@ export class ClientSocketSession {
       await this.room.addClient(this.ws, { sendInitialSync: false });
     } catch (error) {
       this.detach();
-      console.error(`[ws] Failed to initialize room "${this.roomName}":`, error.message);
+      console.error(
+        `[ws] Failed to initialize room "${this.roomName}":`,
+        error.message,
+      );
       this.onFailed?.(this.roomName);
-      this.ws.close(1011, 'Room initialization failed');
+      this.ws.close(1011, "Room initialization failed");
       return;
     }
 
@@ -146,6 +144,8 @@ export class ClientSocketSession {
       return;
     }
 
-    console.log(`[ws] "${this.roomName}" connected (${this.room.clients.size} active client(s))`);
+    console.log(
+      `[ws] "${this.roomName}" connected (${this.room.clients.size} active client(s))`,
+    );
   }
 }

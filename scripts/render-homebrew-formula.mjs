@@ -1,25 +1,30 @@
 #!/usr/bin/env node
 
-import { mkdir, readFile, writeFile } from 'node:fs/promises';
-import path from 'node:path';
+import { mkdir, readFile, writeFile } from "node:fs/promises";
+import path from "node:path";
 
 const args = parseArgs(process.argv.slice(2));
 const rootDir = process.cwd();
-const packageJsonPath = path.join(rootDir, 'package.json');
-const packageJson = JSON.parse(await readFile(packageJsonPath, 'utf8'));
+const packageJsonPath = path.join(rootDir, "package.json");
+const packageJson = JSON.parse(await readFile(packageJsonPath, "utf8"));
 
 const version = args.version || packageJson.version;
 const sha256 = args.sha256;
-const outputPath = path.resolve(rootDir, args.output || 'packaging/homebrew-tap/Formula/collabmd.rb');
-const owner = args.owner || 'andes90';
+const outputPath = path.resolve(
+  rootDir,
+  args.output || "packaging/homebrew-tap/Formula/collabmd.rb",
+);
+const owner = args.owner || "andes90";
 const repo = args.repo || packageJson.name;
 
 if (!version) {
-  throw new Error('Missing version. Pass --version or set package.json version.');
+  throw new Error(
+    "Missing version. Pass --version or set package.json version.",
+  );
 }
 
 if (!sha256) {
-  throw new Error('Missing sha256. Pass --sha256 <checksum>.');
+  throw new Error("Missing sha256. Pass --sha256 <checksum>.");
 }
 
 if (!/^[a-f0-9]{64}$/i.test(sha256)) {
@@ -109,13 +114,13 @@ function parseArgs(argv) {
 
   for (let index = 0; index < argv.length; index += 1) {
     const token = argv[index];
-    if (!token.startsWith('--')) {
+    if (!token.startsWith("--")) {
       throw new Error(`Unexpected argument: ${token}`);
     }
 
     const key = token.slice(2);
     const value = argv[index + 1];
-    if (!value || value.startsWith('--')) {
+    if (!value || value.startsWith("--")) {
       throw new Error(`Missing value for --${key}`);
     }
 
@@ -131,5 +136,5 @@ function toFormulaClassName(name) {
     .split(/[^a-zA-Z0-9]+/)
     .filter(Boolean)
     .map((part) => part[0].toUpperCase() + part.slice(1))
-    .join('');
+    .join("");
 }

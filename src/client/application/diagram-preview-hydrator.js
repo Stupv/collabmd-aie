@@ -1,4 +1,4 @@
-import { resolveApiUrl } from '../domain/runtime-paths.js';
+import { resolveApiUrl } from "../domain/runtime-paths.js";
 import {
   cancelIdleRender,
   IDLE_RENDER_TIMEOUT_MS,
@@ -6,26 +6,30 @@ import {
   requestIdleRender,
   shouldPreserveHydratedDiagram,
   syncAttribute,
-} from './preview-diagram-utils.js';
+} from "./preview-diagram-utils.js";
 
 function datasetKeyToAttributeName(datasetKey) {
   return `data-${datasetKey.replace(/[A-Z]/g, (match) => `-${match.toLowerCase()}`)}`;
 }
 
 export class DiagramPreviewHydrator {
-  constructor(renderer, {
-    batchSize,
-    datasetKeys,
-    fetchFn = (...args) => fetch(...args),
-    filePathLabel,
-    requestIdleRenderFn = requestIdleRender,
-    cancelIdleRenderFn = cancelIdleRender,
-    intersectionObserverFactory = (callback, options) => new IntersectionObserver(callback, options),
-    isNearViewportFn = isNearViewport,
-    requestAnimationFrameFn = (callback) => requestAnimationFrame(callback),
-    shellClassName,
-    sourceClassName,
-  }) {
+  constructor(
+    renderer,
+    {
+      batchSize,
+      datasetKeys,
+      fetchFn = (...args) => fetch(...args),
+      filePathLabel,
+      requestIdleRenderFn = requestIdleRender,
+      cancelIdleRenderFn = cancelIdleRender,
+      intersectionObserverFactory = (callback, options) =>
+        new IntersectionObserver(callback, options),
+      isNearViewportFn = isNearViewport,
+      requestAnimationFrameFn = (callback) => requestAnimationFrame(callback),
+      shellClassName,
+      sourceClassName,
+    },
+  ) {
     this.renderer = renderer;
     this.batchSize = batchSize;
     this.datasetKeys = datasetKeys;
@@ -41,7 +45,10 @@ export class DiagramPreviewHydrator {
     this.shellSelector = `.${shellClassName}`;
     this.sourceSelector = `.${sourceClassName}`;
     this.attributeNames = Object.fromEntries(
-      Object.entries(datasetKeys).map(([name, datasetKey]) => [name, datasetKeyToAttributeName(datasetKey)]),
+      Object.entries(datasetKeys).map(([name, datasetKey]) => [
+        name,
+        datasetKeyToAttributeName(datasetKey),
+      ]),
     );
 
     this.observer = null;
@@ -96,8 +103,9 @@ export class DiagramPreviewHydrator {
       ),
     ).forEach((shell) => {
       const key = shell.dataset[this.datasetKeys.key];
-      const source = shell.querySelector(this.sourceSelector)?.textContent ?? '';
-      const target = shell.dataset[this.datasetKeys.target] ?? '';
+      const source =
+        shell.querySelector(this.sourceSelector)?.textContent ?? "";
+      const target = shell.dataset[this.datasetKeys.target] ?? "";
       if (!key || (!source && !target)) {
         return;
       }
@@ -123,27 +131,36 @@ export class DiagramPreviewHydrator {
     }
 
     let restoredMaximizedShell = false;
-    Array.from(previewElement.querySelectorAll(`${this.shellSelector}[${this.attributeNames.key}]`)).forEach((nextShell) => {
+    Array.from(
+      previewElement.querySelectorAll(
+        `${this.shellSelector}[${this.attributeNames.key}]`,
+      ),
+    ).forEach((nextShell) => {
       const key = nextShell.dataset[this.datasetKeys.key];
       const preservedEntry = key ? this.preservedShells.get(key) : null;
       if (!preservedEntry) {
         return;
       }
 
-      const nextSource = nextShell.querySelector(this.sourceSelector)?.textContent ?? '';
-      const nextTarget = nextShell.dataset[this.datasetKeys.target] ?? '';
-      if (!shouldPreserveHydratedDiagram({
-        nextSource,
-        nextTarget,
-        preservedSource: preservedEntry.source,
-        preservedTarget: preservedEntry.target,
-      })) {
+      const nextSource =
+        nextShell.querySelector(this.sourceSelector)?.textContent ?? "";
+      const nextTarget = nextShell.dataset[this.datasetKeys.target] ?? "";
+      if (
+        !shouldPreserveHydratedDiagram({
+          nextSource,
+          nextTarget,
+          preservedSource: preservedEntry.source,
+          preservedTarget: preservedEntry.target,
+        })
+      ) {
         return;
       }
 
       this.syncPreservedShell(preservedEntry.shell, nextShell);
       nextShell.replaceWith(preservedEntry.shell);
-      restoredMaximizedShell = restoredMaximizedShell || preservedEntry.shell.classList.contains('is-maximized');
+      restoredMaximizedShell =
+        restoredMaximizedShell ||
+        preservedEntry.shell.classList.contains("is-maximized");
       this.preservedShells.delete(key);
     });
 
@@ -162,8 +179,8 @@ export class DiagramPreviewHydrator {
     syncAttribute(preservedShell, nextShell, this.attributeNames.sourceHash);
 
     preservedShell.classList.add(this.shellClassName);
-    preservedShell.dataset[this.datasetKeys.hydrated] = 'true';
-    this.removeDatasetValue(preservedShell, 'queued');
+    preservedShell.dataset[this.datasetKeys.hydrated] = "true";
+    this.removeDatasetValue(preservedShell, "queued");
 
     const nextSourceNode = nextShell.querySelector(this.sourceSelector);
     let preservedSourceNode = preservedShell.querySelector(this.sourceSelector);
@@ -174,7 +191,7 @@ export class DiagramPreviewHydrator {
     }
 
     if (preservedSourceNode && nextSourceNode) {
-      const nextSource = nextSourceNode.textContent ?? '';
+      const nextSource = nextSourceNode.textContent ?? "";
       if (nextSource || !nextShell.dataset[this.datasetKeys.target]) {
         preservedSourceNode.textContent = nextSource;
       }
@@ -189,23 +206,28 @@ export class DiagramPreviewHydrator {
       return 0;
     }
 
-    const shells = Array.from(previewElement.querySelectorAll(this.shellSelector));
+    const shells = Array.from(
+      previewElement.querySelectorAll(this.shellSelector),
+    );
     if (shells.length === 0) {
       return 0;
     }
 
-    this.observer = this.intersectionObserverFactory((entries) => {
-      entries.forEach((entry) => {
-        if (!entry.isIntersecting) {
-          return;
-        }
+    this.observer = this.intersectionObserverFactory(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (!entry.isIntersecting) {
+            return;
+          }
 
-        this.enqueueShell(entry.target);
-      });
-    }, {
-      root: previewContainer,
-      rootMargin: this.renderer.isLargeDocument ? '180px 0px' : '420px 0px',
-    });
+          this.enqueueShell(entry.target);
+        });
+      },
+      {
+        root: previewContainer,
+        rootMargin: this.renderer.isLargeDocument ? "180px 0px" : "420px 0px",
+      },
+    );
 
     shells.forEach((shell) => this.observer.observe(shell));
 
@@ -229,19 +251,25 @@ export class DiagramPreviewHydrator {
     }
 
     const margin = this.renderer.isLargeDocument ? 180 : 420;
-    Array.from(previewElement.querySelectorAll(this.shellSelector)).forEach((shell) => {
-      if (this.isNearViewportFn(shell, previewContainer, margin)) {
-        this.enqueueShell(shell, { prioritize: true });
-      }
-    });
+    Array.from(previewElement.querySelectorAll(this.shellSelector)).forEach(
+      (shell) => {
+        if (this.isNearViewportFn(shell, previewContainer, margin)) {
+          this.enqueueShell(shell, { prioritize: true });
+        }
+      },
+    );
   }
 
   enqueueShell(shell, { prioritize = false } = {}) {
-    if (!shell?.isConnected || this.isShellHydrated(shell) || this.isShellQueued(shell)) {
+    if (
+      !shell?.isConnected ||
+      this.isShellHydrated(shell) ||
+      this.isShellQueued(shell)
+    ) {
       return;
     }
 
-    shell.dataset[this.datasetKeys.queued] = 'true';
+    shell.dataset[this.datasetKeys.queued] = "true";
     if (prioritize) {
       this.pendingShells.unshift(shell);
     } else {
@@ -257,7 +285,11 @@ export class DiagramPreviewHydrator {
   }
 
   scheduleHydration() {
-    if (this.renderer.hydrationPaused || this.hydrationInProgress || this.idleId !== null) {
+    if (
+      this.renderer.hydrationPaused ||
+      this.hydrationInProgress ||
+      this.idleId !== null
+    ) {
       return;
     }
 
@@ -279,7 +311,7 @@ export class DiagramPreviewHydrator {
         continue;
       }
 
-      this.removeDatasetValue(nextShell, 'queued');
+      this.removeDatasetValue(nextShell, "queued");
       shells.push(nextShell);
     }
 
@@ -289,7 +321,7 @@ export class DiagramPreviewHydrator {
     }
 
     this.hydrationInProgress = true;
-    this.renderer.setPhase('hydrating');
+    this.renderer.setPhase("hydrating");
 
     let batchContext = null;
     try {
@@ -321,16 +353,16 @@ export class DiagramPreviewHydrator {
   handlePrepareHydrationBatchError(_shells, _error) {}
 
   async hydrateShell() {
-    throw new Error('hydrateShell must be implemented by subclasses');
+    throw new Error("hydrateShell must be implemented by subclasses");
   }
 
   markShellHydrated(shell) {
-    shell.dataset[this.datasetKeys.hydrated] = 'true';
+    shell.dataset[this.datasetKeys.hydrated] = "true";
     shell.dataset[this.datasetKeys.instanceId] = String(++this.instanceCounter);
   }
 
   isShellHydrated(shell) {
-    return shell?.dataset?.[this.datasetKeys.hydrated] === 'true';
+    return shell?.dataset?.[this.datasetKeys.hydrated] === "true";
   }
 
   removeDatasetValue(shell, name) {
@@ -346,11 +378,11 @@ export class DiagramPreviewHydrator {
   }
 
   isShellQueued(shell) {
-    return shell?.dataset?.[this.datasetKeys.queued] === 'true';
+    return shell?.dataset?.[this.datasetKeys.queued] === "true";
   }
 
   async fetchSource(filePath) {
-    const target = String(filePath ?? '').trim();
+    const target = String(filePath ?? "").trim();
     if (!target) {
       throw new Error(`Missing ${this.filePathLabel} file path`);
     }
@@ -359,14 +391,17 @@ export class DiagramPreviewHydrator {
       return this.fileInflightRequests.get(target);
     }
 
-    const request = this.fetchFn(resolveApiUrl(`/file?path=${encodeURIComponent(target)}`), {
-      headers: {
-        Accept: 'application/json',
+    const request = this.fetchFn(
+      resolveApiUrl(`/file?path=${encodeURIComponent(target)}`),
+      {
+        headers: {
+          Accept: "application/json",
+        },
       },
-    })
+    )
       .then(async (response) => {
         const data = await response.json().catch(() => null);
-        if (!response.ok || typeof data?.content !== 'string') {
+        if (!response.ok || typeof data?.content !== "string") {
           throw new Error(data?.error || `Failed to load ${target}`);
         }
 

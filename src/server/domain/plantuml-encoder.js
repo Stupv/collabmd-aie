@@ -1,4 +1,4 @@
-import { deflateRawSync } from 'node:zlib';
+import { deflateRawSync } from "node:zlib";
 
 function encode6bit(value) {
   if (value < 10) {
@@ -14,14 +14,14 @@ function encode6bit(value) {
   }
 
   if (value === 62) {
-    return '-';
+    return "-";
   }
 
   if (value === 63) {
-    return '_';
+    return "_";
   }
 
-  return '?';
+  return "?";
 }
 
 function append3bytes(byte1, byte2, byte3) {
@@ -33,9 +33,9 @@ function append3bytes(byte1, byte2, byte3) {
   return `${encode6bit(c1 & 0x3f)}${encode6bit(c2 & 0x3f)}${encode6bit(c3 & 0x3f)}${encode6bit(c4 & 0x3f)}`;
 }
 
-export function encodePlantUmlText(source = '') {
-  const compressed = deflateRawSync(Buffer.from(String(source), 'utf-8'));
-  let encoded = '';
+export function encodePlantUmlText(source = "") {
+  const compressed = deflateRawSync(Buffer.from(String(source), "utf-8"));
+  let encoded = "";
 
   for (let index = 0; index < compressed.length; index += 3) {
     encoded += append3bytes(

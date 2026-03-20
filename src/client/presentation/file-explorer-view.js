@@ -1,30 +1,32 @@
 import {
   getVaultTreeNodeType,
   stripVaultFileExtension,
-} from '../../domain/file-kind.js';
-import { escapeHtml } from '../domain/vault-utils.js';
+} from "../../domain/file-kind.js";
+import { escapeHtml } from "../domain/vault-utils.js";
 
 function getPathLeaf(path) {
-  return String(path ?? '')
-    .replace(/\/+$/u, '')
-    .split('/')
-    .filter(Boolean)
-    .pop() || '';
+  return (
+    String(path ?? "")
+      .replace(/\/+$/u, "")
+      .split("/")
+      .filter(Boolean)
+      .pop() || ""
+  );
 }
 
 function getParentPath(pathValue) {
-  const normalized = String(pathValue ?? '').replace(/\/+$/u, '');
-  const separatorIndex = normalized.lastIndexOf('/');
-  return separatorIndex >= 0 ? normalized.slice(0, separatorIndex) : '';
+  const normalized = String(pathValue ?? "").replace(/\/+$/u, "");
+  const separatorIndex = normalized.lastIndexOf("/");
+  return separatorIndex >= 0 ? normalized.slice(0, separatorIndex) : "";
 }
 
-function findNodeByPath(nodes = [], pathValue = '') {
+function findNodeByPath(nodes = [], pathValue = "") {
   for (const node of nodes) {
     if (node.path === pathValue) {
       return node;
     }
 
-    if (node.type === 'directory' && Array.isArray(node.children)) {
+    if (node.type === "directory" && Array.isArray(node.children)) {
       const nested = findNodeByPath(node.children, pathValue);
       if (nested) {
         return nested;
@@ -48,20 +50,20 @@ export class FileExplorerView {
     this.onFileSelect = onFileSelect;
     this.onSearchChange = onSearchChange;
     this.onTreeContextMenu = onTreeContextMenu;
-    this.treeContainer = document.getElementById('fileTree');
-    this.searchInput = document.getElementById('fileSearchInput');
+    this.treeContainer = document.getElementById("fileTree");
+    this.searchInput = document.getElementById("fileSearchInput");
     this.renderedDirectoryWrappers = new Map();
     this.renderedChildContainers = new Map();
-    this.lastRenderMode = 'tree';
+    this.lastRenderMode = "tree";
   }
 
   initialize() {
-    this.searchInput?.addEventListener('input', (event) => {
+    this.searchInput?.addEventListener("input", (event) => {
       this.onSearchChange?.(event.target.value);
     });
 
-    this.treeContainer?.addEventListener('contextmenu', (event) => {
-      if (event.target.closest('.file-tree-item')) {
+    this.treeContainer?.addEventListener("contextmenu", (event) => {
+      if (event.target.closest(".file-tree-item")) {
         return;
       }
 
@@ -70,62 +72,78 @@ export class FileExplorerView {
     });
   }
 
-  render({ activeFilePath, changedPaths = null, expandedDirs, reset = false, searchMatches, searchQuery, tree }) {
+  render({
+    activeFilePath,
+    changedPaths = null,
+    expandedDirs,
+    reset = false,
+    searchMatches,
+    searchQuery,
+    tree,
+  }) {
     if (!this.treeContainer) {
       return;
     }
 
     if (searchQuery) {
-      this.lastRenderMode = 'search';
+      this.lastRenderMode = "search";
       this.renderSearchResults(searchMatches, activeFilePath);
       return;
     }
 
     if (
-      reset
-      || this.lastRenderMode !== 'tree'
-      || !Array.isArray(changedPaths)
-      || changedPaths.length === 0
+      reset ||
+      this.lastRenderMode !== "tree" ||
+      !Array.isArray(changedPaths) ||
+      changedPaths.length === 0
     ) {
       this.renderFullTree(tree, {
         activeFilePath,
         expandedDirs,
       });
-      this.lastRenderMode = 'tree';
+      this.lastRenderMode = "tree";
       return;
     }
 
-    const affectedParentPaths = Array.from(new Set(
-      changedPaths.map((pathValue) => getParentPath(pathValue)),
-    ))
-      .sort((left, right) => left.split('/').length - right.split('/').length)
-      .filter((pathValue, index, values) => (
-        !values.slice(0, index).some((ancestorPath) => ancestorPath && pathValue.startsWith(`${ancestorPath}/`))
-      ));
-    if (affectedParentPaths.includes('')) {
+    const affectedParentPaths = Array.from(
+      new Set(changedPaths.map((pathValue) => getParentPath(pathValue))),
+    )
+      .sort((left, right) => left.split("/").length - right.split("/").length)
+      .filter(
+        (pathValue, index, values) =>
+          !values
+            .slice(0, index)
+            .some(
+              (ancestorPath) =>
+                ancestorPath && pathValue.startsWith(`${ancestorPath}/`),
+            ),
+      );
+    if (affectedParentPaths.includes("")) {
       this.renderFullTree(tree, {
         activeFilePath,
         expandedDirs,
       });
-      this.lastRenderMode = 'tree';
+      this.lastRenderMode = "tree";
       return;
     }
 
     for (const parentPath of affectedParentPaths) {
-      if (!this.rerenderDirectoryBranch(parentPath, tree, {
-        activeFilePath,
-        expandedDirs,
-      })) {
+      if (
+        !this.rerenderDirectoryBranch(parentPath, tree, {
+          activeFilePath,
+          expandedDirs,
+        })
+      ) {
         this.renderFullTree(tree, {
           activeFilePath,
           expandedDirs,
         });
-        this.lastRenderMode = 'tree';
+        this.lastRenderMode = "tree";
         return;
       }
     }
 
-    this.lastRenderMode = 'tree';
+    this.lastRenderMode = "tree";
   }
 
   renderSearchResults(matches, activeFilePath) {
@@ -134,32 +152,36 @@ export class FileExplorerView {
     }
 
     this.resetTreeIndexes();
-    this.treeContainer.innerHTML = '';
+    this.treeContainer.innerHTML = "";
 
     if (matches.length === 0) {
-      this.treeContainer.innerHTML = '<div class="file-tree-empty">No matches</div>';
+      this.treeContainer.innerHTML =
+        '<div class="file-tree-empty">No matches</div>';
       return;
     }
 
     const fragment = document.createDocumentFragment();
     for (const filePath of matches) {
-      fragment.appendChild(this.createFileItem({
-        activeFilePath,
-        depth: 0,
-        filePath,
-        fileType: getVaultTreeNodeType(filePath) ?? 'file',
-        name: getPathLeaf(filePath),
-      }));
+      fragment.appendChild(
+        this.createFileItem({
+          activeFilePath,
+          depth: 0,
+          filePath,
+          fileType: getVaultTreeNodeType(filePath) ?? "file",
+          name: getPathLeaf(filePath),
+        }),
+      );
     }
     this.treeContainer.appendChild(fragment);
   }
 
   renderFullTree(tree, { activeFilePath, expandedDirs }) {
     this.resetTreeIndexes();
-    this.treeContainer.innerHTML = '';
+    this.treeContainer.innerHTML = "";
 
     if (tree.length === 0) {
-      this.treeContainer.innerHTML = '<div class="file-tree-empty">No vault files found</div>';
+      this.treeContainer.innerHTML =
+        '<div class="file-tree-empty">No vault files found</div>';
       return;
     }
 
@@ -179,56 +201,63 @@ export class FileExplorerView {
 
   renderNodes(nodes, container, { activeFilePath, depth, expandedDirs }) {
     for (const node of nodes) {
-      if (node.type === 'directory') {
-        container.appendChild(this.createDirectoryItem(node, {
-          activeFilePath,
-          depth,
-          expandedDirs,
-        }));
+      if (node.type === "directory") {
+        container.appendChild(
+          this.createDirectoryItem(node, {
+            activeFilePath,
+            depth,
+            expandedDirs,
+          }),
+        );
         continue;
       }
 
-      container.appendChild(this.createFileItem({
-        activeFilePath,
-        depth,
-        filePath: node.path,
-        fileType: node.type,
-        name: node.name,
-      }));
+      container.appendChild(
+        this.createFileItem({
+          activeFilePath,
+          depth,
+          filePath: node.path,
+          fileType: node.type,
+          name: node.name,
+        }),
+      );
     }
   }
 
   createDirectoryItem(node, { activeFilePath, depth, expandedDirs }) {
-    const wrapper = document.createElement('div');
-    wrapper.className = 'file-tree-group';
+    const wrapper = document.createElement("div");
+    wrapper.className = "file-tree-group";
 
-    const button = document.createElement('button');
-    button.className = 'file-tree-item file-tree-dir';
-    button.style.setProperty('--depth', depth);
+    const button = document.createElement("button");
+    button.className = "file-tree-item file-tree-dir";
+    button.style.setProperty("--depth", depth);
     button.dataset.depth = depth;
 
     const isExpanded = expandedDirs.has(node.path);
-    button.setAttribute('aria-expanded', String(isExpanded));
+    button.setAttribute("aria-expanded", String(isExpanded));
     button.innerHTML = `
-      <svg class="file-tree-chevron${isExpanded ? ' expanded' : ''}" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+      <svg class="file-tree-chevron${isExpanded ? " expanded" : ""}" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
       <svg class="file-tree-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
       <span class="file-tree-name">${escapeHtml(node.name)}</span>
     `;
 
-    button.addEventListener('click', () => {
+    button.addEventListener("click", () => {
       this.onDirectoryToggle?.(node.path);
     });
-    button.addEventListener('contextmenu', (event) => {
+    button.addEventListener("contextmenu", (event) => {
       event.preventDefault();
-      this.onFileContextMenu?.(event, { directoryPath: node.path, type: 'directory' });
+      this.onFileContextMenu?.(event, {
+        directoryPath: node.path,
+        type: "directory",
+      });
     });
 
     wrapper.appendChild(button);
     this.renderedDirectoryWrappers.set(node.path, wrapper);
 
     if (isExpanded && Array.isArray(node.children)) {
-      const childContainer = document.createElement('div');
-      childContainer.className = 'file-tree-children';
+      const childContainer = document.createElement("div");
+      childContainer.className = "file-tree-children";
       this.renderedChildContainers.set(node.path, childContainer);
       this.renderNodes(node.children, childContainer, {
         activeFilePath,
@@ -246,17 +275,21 @@ export class FileExplorerView {
   rerenderDirectoryBranch(parentPath, tree, { activeFilePath, expandedDirs }) {
     const wrapper = this.renderedDirectoryWrappers.get(parentPath);
     const parentNode = findNodeByPath(tree, parentPath);
-    if (!wrapper || parentNode?.type !== 'directory') {
+    if (!wrapper || parentNode?.type !== "directory") {
       return false;
     }
 
-    const button = wrapper.querySelector('.file-tree-dir');
+    const button = wrapper.querySelector(".file-tree-dir");
     const isExpanded = expandedDirs.has(parentPath);
-    button?.setAttribute('aria-expanded', String(isExpanded));
-    button?.querySelector('.file-tree-chevron')?.classList.toggle('expanded', isExpanded);
+    button?.setAttribute("aria-expanded", String(isExpanded));
+    button
+      ?.querySelector(".file-tree-chevron")
+      ?.classList.toggle("expanded", isExpanded);
 
     const depth = Number(button?.dataset.depth ?? 0);
-    let childContainer = this.renderedChildContainers.get(parentPath) ?? wrapper.querySelector('.file-tree-children');
+    let childContainer =
+      this.renderedChildContainers.get(parentPath) ??
+      wrapper.querySelector(".file-tree-children");
 
     this.clearRenderedDescendants(parentPath);
 
@@ -267,11 +300,11 @@ export class FileExplorerView {
     }
 
     if (!childContainer) {
-      childContainer = document.createElement('div');
-      childContainer.className = 'file-tree-children';
+      childContainer = document.createElement("div");
+      childContainer.className = "file-tree-children";
       wrapper.appendChild(childContainer);
     } else {
-      childContainer.innerHTML = '';
+      childContainer.innerHTML = "";
     }
     this.renderedChildContainers.set(parentPath, childContainer);
 
@@ -298,31 +331,31 @@ export class FileExplorerView {
     });
   }
 
-  createFileItem({ activeFilePath, depth, filePath, fileType = 'file', name }) {
-    const button = document.createElement('button');
-    button.className = 'file-tree-item file-tree-file';
-    const isExcalidraw = fileType === 'excalidraw';
-    const isImage = fileType === 'image';
-    const isMermaid = fileType === 'mermaid';
-    const isPlantUml = fileType === 'plantuml';
+  createFileItem({ activeFilePath, depth, filePath, fileType = "file", name }) {
+    const button = document.createElement("button");
+    button.className = "file-tree-item file-tree-file";
+    const isExcalidraw = fileType === "excalidraw";
+    const isImage = fileType === "image";
+    const isMermaid = fileType === "mermaid";
+    const isPlantUml = fileType === "plantuml";
 
     if (isExcalidraw) {
-      button.classList.add('is-excalidraw');
+      button.classList.add("is-excalidraw");
     }
     if (isImage) {
-      button.classList.add('is-image');
+      button.classList.add("is-image");
     }
     if (isMermaid) {
-      button.classList.add('is-mermaid');
+      button.classList.add("is-mermaid");
     }
     if (isPlantUml) {
-      button.classList.add('is-plantuml');
+      button.classList.add("is-plantuml");
     }
     if (filePath === activeFilePath) {
-      button.classList.add('active');
+      button.classList.add("active");
     }
 
-    button.style.setProperty('--depth', depth);
+    button.style.setProperty("--depth", depth);
     button.dataset.depth = depth;
     button.dataset.path = filePath;
     button.innerHTML = `
@@ -330,12 +363,12 @@ export class FileExplorerView {
       <span class="file-tree-name">${escapeHtml(stripVaultFileExtension(name))}</span>
     `;
 
-    button.addEventListener('click', () => {
+    button.addEventListener("click", () => {
       this.onFileSelect?.(filePath);
     });
-    button.addEventListener('contextmenu', (event) => {
+    button.addEventListener("contextmenu", (event) => {
       event.preventDefault();
-      this.onFileContextMenu?.(event, { filePath, type: 'file' });
+      this.onFileContextMenu?.(event, { filePath, type: "file" });
     });
 
     return button;
@@ -368,14 +401,14 @@ export class FileExplorerView {
       return;
     }
 
-    const menu = document.createElement('div');
-    menu.className = 'file-context-menu';
+    const menu = document.createElement("div");
+    menu.className = "file-context-menu";
 
     for (const item of items) {
-      const button = document.createElement('button');
-      button.className = `file-context-item${item.danger ? ' file-context-danger' : ''}`;
+      const button = document.createElement("button");
+      button.className = `file-context-item${item.danger ? " file-context-danger" : ""}`;
       button.textContent = item.label;
-      button.addEventListener('click', () => {
+      button.addEventListener("click", () => {
         this.removeContextMenu();
         item.onSelect?.();
       });
@@ -393,13 +426,15 @@ export class FileExplorerView {
     const close = (closeEvent) => {
       if (!menu.contains(closeEvent.target)) {
         this.removeContextMenu();
-        document.removeEventListener('click', close);
+        document.removeEventListener("click", close);
       }
     };
-    setTimeout(() => document.addEventListener('click', close), 0);
+    setTimeout(() => document.addEventListener("click", close), 0);
   }
 
   removeContextMenu() {
-    document.querySelectorAll('.file-context-menu').forEach((menu) => menu.remove());
+    document
+      .querySelectorAll(".file-context-menu")
+      .forEach((menu) => menu.remove());
   }
 }

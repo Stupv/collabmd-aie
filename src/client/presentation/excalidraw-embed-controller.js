@@ -1,6 +1,6 @@
-import { setDiagramActionButtonIcon } from '../domain/diagram-action-icons.js';
-import { reconcileEmbedEntries } from './excalidraw-embed-reconciler.js';
-import { resolveAppUrl } from '../domain/runtime-paths.js';
+import { setDiagramActionButtonIcon } from "../domain/diagram-action-icons.js";
+import { reconcileEmbedEntries } from "./excalidraw-embed-reconciler.js";
+import { resolveAppUrl } from "../domain/runtime-paths.js";
 
 const DEFAULT_HEIGHT = 420;
 const HYDRATE_TIMEOUT_MS = 500;
@@ -8,10 +8,10 @@ const IFRAME_BOOT_TIMEOUT_MS = 15000;
 const MAX_HEIGHT = 800;
 const MAX_IFRAME_BOOT_ATTEMPTS = 3;
 const MIN_HEIGHT = 200;
-const EDITOR_IFRAME_PATH = '/excalidraw-editor.html';
+const EDITOR_IFRAME_PATH = "/excalidraw-editor.html";
 
 function requestIdleRender(callback, timeout) {
-  if (typeof window.requestIdleCallback === 'function') {
+  if (typeof window.requestIdleCallback === "function") {
     return window.requestIdleCallback(callback, { timeout });
   }
 
@@ -28,7 +28,7 @@ function cancelIdleRender(id) {
     return;
   }
 
-  if (typeof window.cancelIdleCallback === 'function') {
+  if (typeof window.cancelIdleCallback === "function") {
     window.cancelIdleCallback(id);
     return;
   }
@@ -45,8 +45,8 @@ function isNearViewport(element, root, marginPx) {
   const elementRect = element.getBoundingClientRect();
 
   return (
-    elementRect.bottom >= (rootRect.top - marginPx)
-    && elementRect.top <= (rootRect.bottom + marginPx)
+    elementRect.bottom >= rootRect.top - marginPx &&
+    elementRect.top <= rootRect.bottom + marginPx
   );
 }
 
@@ -84,21 +84,21 @@ export class ExcalidrawEmbedController {
     this._onKeyDown = this._onKeyDown.bind(this);
     this._onPreviewClick = this._onPreviewClick.bind(this);
 
-    window.addEventListener('message', this._onMessage);
-    window.addEventListener('keydown', this._onKeyDown);
-    this.previewElement?.addEventListener('click', this._onPreviewClick);
+    window.addEventListener("message", this._onMessage);
+    window.addEventListener("keydown", this._onKeyDown);
+    this.previewElement?.addEventListener("click", this._onPreviewClick);
   }
 
   destroy() {
-    window.removeEventListener('message', this._onMessage);
-    window.removeEventListener('keydown', this._onKeyDown);
-    this.previewElement?.removeEventListener('click', this._onPreviewClick);
+    window.removeEventListener("message", this._onMessage);
+    window.removeEventListener("keydown", this._onKeyDown);
+    this.previewElement?.removeEventListener("click", this._onPreviewClick);
     this._disconnectPlaceholderObserver();
     cancelIdleRender(this.hydrationIdleId);
     this.hydrationIdleId = null;
     this.hydrationQueue = [];
     this._exitMaximizedEmbed();
-    document.body.classList.remove('excalidraw-maximized-open');
+    document.body.classList.remove("excalidraw-maximized-open");
 
     this.embedEntries.forEach((entry) => {
       this._clearEntryBootTimeout(entry);
@@ -178,14 +178,21 @@ export class ExcalidrawEmbedController {
     this.hydrationQueue = [];
     this.hydrationInProgress = false;
 
-    const descriptors = Array.from(previewElement.querySelectorAll('.excalidraw-embed-placeholder[data-embed-key]')).map((placeholder) => ({
+    const descriptors = Array.from(
+      previewElement.querySelectorAll(
+        ".excalidraw-embed-placeholder[data-embed-key]",
+      ),
+    ).map((placeholder) => ({
       filePath: placeholder.dataset.embedTarget,
       key: placeholder.dataset.embedKey,
       label: placeholder.dataset.embedLabel || placeholder.dataset.embedTarget,
       placeholder,
     }));
 
-    const { nextEntries, removedEntries } = reconcileEmbedEntries(this.embedEntries, descriptors);
+    const { nextEntries, removedEntries } = reconcileEmbedEntries(
+      this.embedEntries,
+      descriptors,
+    );
     this._adoptReusableEntries(nextEntries, removedEntries);
     removedEntries.forEach((entry) => this._destroyEntry(entry));
     this.embedEntries = nextEntries;
@@ -235,8 +242,8 @@ export class ExcalidrawEmbedController {
   updateTheme(theme) {
     this.embedEntries.forEach((entry) => {
       this._postMessageToEntry(entry, {
-        source: 'collabmd-host',
-        type: 'set-theme',
+        source: "collabmd-host",
+        type: "set-theme",
         theme,
       });
     });
@@ -278,8 +285,8 @@ export class ExcalidrawEmbedController {
       });
 
       this._postMessageToEntry(entry, {
-        source: 'collabmd-host',
-        type: 'prepare-disconnect',
+        source: "collabmd-host",
+        type: "prepare-disconnect",
         requestId,
       });
     });
@@ -290,21 +297,26 @@ export class ExcalidrawEmbedController {
       return;
     }
 
-    this.placeholderObserver = new IntersectionObserver((entries) => {
-      entries.forEach((entry) => {
-        if (!entry.isIntersecting) {
-          return;
-        }
+    this.placeholderObserver = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (!entry.isIntersecting) {
+            return;
+          }
 
-        const embedEntry = this.embedEntries.get(entry.target.dataset.embedKey);
-        if (embedEntry) {
-          this._enqueueHydration(embedEntry);
-        }
-      });
-    }, {
-      root: this.previewContainer,
-      rootMargin: this.isLargeDocument ? '180px 0px' : '420px 0px',
-    });
+          const embedEntry = this.embedEntries.get(
+            entry.target.dataset.embedKey,
+          );
+          if (embedEntry) {
+            this._enqueueHydration(embedEntry);
+          }
+        });
+      },
+      {
+        root: this.previewContainer,
+        rootMargin: this.isLargeDocument ? "180px 0px" : "420px 0px",
+      },
+    );
   }
 
   _disconnectPlaceholderObserver() {
@@ -332,7 +344,11 @@ export class ExcalidrawEmbedController {
       return;
     }
 
-    if (prioritize && !this.hydrationInProgress && this.hydrationIdleId === null) {
+    if (
+      prioritize &&
+      !this.hydrationInProgress &&
+      this.hydrationIdleId === null
+    ) {
       void this._flushHydrationQueue();
       return;
     }
@@ -341,7 +357,11 @@ export class ExcalidrawEmbedController {
   }
 
   _scheduleHydration() {
-    if (this.hydrationPaused || this.hydrationInProgress || this.hydrationIdleId !== null) {
+    if (
+      this.hydrationPaused ||
+      this.hydrationInProgress ||
+      this.hydrationIdleId !== null
+    ) {
       return;
     }
 
@@ -409,7 +429,9 @@ export class ExcalidrawEmbedController {
   _attachWrapper(entry) {
     const placeholder = entry.placeholder?.isConnected
       ? entry.placeholder
-      : this.previewElement?.querySelector(`.excalidraw-embed-placeholder[data-embed-key="${entry.key}"]`);
+      : this.previewElement?.querySelector(
+          `.excalidraw-embed-placeholder[data-embed-key="${entry.key}"]`,
+        );
 
     if (!placeholder) {
       return;
@@ -418,12 +440,12 @@ export class ExcalidrawEmbedController {
     entry.placeholder = placeholder;
     this._syncMountedEntryMetadata(entry);
     if (this._shouldInlineFilePreview(entry)) {
-      entry.wrapper.style.position = '';
-      entry.wrapper.style.top = '';
-      entry.wrapper.style.left = '';
-      entry.wrapper.style.width = '';
-      entry.wrapper.style.margin = '';
-      entry.wrapper.style.pointerEvents = 'auto';
+      entry.wrapper.style.position = "";
+      entry.wrapper.style.top = "";
+      entry.wrapper.style.left = "";
+      entry.wrapper.style.width = "";
+      entry.wrapper.style.margin = "";
+      entry.wrapper.style.pointerEvents = "auto";
       placeholder.replaceWith(entry.wrapper);
       entry.placeholder = null;
       return;
@@ -444,11 +466,12 @@ export class ExcalidrawEmbedController {
         return;
       }
 
-      const removedIndex = removedEntries.findIndex((entry) => (
-        entry.filePath === nextEntry.filePath
-        && this._getEntryMode(entry) === this._getEntryMode(nextEntry)
-        && (entry.wrapper || entry.iframe)
-      ));
+      const removedIndex = removedEntries.findIndex(
+        (entry) =>
+          entry.filePath === nextEntry.filePath &&
+          this._getEntryMode(entry) === this._getEntryMode(nextEntry) &&
+          (entry.wrapper || entry.iframe),
+      );
       if (removedIndex < 0) {
         return;
       }
@@ -564,7 +587,10 @@ export class ExcalidrawEmbedController {
 
   _updateEmbedLabel(entry) {
     if (entry.labelElement) {
-      entry.labelElement.textContent = entry.label.replace(/\.excalidraw$/i, '');
+      entry.labelElement.textContent = entry.label.replace(
+        /\.excalidraw$/i,
+        "",
+      );
     }
   }
 
@@ -581,74 +607,77 @@ export class ExcalidrawEmbedController {
 
   _buildIframeUrl(entry) {
     const iframeUrl = new URL(resolveAppUrl(EDITOR_IFRAME_PATH));
-    const theme = this.getTheme?.() || 'dark';
+    const theme = this.getTheme?.() || "dark";
 
-    iframeUrl.searchParams.set('file', entry.filePath);
-    iframeUrl.searchParams.set('theme', theme);
-    iframeUrl.searchParams.set('boot', entry.instanceId || '');
+    iframeUrl.searchParams.set("file", entry.filePath);
+    iframeUrl.searchParams.set("theme", theme);
+    iframeUrl.searchParams.set("boot", entry.instanceId || "");
     if (!this._isFilePreviewEntry(entry)) {
-      iframeUrl.searchParams.set('mode', 'preview');
+      iframeUrl.searchParams.set("mode", "preview");
     }
 
     const localUser = this.getLocalUser?.();
     if (localUser?.name) {
-      iframeUrl.searchParams.set('userName', localUser.name);
+      iframeUrl.searchParams.set("userName", localUser.name);
     }
     if (localUser?.color) {
-      iframeUrl.searchParams.set('userColor', localUser.color);
+      iframeUrl.searchParams.set("userColor", localUser.color);
     }
     if (localUser?.colorLight) {
-      iframeUrl.searchParams.set('userColorLight', localUser.colorLight);
+      iframeUrl.searchParams.set("userColorLight", localUser.colorLight);
     }
     if (localUser?.peerId) {
-      iframeUrl.searchParams.set('userPeerId', localUser.peerId);
+      iframeUrl.searchParams.set("userPeerId", localUser.peerId);
     }
 
     const hostSearchParams = new URLSearchParams(window.location.search);
-    const serverOverride = hostSearchParams.get('server');
+    const serverOverride = hostSearchParams.get("server");
     if (serverOverride) {
-      iframeUrl.searchParams.set('server', serverOverride);
+      iframeUrl.searchParams.set("server", serverOverride);
     }
-    if (hostSearchParams.get('test') === '1') {
-      iframeUrl.searchParams.set('test', '1');
+    if (hostSearchParams.get("test") === "1") {
+      iframeUrl.searchParams.set("test", "1");
     }
-    if (hostSearchParams.has('syncTimeoutMs')) {
-      iframeUrl.searchParams.set('syncTimeoutMs', hostSearchParams.get('syncTimeoutMs'));
+    if (hostSearchParams.has("syncTimeoutMs")) {
+      iframeUrl.searchParams.set(
+        "syncTimeoutMs",
+        hostSearchParams.get("syncTimeoutMs"),
+      );
     }
 
     return iframeUrl;
   }
 
   _createEmbedContainer(entry) {
-    const wrapper = document.createElement('div');
-    wrapper.className = 'excalidraw-embed diagram-preview-shell';
+    const wrapper = document.createElement("div");
+    wrapper.className = "excalidraw-embed diagram-preview-shell";
     wrapper.dataset.embedKey = entry.key;
     wrapper.dataset.file = entry.filePath;
 
-    const header = document.createElement('div');
-    header.className = 'excalidraw-embed-header diagram-preview-toolbar';
+    const header = document.createElement("div");
+    header.className = "excalidraw-embed-header diagram-preview-toolbar";
 
-    const icon = document.createElement('span');
-    icon.className = 'excalidraw-embed-icon';
+    const icon = document.createElement("span");
+    icon.className = "excalidraw-embed-icon";
     icon.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19l7-7 3 3-7 7-3-3z"/><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/><path d="M2 2l7.586 7.586"/><circle cx="11" cy="11" r="2"/></svg>`;
 
-    const label = document.createElement('span');
-    label.className = 'excalidraw-embed-label';
-    label.textContent = entry.label.replace(/\.excalidraw$/i, '');
+    const label = document.createElement("span");
+    label.className = "excalidraw-embed-label";
+    label.textContent = entry.label.replace(/\.excalidraw$/i, "");
 
-    const openBtn = document.createElement('button');
-    openBtn.type = 'button';
-    openBtn.className = 'excalidraw-embed-btn diagram-preview-action-btn';
-    openBtn.title = 'Edit in Excalidraw';
-    openBtn.setAttribute('aria-label', 'Edit in Excalidraw');
-    setDiagramActionButtonIcon(openBtn, 'edit');
+    const openBtn = document.createElement("button");
+    openBtn.type = "button";
+    openBtn.className = "excalidraw-embed-btn diagram-preview-action-btn";
+    openBtn.title = "Edit in Excalidraw";
+    openBtn.setAttribute("aria-label", "Edit in Excalidraw");
+    setDiagramActionButtonIcon(openBtn, "edit");
 
-    const maxBtn = document.createElement('button');
-    maxBtn.type = 'button';
-    maxBtn.className = 'excalidraw-embed-btn diagram-preview-action-btn';
-    maxBtn.title = 'Maximize diagram';
-    maxBtn.setAttribute('aria-label', 'Maximize diagram');
-    setDiagramActionButtonIcon(maxBtn, 'maximize');
+    const maxBtn = document.createElement("button");
+    maxBtn.type = "button";
+    maxBtn.className = "excalidraw-embed-btn diagram-preview-action-btn";
+    maxBtn.title = "Maximize diagram";
+    maxBtn.setAttribute("aria-label", "Maximize diagram");
+    setDiagramActionButtonIcon(maxBtn, "maximize");
 
     header.append(icon, label);
     if (!this._isFilePreviewEntry(entry)) {
@@ -656,20 +685,20 @@ export class ExcalidrawEmbedController {
     }
     header.append(maxBtn);
 
-    const iframe = document.createElement('iframe');
-    iframe.className = 'excalidraw-embed-iframe';
+    const iframe = document.createElement("iframe");
+    iframe.className = "excalidraw-embed-iframe";
     iframe.dataset.instanceId = String(++this.instanceCounter);
     entry.instanceId = iframe.dataset.instanceId;
     iframe.src = this._buildIframeUrl(entry).toString();
     // The controller already lazy-hydrates embeds near the viewport, so the
     // iframe should start loading immediately once it has been mounted.
-    iframe.setAttribute('loading', 'eager');
+    iframe.setAttribute("loading", "eager");
     iframe.title = `Excalidraw: ${entry.filePath}`;
     iframe.style.height = `${DEFAULT_HEIGHT}px`;
 
-    const resizer = document.createElement('div');
-    resizer.className = 'excalidraw-embed-resizer';
-    resizer.title = 'Drag to resize';
+    const resizer = document.createElement("div");
+    resizer.className = "excalidraw-embed-resizer";
+    resizer.title = "Drag to resize";
     this._setupResizer(resizer, iframe, () => this._syncEntryLayout(entry));
 
     wrapper.append(header, iframe, resizer);
@@ -678,17 +707,20 @@ export class ExcalidrawEmbedController {
     let restoreHeight = `${DEFAULT_HEIGHT}px`;
 
     const syncMaximizeButtonState = () => {
-      setDiagramActionButtonIcon(maxBtn, isMaximized ? 'restore' : 'maximize');
-      maxBtn.title = isMaximized ? 'Restore diagram size' : 'Maximize diagram';
-      maxBtn.setAttribute('aria-label', isMaximized ? 'Restore diagram size' : 'Maximize diagram');
+      setDiagramActionButtonIcon(maxBtn, isMaximized ? "restore" : "maximize");
+      maxBtn.title = isMaximized ? "Restore diagram size" : "Maximize diagram";
+      maxBtn.setAttribute(
+        "aria-label",
+        isMaximized ? "Restore diagram size" : "Maximize diagram",
+      );
     };
 
     const exitMaximize = () => {
       if (!isMaximized) return;
       isMaximized = false;
-      wrapper.classList.remove('is-maximized');
+      wrapper.classList.remove("is-maximized");
       syncMaximizeButtonState();
-      document.body.classList.remove('excalidraw-maximized-open');
+      document.body.classList.remove("excalidraw-maximized-open");
       this._restoreWrapperMount(entry);
       iframe.style.height = restoreHeight;
       if (this.maximizedEmbed?.wrapper === wrapper) {
@@ -703,21 +735,21 @@ export class ExcalidrawEmbedController {
       isMaximized = true;
       restoreHeight = iframe.style.height || `${DEFAULT_HEIGHT}px`;
       this._mountWrapperInMaximizedRoot(entry);
-      wrapper.classList.add('is-maximized');
+      wrapper.classList.add("is-maximized");
       syncMaximizeButtonState();
-      document.body.classList.add('excalidraw-maximized-open');
+      document.body.classList.add("excalidraw-maximized-open");
       this.maximizedEmbed = { wrapper, exit: exitMaximize };
       this._syncEntryLayout(entry);
     };
 
-    maxBtn.addEventListener('click', () => {
+    maxBtn.addEventListener("click", () => {
       if (isMaximized) {
         exitMaximize();
       } else {
         enterMaximize();
       }
     });
-    openBtn.addEventListener('click', () => {
+    openBtn.addEventListener("click", () => {
       this.onOpenFile?.(entry.filePath);
     });
 
@@ -737,37 +769,45 @@ export class ExcalidrawEmbedController {
 
     const onPointerMove = (event) => {
       const delta = event.clientY - startY;
-      const newHeight = Math.min(Math.max(startHeight + delta, MIN_HEIGHT), MAX_HEIGHT);
+      const newHeight = Math.min(
+        Math.max(startHeight + delta, MIN_HEIGHT),
+        MAX_HEIGHT,
+      );
       iframe.style.height = `${newHeight}px`;
-      iframe.style.pointerEvents = 'none';
+      iframe.style.pointerEvents = "none";
     };
 
     const onPointerUp = () => {
-      iframe.style.pointerEvents = '';
-      document.removeEventListener('pointermove', onPointerMove);
-      document.removeEventListener('pointerup', onPointerUp);
+      iframe.style.pointerEvents = "";
+      document.removeEventListener("pointermove", onPointerMove);
+      document.removeEventListener("pointerup", onPointerUp);
       onResizeEnd?.();
     };
 
-    resizer.addEventListener('pointerdown', (event) => {
+    resizer.addEventListener("pointerdown", (event) => {
       event.preventDefault();
       startY = event.clientY;
       startHeight = iframe.offsetHeight;
-      document.addEventListener('pointermove', onPointerMove);
-      document.addEventListener('pointerup', onPointerUp);
+      document.addEventListener("pointermove", onPointerMove);
+      document.addEventListener("pointerup", onPointerUp);
     });
   }
 
   _ensureOverlayRoot() {
-    if (this.overlayRoot?.isConnected && this.overlayRoot.parentElement === this.previewElement) {
+    if (
+      this.overlayRoot?.isConnected &&
+      this.overlayRoot.parentElement === this.previewElement
+    ) {
       return this.overlayRoot;
     }
 
-    let overlayRoot = this.previewElement?.querySelector('[data-excalidraw-overlay-root="true"]');
+    let overlayRoot = this.previewElement?.querySelector(
+      '[data-excalidraw-overlay-root="true"]',
+    );
     if (!overlayRoot) {
-      overlayRoot = document.createElement('div');
-      overlayRoot.dataset.excalidrawOverlayRoot = 'true';
-      overlayRoot.className = 'excalidraw-embed-overlay-root';
+      overlayRoot = document.createElement("div");
+      overlayRoot.dataset.excalidrawOverlayRoot = "true";
+      overlayRoot.className = "excalidraw-embed-overlay-root";
       this.previewElement?.appendChild(overlayRoot);
     }
 
@@ -776,15 +816,20 @@ export class ExcalidrawEmbedController {
   }
 
   _ensureMaximizedRoot() {
-    if (this.maximizedRoot?.isConnected && this.maximizedRoot.parentElement === document.body) {
+    if (
+      this.maximizedRoot?.isConnected &&
+      this.maximizedRoot.parentElement === document.body
+    ) {
       return this.maximizedRoot;
     }
 
-    let maximizedRoot = document.body.querySelector('[data-excalidraw-maximized-root="true"]');
+    let maximizedRoot = document.body.querySelector(
+      '[data-excalidraw-maximized-root="true"]',
+    );
     if (!maximizedRoot) {
-      maximizedRoot = document.createElement('div');
-      maximizedRoot.dataset.excalidrawMaximizedRoot = 'true';
-      maximizedRoot.className = 'excalidraw-maximized-root';
+      maximizedRoot = document.createElement("div");
+      maximizedRoot.dataset.excalidrawMaximizedRoot = "true";
+      maximizedRoot.className = "excalidraw-maximized-root";
       document.body.appendChild(maximizedRoot);
     }
 
@@ -797,7 +842,7 @@ export class ExcalidrawEmbedController {
   }
 
   _getEntryMode(entry) {
-    return this._isFilePreviewEntry(entry) ? 'edit' : 'preview';
+    return this._isFilePreviewEntry(entry) ? "edit" : "preview";
   }
 
   _shouldInlineFilePreview(entry) {
@@ -805,14 +850,17 @@ export class ExcalidrawEmbedController {
   }
 
   _resetPlaceholderLayout(entry) {
-    if (!entry?.placeholder?.isConnected || this._shouldInlineFilePreview(entry)) {
+    if (
+      !entry?.placeholder?.isConnected ||
+      this._shouldInlineFilePreview(entry)
+    ) {
       return;
     }
 
-    entry.placeholder.classList.remove('is-hydrated');
-    entry.placeholder.removeAttribute('data-embed-hydrated');
-    entry.placeholder.style.height = '';
-    entry.placeholder.style.pointerEvents = '';
+    entry.placeholder.classList.remove("is-hydrated");
+    entry.placeholder.removeAttribute("data-embed-hydrated");
+    entry.placeholder.style.height = "";
+    entry.placeholder.style.pointerEvents = "";
   }
 
   _mountWrapperInMaximizedRoot(entry) {
@@ -824,11 +872,11 @@ export class ExcalidrawEmbedController {
     maximizedRoot.hidden = false;
     entry.restoreParent = entry.wrapper.parentElement || null;
     entry.restoreNextSibling = entry.wrapper.nextSibling || null;
-    entry.wrapper.style.position = '';
-    entry.wrapper.style.top = '';
-    entry.wrapper.style.left = '';
-    entry.wrapper.style.width = '';
-    entry.wrapper.style.margin = '';
+    entry.wrapper.style.position = "";
+    entry.wrapper.style.top = "";
+    entry.wrapper.style.left = "";
+    entry.wrapper.style.width = "";
+    entry.wrapper.style.margin = "";
     if (entry.wrapper.parentElement !== maximizedRoot) {
       maximizedRoot.appendChild(entry.wrapper);
     }
@@ -871,28 +919,34 @@ export class ExcalidrawEmbedController {
 
     const placeholder = entry.placeholder?.isConnected
       ? entry.placeholder
-      : this.previewElement?.querySelector(`.excalidraw-embed-placeholder[data-embed-key="${entry.key}"]`);
+      : this.previewElement?.querySelector(
+          `.excalidraw-embed-placeholder[data-embed-key="${entry.key}"]`,
+        );
 
     if (!placeholder) {
       return;
     }
 
     entry.placeholder = placeholder;
-    placeholder.classList.add('is-hydrated');
-    placeholder.dataset.embedHydrated = 'true';
-    placeholder.style.pointerEvents = 'none';
+    placeholder.classList.add("is-hydrated");
+    placeholder.dataset.embedHydrated = "true";
+    placeholder.style.pointerEvents = "none";
     if (this._isFilePreviewEntry(entry) && placeholder.childElementCount > 0) {
       placeholder.replaceChildren();
     }
 
-    const isMaximized = entry.wrapper.classList.contains('is-maximized');
-    const headerHeight = entry.wrapper.querySelector('.excalidraw-embed-header')?.offsetHeight || 0;
-    const iframeHeight = entry.iframe?.offsetHeight
-      || Number.parseFloat(entry.iframe?.style.height || '')
-      || DEFAULT_HEIGHT;
+    const isMaximized = entry.wrapper.classList.contains("is-maximized");
+    const headerHeight =
+      entry.wrapper.querySelector(".excalidraw-embed-header")?.offsetHeight ||
+      0;
+    const iframeHeight =
+      entry.iframe?.offsetHeight ||
+      Number.parseFloat(entry.iframe?.style.height || "") ||
+      DEFAULT_HEIGHT;
     const resizerHeight = isMaximized
       ? 0
-      : (entry.wrapper.querySelector('.excalidraw-embed-resizer')?.offsetHeight || 0);
+      : entry.wrapper.querySelector(".excalidraw-embed-resizer")
+          ?.offsetHeight || 0;
     const inlineHeight = Math.ceil(headerHeight + iframeHeight + resizerHeight);
 
     if (!isMaximized) {
@@ -900,22 +954,22 @@ export class ExcalidrawEmbedController {
     }
 
     placeholder.style.height = `${Math.ceil(entry.inlineHeightPx || inlineHeight || DEFAULT_HEIGHT)}px`;
-    entry.wrapper.style.pointerEvents = 'auto';
+    entry.wrapper.style.pointerEvents = "auto";
 
     if (isMaximized) {
-      entry.wrapper.style.position = '';
-      entry.wrapper.style.top = '';
-      entry.wrapper.style.left = '';
-      entry.wrapper.style.width = '';
-      entry.wrapper.style.margin = '';
+      entry.wrapper.style.position = "";
+      entry.wrapper.style.top = "";
+      entry.wrapper.style.left = "";
+      entry.wrapper.style.width = "";
+      entry.wrapper.style.margin = "";
       return;
     }
 
-    entry.wrapper.style.position = 'absolute';
+    entry.wrapper.style.position = "absolute";
     entry.wrapper.style.top = `${placeholder.offsetTop}px`;
     entry.wrapper.style.left = `${placeholder.offsetLeft}px`;
     entry.wrapper.style.width = `${placeholder.offsetWidth}px`;
-    entry.wrapper.style.margin = '0';
+    entry.wrapper.style.margin = "0";
   }
 
   syncLayout() {
@@ -927,7 +981,9 @@ export class ExcalidrawEmbedController {
   }
 
   _onPreviewClick(event) {
-    const loadButton = event.target.closest('.excalidraw-embed-placeholder-btn');
+    const loadButton = event.target.closest(
+      ".excalidraw-embed-placeholder-btn",
+    );
     if (!loadButton) {
       return;
     }
@@ -942,33 +998,33 @@ export class ExcalidrawEmbedController {
   _onMessage(event) {
     if (event.origin !== window.location.origin) return;
     const msg = event.data;
-    if (!msg || msg.source !== 'excalidraw-editor') return;
+    if (!msg || msg.source !== "excalidraw-editor") return;
 
     const entry = this._findEntryByContentWindow(event.source);
     if (!entry) {
       return;
     }
 
-    if (msg.type === 'ready') {
+    if (msg.type === "ready") {
       entry.isReady = true;
       this._clearEntryBootTimeout(entry);
       this._syncEntryUser(entry);
       this._postMessageToEntry(entry, {
-        source: 'collabmd-host',
-        type: 'set-theme',
-        theme: this.getTheme?.() || 'dark',
+        source: "collabmd-host",
+        type: "set-theme",
+        theme: this.getTheme?.() || "dark",
       });
       this._syncEntryFollowState(entry);
       return;
     }
 
-    if (msg.type === 'error') {
+    if (msg.type === "error") {
       entry.isReady = false;
       void this._handleEntryBootTimeout(entry);
       return;
     }
 
-    if (msg.type === 'disconnect-ready') {
+    if (msg.type === "disconnect-ready") {
       const request = this.pendingDisconnectRequests.get(msg.requestId);
       if (request?.entry === entry) {
         request.resolve(true);
@@ -977,7 +1033,7 @@ export class ExcalidrawEmbedController {
   }
 
   _onKeyDown(event) {
-    if (event.key === 'Escape') {
+    if (event.key === "Escape") {
       this._exitMaximizedEmbed();
     }
   }
@@ -987,7 +1043,7 @@ export class ExcalidrawEmbedController {
       this.maximizedEmbed.exit();
     }
     this.maximizedEmbed = null;
-    document.body.classList.remove('excalidraw-maximized-open');
+    document.body.classList.remove("excalidraw-maximized-open");
   }
 
   _postMessageToEntry(entry, payload) {
@@ -1001,13 +1057,13 @@ export class ExcalidrawEmbedController {
     }
 
     this._postMessageToEntry(entry, {
-      source: 'collabmd-host',
-      type: 'set-user',
+      source: "collabmd-host",
+      type: "set-user",
       user: {
-        color: localUser.color || '',
-        colorLight: localUser.colorLight || '',
-        name: localUser.name || '',
-        peerId: localUser.peerId || '',
+        color: localUser.color || "",
+        colorLight: localUser.colorLight || "",
+        name: localUser.name || "",
+        peerId: localUser.peerId || "",
       },
     });
   }
@@ -1018,8 +1074,8 @@ export class ExcalidrawEmbedController {
     }
 
     this._postMessageToEntry(entry, {
-      source: 'collabmd-host',
-      type: 'follow-user',
+      source: "collabmd-host",
+      type: "follow-user",
       peerId: entry.followedPeerId,
     });
   }

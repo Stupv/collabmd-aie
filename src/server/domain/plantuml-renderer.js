@@ -1,1 +1,1 @@
-export { PlantUmlRenderer } from '../infrastructure/plantuml/plantuml-renderer.js';
+export { PlantUmlRenderer } from "../infrastructure/plantuml/plantuml-renderer.js";
