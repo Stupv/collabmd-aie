@@ -4,7 +4,7 @@ const DEFAULT_AUTH_CONFIG = {
   enabled: false,
   implemented: true,
   loginEndpoint: "/api/auth/oidc/login",
-  passwordLabel: "Password",
+  passwordLabel: "Password", // pragma: allowlist secret — UI label, not a credential
   provider: "",
   requiresLogin: false,
   sessionEndpoint: "/api/auth/session",

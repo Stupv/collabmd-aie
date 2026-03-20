@@ -4,14 +4,54 @@ import { loadConfig } from "./config/env.js";
 import { createAppServer } from "./create-app-server.js";
 import { prepareConfigForStartup } from "./startup/git-remote-bootstrap.js";
 
+export function printAuthWarnings(authStrategy, tunnelUrl) {
+  if (authStrategy !== "none") return;
+  if (tunnelUrl) {
+    process.stderr.write(
+      [
+        "",
+        "WARNING: SECURITY",
+        "----------------------------------------------",
+        "Authentication is disabled (--auth none) and a",
+        "Cloudflare tunnel is active:",
+        `  ${tunnelUrl}`,
+        "Anyone with this URL has FULL WRITE access to",
+        "your vault. To add password protection, restart",
+        "with: --auth password",
+        "----------------------------------------------",
+        "",
+      ].join("\n"),
+    );
+  } else {
+    process.stderr.write(
+      "WARNING: Auth is disabled. Anyone on the local network has full write access to this vault.\n",
+    );
+  }
+}
+
 let shutdownPromise = null;
 const config = loadConfig();
+let bootstrapResult;
 
 try {
-  await prepareConfigForStartup(config);
+  bootstrapResult = await prepareConfigForStartup(config);
 } catch (error) {
   console.error("[server] Failed to prepare git-backed vault:", error.message);
   process.exit(1);
+}
+
+if (bootstrapResult?.skippedRemoteSync) {
+  process.stderr.write(
+    [
+      "",
+      "WARNING: Remote sync skipped — vault may be behind the remote",
+      `Reason: ${bootstrapResult.reason}`,
+      "Dirty files:",
+      ...(bootstrapResult.dirtyFiles || []).map((f) => `  - ${f}`),
+      "Commit or stash local changes and restart to sync from remote.",
+      "",
+    ].join("\n"),
+  );
 }
 
 const server = createAppServer(config);
@@ -70,6 +110,7 @@ server
       console.log("  auth: none");
     }
     console.log("");
+    printAuthWarnings(server.config.auth.strategy);
   })
   .catch(async (error) => {
     await config.git?.cleanup?.();

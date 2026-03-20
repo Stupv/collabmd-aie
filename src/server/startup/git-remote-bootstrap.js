@@ -133,18 +133,6 @@ async function getOriginUrl(vaultDir, options = {}) {
   ).trim();
 }
 
-async function hasCleanWorkingTree(vaultDir, options = {}) {
-  const status = await execGit(
-    ["status", "--porcelain=v1", "--untracked-files=all"],
-    {
-      ...options,
-      cwd: vaultDir,
-    },
-  );
-
-  return status.trim().length === 0;
-}
-
 async function localBranchExists(vaultDir, branchName, options = {}) {
   try {
     await execGit(
@@ -203,11 +191,28 @@ async function updateExistingCheckout(vaultDir, repoUrl, options = {}) {
     );
   }
 
-  if (!(await hasCleanWorkingTree(vaultDir, options))) {
+  const statusOutput = await execGit(
+    ["status", "--porcelain=v1", "--untracked-files=all"],
+    {
+      ...options,
+      cwd: vaultDir,
+    },
+  );
+
+  if (statusOutput.trim().length > 0) {
+    const dirtyFiles = statusOutput
+      .trim()
+      .split("\n")
+      .map((line) => line.slice(3).trim())
+      .filter(Boolean);
+
     console.warn(
       `[git] Detected dirty working tree in "${vaultDir}". Skipping automatic sync. Use POST /api/git/pull to update manually after resolving uncommitted changes.`,
     );
     return {
+      dirtyFiles,
+      reason: "dirty working tree",
+      skippedRemoteSync: true,
       syncSkipped: true,
     };
   }
@@ -240,6 +245,7 @@ async function updateExistingCheckout(vaultDir, repoUrl, options = {}) {
   });
 
   return {
+    skippedRemoteSync: false,
     syncSkipped: false,
   };
 }
@@ -401,7 +407,7 @@ export async function prepareConfigForStartup(config, options = {}) {
     config.gitEnabled = config.git.enabled;
 
     if (!config.git.remote.enabled) {
-      return config;
+      return { skippedRemoteSync: false, syncSkipped: false };
     }
 
     if (await pathExists(config.vaultDir)) {
@@ -432,7 +438,9 @@ export async function prepareConfigForStartup(config, options = {}) {
           );
         }
 
-        return config;
+        return (
+          checkoutState || { skippedRemoteSync: false, syncSkipped: false }
+        );
       }
 
       if (await isDirectoryEmpty(config.vaultDir)) {
@@ -445,7 +453,7 @@ export async function prepareConfigForStartup(config, options = {}) {
           ...options,
           commandEnv: config.git.commandEnv,
         });
-        return config;
+        return { skippedRemoteSync: false, syncSkipped: false };
       }
 
       throw new Error(
@@ -463,7 +471,7 @@ export async function prepareConfigForStartup(config, options = {}) {
       ...options,
       commandEnv: config.git.commandEnv,
     });
-    return config;
+    return { skippedRemoteSync: false, syncSkipped: false };
   } catch (error) {
     await runtimeCleanup();
     throw error;

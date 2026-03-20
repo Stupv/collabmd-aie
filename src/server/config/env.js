@@ -256,21 +256,35 @@ function loadOidcConfig(overrides = {}, { basePath = "" } = {}) {
   };
 }
 
-function resolveSessionSecret(overrides = {}) {
+const MIN_SECRET_LENGTH = 32;
+
+export function resolveSessionSecret(overrides = {}) {
   if (overrides.sessionSecret) {
     return overrides.sessionSecret;
   }
 
-  const rawSessionSecret = normalizeOptionalString(process.env.SESSION_SECRET);
-  if (rawSessionSecret) {
-    if (rawSessionSecret.length < 32) {
-      console.error("SESSION_SECRET must be at least 32 characters long.");
-      process.exit(1);
+  const envSecret = normalizeOptionalString(
+    process.env.COLLABMD_SESSION_SECRET || process.env.SESSION_SECRET,
+  );
+  if (envSecret) {
+    if (envSecret.length < MIN_SECRET_LENGTH) {
+      throw new Error(
+        `COLLABMD_SESSION_SECRET must be at least ${MIN_SECRET_LENGTH} characters. ` +
+          `Received ${envSecret.length} characters. Aborting startup.`,
+      );
     }
-    return rawSessionSecret;
+    return envSecret;
   }
 
-  return process.env.AUTH_SESSION_SECRET || createRandomSessionSecret();
+  if (process.env.AUTH_SESSION_SECRET) {
+    return process.env.AUTH_SESSION_SECRET;
+  }
+
+  const ephemeral = createRandomSessionSecret();
+  console.warn(
+    " No COLLABMD_SESSION_SECRET set — using ephemeral session secret. Sessions will not survive restarts.",
+  );
+  return ephemeral;
 }
 
 export function loadConfig(overrides = {}) {

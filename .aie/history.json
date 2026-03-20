@@ -97,5 +97,34 @@
     "run_type": "review",
     "findings_count": 22,
     "backlog_items_count": 0
+  },
+  {
+    "run_id": "run-007",
+    "project_name": "collabmd",
+    "started_at": "2026-03-20T12:00:01.922757Z",
+    "status": "completed",
+    "metrics_summary": {},
+    "proposals_count": 0,
+    "tasks_count": 0,
+    "run_type": "review",
+    "findings_count": 18,
+    "backlog_items_count": 0
+  },
+  {
+    "run_id": "run-006",
+    "project_name": "collabmd",
+    "started_at": "2026-03-20T11:59:59.884796Z",
+    "status": "completed",
+    "metrics_summary": {
+      "eslint_violations": 1.0,
+      "prettier_violations": 0.0,
+      "dockerfile_issues": 0.0,
+      "secrets_detected": 5.0
+    },
+    "proposals_count": 5,
+    "tasks_count": 5,
+    "run_type": "single",
+    "findings_count": 0,
+    "backlog_items_count": 0
   }
 ]

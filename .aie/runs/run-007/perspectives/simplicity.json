@@ -1,0 +1,148 @@
+{
+  "perspective_name": "simplicity",
+  "raw_output": {
+    "findings": [
+      {
+        "id": "R-001",
+        "severity": "warning",
+        "title": "PreviewRenderer duplicates hydration logic already abstracted into dedicated hydrator classes",
+        "description": "src/client/application/preview-renderer.js (488 lines) contains ~20 paired Mermaid/PlantUML method duplicates — cancelMermaidHydration/cancelPlantUmlHydration, setupMermaidHydration/setupPlantUmlHydration, hydrateVisibleMermaids/hydrateVisiblePlantUmls, enqueueMermaidShell/enqueuePlantUmlShell, scheduleMermaidHydration/schedulePlantUmlHydration, flushMermaidHydrationQueue/flushPlantUmlHydrationQueue, reconcileHydratedMermaids/reconcileHydratedPlantUmls, syncPreservedMermaidShell/syncPreservedPlantUmlShell, preserveHydratedMermaidsForCommit/preserveHydratedPlantUmlsForCommit, enhanceMermaidDiagram/enhancePlantUmlDiagram, createMermaidZoomButton/createPlantUmlToolButton, and more. The codebase already has DiagramPreviewHydrator (417 lines), MermaidPreviewHydrator (627 lines), and PlantUmlPreviewHydrator (611 lines) that are clearly meant to own exactly this responsibility. PreviewRenderer appears to be a legacy monolith that was never fully refactored to delegate to the hydrator classes, resulting in two parallel implementations of the same logic. Any bug in hydration behaviour must be fixed in multiple places.",
+        "affected_files": [
+          "src/client/application/preview-renderer.js",
+          "src/client/application/diagram-preview-hydrator.js",
+          "src/client/application/mermaid-preview-hydrator.js",
+          "src/client/application/plantuml-preview-hydrator.js"
+        ],
+        "affected_symbols": [
+          "PreviewRenderer",
+          "MermaidPreviewHydrator",
+          "PlantUmlPreviewHydrator",
+          "DiagramPreviewHydrator"
+        ],
+        "recommendation": "Complete the refactoring: have PreviewRenderer own and delegate to MermaidPreviewHydrator and PlantUmlPreviewHydrator instances rather than re-implementing their logic inline. All the paired mermaid*/plantUml* methods in PreviewRenderer should become thin delegation calls or be removed entirely once the hydrators are the authoritative owners.",
+        "effort_to_fix": "large"
+      },
+      {
+        "id": "R-002",
+        "severity": "warning",
+        "title": "Twelve zoom/pan utility functions duplicated verbatim between the two diagram hydrators",
+        "description": "Both src/client/application/mermaid-preview-hydrator.js and src/client/application/plantuml-preview-hydrator.js define an identical set of module-level functions: calculateDefaultZoom, applyZoom, getViewportCenter, restoreViewportCenter, animateZoomTo, tick, zoomBy, resetZoomToFit, scheduleResetZoomToFit, syncMaximizeButtonState, setMaximizedState, stopPanning. These are listed identically in the symbol summary for both files. src/client/application/preview-diagram-utils.js already exists as a shared utility module for exactly this kind of shared diagram logic (it already exports requestIdleRender, cancelIdleRender, getSvgSize, etc.), yet these 12 functions were not placed there.",
+        "affected_files": [
+          "src/client/application/mermaid-preview-hydrator.js",
+          "src/client/application/plantuml-preview-hydrator.js",
+          "src/client/application/preview-diagram-utils.js"
+        ],
+        "affected_symbols": [
+          "calculateDefaultZoom",
+          "applyZoom",
+          "getViewportCenter",
+          "restoreViewportCenter",
+          "animateZoomTo",
+          "tick",
+          "zoomBy",
+          "resetZoomToFit",
+          "scheduleResetZoomToFit",
+          "syncMaximizeButtonState",
+          "setMaximizedState",
+          "stopPanning"
+        ],
+        "recommendation": "Extract all 12 functions into preview-diagram-utils.js (or a new preview-zoom-utils.js if they are voluminous) and import them in both hydrator files. This halves the code to maintain for the zoom/pan feature.",
+        "effort_to_fix": "small"
+      },
+      {
+        "id": "R-003",
+        "severity": "warning",
+        "title": "WorkspaceCoordinator constructor accepts approximately 40 named parameters",
+        "description": "WorkspaceCoordinator.constructor in src/client/application/workspace-coordinator.js takes a single destructured options object with ~40 distinct named parameters (attachEditorScroller, beginDocumentLoad, cleanupAfterSessionDestroy, createEditorSession, getDisplayName, getFileList, getLineWrappingEnabled, getLocalUser, getStoredUserName, getTheme, isExcalidrawFile, isImageFile, isMermaidFile, isPlantUmlFile, isTabActive, loadBootstrapContent, loadEditorSessionClass, loadBacklinks, onBeforeFileOpen, onConnectionChange, onContentChange, onCommentsChange, onFileAwarenessChange, onFileOpenError, onFileOpenReady, onImagePaste, onSelectionChange, onSessionAssigned, onFileOpenMetric, onRenderExcalidrawPreview, onRenderImagePreview, onSyncWrapToggle, onUpdateActiveFile, onUpdateCurrentFile, onUpdateLobbyCurrentFile, onUpdateVisibleChrome, onViewModeReset, renderPresence, scrollContainerForSession, showEditorLoading, stateStore). This makes the class nearly impossible to reason about in isolation and signals it has absorbed too many responsibilities. WorkspaceChromeController also has ~18 constructor parameters.",
+        "affected_files": [
+          "src/client/application/workspace-coordinator.js",
+          "src/client/application/workspace-chrome-controller.js"
+        ],
+        "affected_symbols": [
+          "WorkspaceCoordinator",
+          "WorkspaceChromeController"
+        ],
+        "recommendation": "Group related callbacks into sub-objects or intermediate services. For example, all the file-kind predicates (isExcalidrawFile, isImageFile, isMermaidFile, isPlantUmlFile) could be a single FileKindService; all the onXxx event callbacks could be grouped into an EventBus or typed handler objects. The goal is to reduce the constructor to under 10 conceptually distinct dependencies.",
+        "effort_to_fix": "large"
+      },
+      {
+        "id": "R-004",
+        "severity": "warning",
+        "title": "generatePeerId and normalizeUserName duplicated across domain modules",
+        "description": "generatePeerId is defined independently in both src/client/domain/room.js and src/client/domain/excalidraw-collaboration.js. normalizeUserName is defined independently in both src/client/domain/room.js and src/client/domain/excalidraw-scene.js. These are small pure functions with identical names and almost certainly identical semantics. Having two canonical sources of truth for identity generation means divergence over time and confusion about which to import.",
+        "affected_files": [
+          "src/client/domain/room.js",
+          "src/client/domain/excalidraw-collaboration.js",
+          "src/client/domain/excalidraw-scene.js"
+        ],
+        "affected_symbols": [
+          "generatePeerId",
+          "normalizeUserName"
+        ],
+        "recommendation": "Keep a single implementation in room.js (which already exports getLocalPeerId, getLocalUserId, normalizeUserName, createRandomUser) and import from it in excalidraw-collaboration.js and excalidraw-scene.js. Delete the local duplicates.",
+        "effort_to_fix": "trivial"
+      },
+      {
+        "id": "R-005",
+        "severity": "warning",
+        "title": "requestIdleRender / cancelIdleRender / isNearViewport duplicated between preview-diagram-utils and excalidraw-embed-controller",
+        "description": "src/client/application/preview-diagram-utils.js exports requestIdleRender, cancelIdleRender, and isNearViewport as shared utilities. src/client/presentation/excalidraw-embed-controller.js (1082 lines) locally re-defines its own requestIdleRender, cancelIdleRender, and isNearViewport functions at the top of the file rather than importing from the shared module. This is confirmed by both the symbol summary (which shows these as private functions in excalidraw-embed-controller.js) and the exports list in preview-diagram-utils.js.",
+        "affected_files": [
+          "src/client/presentation/excalidraw-embed-controller.js",
+          "src/client/application/preview-diagram-utils.js"
+        ],
+        "affected_symbols": [
+          "requestIdleRender",
+          "cancelIdleRender",
+          "isNearViewport"
+        ],
+        "recommendation": "Remove the three private functions from excalidraw-embed-controller.js and import requestIdleRender, cancelIdleRender, and isNearViewport from preview-diagram-utils.js instead.",
+        "effort_to_fix": "trivial"
+      },
+      {
+        "id": "R-006",
+        "severity": "info",
+        "title": "BrowserNavigationPort is a zero-logic delegation wrapper around three already-exported functions",
+        "description": "src/client/infrastructure/browser-navigation-port.js defines a class with three instance methods — getHashRoute(), navigateToFile(), navigateToGitDiff() — each of which is a single-line call to the identically-named function imported from runtime-config.js. The class adds no state, no error handling, no transformation, and no testability benefit. The same is visible in the full source: every method body is exactly one line delegating to the imported function.",
+        "affected_files": [
+          "src/client/infrastructure/browser-navigation-port.js",
+          "src/client/infrastructure/runtime-config.js"
+        ],
+        "affected_symbols": [
+          "BrowserNavigationPort"
+        ],
+        "recommendation": "Either (a) remove BrowserNavigationPort and have callers import the three functions directly from runtime-config.js, or (b) if the class abstraction is genuinely needed for testing/injection purposes, document that intent clearly. As written, the class is pure noise.",
+        "effort_to_fix": "small"
+      },
+      {
+        "id": "R-007",
+        "severity": "info",
+        "title": "src/client/domain/vault-api-client.js is a trivial re-export indirection with no added value",
+        "description": "The entire file src/client/domain/vault-api-client.js consists of two lines that re-export VaultApiClient and vaultApiClient from src/client/infrastructure/vault-api-client.js. It adds no transformation, aliasing, or domain adaptation. Callers importing from the domain path get exactly the same symbols as the infrastructure path, making the intermediate file purely an indirection cost (an extra module to trace when debugging, another file in the tree to maintain).",
+        "affected_files": [
+          "src/client/domain/vault-api-client.js",
+          "src/client/infrastructure/vault-api-client.js"
+        ],
+        "affected_symbols": [
+          "VaultApiClient",
+          "vaultApiClient"
+        ],
+        "recommendation": "Remove src/client/domain/vault-api-client.js and update all importers to import directly from src/client/infrastructure/vault-api-client.js. If the domain/infrastructure separation is important, add a comment in the infrastructure file explaining its dual role rather than maintaining a pass-through module.",
+        "effort_to_fix": "small"
+      }
+    ],
+    "summary": "The codebase shows a clear pattern of incomplete refactoring: dedicated hydrator classes (DiagramPreviewHydrator, MermaidPreviewHydrator, PlantUmlPreviewHydrator) were created to decompose diagram rendering concerns, but PreviewRenderer still contains a parallel inline implementation of all the same logic — effectively doubling the code surface for hydration bugs. The same abstraction failure appears at a smaller scale: 12 zoom/pan utility functions are copy-pasted between the two hydrator files despite a shared preview-diagram-utils module existing for exactly this purpose, and three idle-render utilities are re-implemented locally in ExcalidrawEmbedController despite being exported from that shared module. Identity primitives (generatePeerId, normalizeUserName) are independently redefined in multiple domain modules. Two structural simplicity issues round out the picture: WorkspaceCoordinator's ~40-parameter constructor signals excessive responsibility aggregation, and a zero-logic BrowserNavigationPort wrapper class adds indirection without value."
+  },
+  "metadata": {
+    "model": "claude-sonnet-4-6",
+    "stage": "review_simplicity",
+    "input_tokens": 4,
+    "output_tokens": 5305,
+    "duration_seconds": 88.09
+  },
+  "success": true,
+  "error": null,
+  "error_type": null,
+  "error_detail": null,
+  "duration_seconds": 88.09
+}

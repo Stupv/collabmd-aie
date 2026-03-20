@@ -8,7 +8,7 @@ import {
 } from "./session-cookie.js";
 
 export const AUTH_STRATEGY_NONE = "none";
-export const AUTH_STRATEGY_PASSWORD = "password";
+export const AUTH_STRATEGY_PASSWORD = "password"; // pragma: allowlist secret — strategy enum value, not a credential
 export const AUTH_STRATEGY_OIDC = "oidc";
 
 export const SUPPORTED_AUTH_STRATEGIES = new Set([
@@ -21,7 +21,7 @@ const OIDC_FLOW_TTL_MS = 10 * 60 * 1000;
 const OIDC_PROVIDER_GOOGLE = "google";
 
 export function createRandomAuthPassword(length = 18) {
-  const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789";
+  const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789"; // pragma: allowlist secret — character set for random generation, not a credential
   const bytes = randomBytes(length);
   let password = "";
 
@@ -229,7 +229,7 @@ function buildClientConfig(authConfig, { basePath = "" } = {}) {
     return {
       enabled: true,
       implemented: true,
-      passwordLabel: "Host password",
+      passwordLabel: "Host password", // pragma: allowlist secret — UI label, not a credential
       requiresLogin: true,
       sessionEndpoint,
       statusEndpoint,
@@ -276,7 +276,8 @@ function createPasswordStrategy(
     },
 
     createSession(req, body = {}) {
-      if (typeof body.password !== "string" || !body.password) {
+      // prettier-ignore
+      if (typeof body.password !== "string" || !body.password) { // pragma: allowlist secret — request field name, not a credential
         return createResponse(
           400,
           { error: "Missing password" },

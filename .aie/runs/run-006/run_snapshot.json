@@ -1,0 +1,784 @@
+{
+  "metadata": {
+    "run_id": "run-006",
+    "project_name": "collabmd",
+    "project_path": "/projects/external/collabmd",
+    "started_at": "2026-03-20T11:59:59.884796Z",
+    "completed_at": "2026-03-20T12:11:40.750531Z",
+    "status": "completed",
+    "stages_completed": [
+      "measure",
+      "understand",
+      "discover",
+      "formulate"
+    ],
+    "llm_calls": [
+      {
+        "model": "claude-haiku-4-5-20251001",
+        "stage": "1a_metric_parser",
+        "input_tokens": 3448,
+        "output_tokens": 2757,
+        "duration_seconds": 27.52
+      },
+      {
+        "model": "claude-sonnet-4-6",
+        "stage": "1b_dependency_mapper",
+        "input_tokens": 4,
+        "output_tokens": 2438,
+        "duration_seconds": 60.62
+      },
+      {
+        "model": "claude-sonnet-4-6",
+        "stage": "1c_doc_understanding",
+        "input_tokens": 4,
+        "output_tokens": 1806,
+        "duration_seconds": 68.71
+      },
+      {
+        "model": "claude-sonnet-4-6",
+        "stage": "2a_code_sweep",
+        "input_tokens": 4,
+        "output_tokens": 4205,
+        "duration_seconds": 212.83
+      },
+      {
+        "model": "claude-sonnet-4-6",
+        "stage": "2b_feature_sweep",
+        "input_tokens": 4,
+        "output_tokens": 3321,
+        "duration_seconds": 75.67
+      },
+      {
+        "model": "claude-sonnet-4-6",
+        "stage": "3a_task_generator",
+        "input_tokens": 3,
+        "output_tokens": 6015,
+        "duration_seconds": 241.42
+      }
+    ],
+    "total_duration_seconds": 700.865735,
+    "aie_version": "2.0.0",
+    "run_type": "single",
+    "reconciliation_method": "none"
+  },
+  "metrics_before": {
+    "project_name": "collabmd",
+    "project_path": "/projects/external/collabmd",
+    "metrics": {
+      "eslint_violations": {
+        "metric_id": "eslint_violations",
+        "value": 1.0,
+        "unit": "count",
+        "raw_output": "[{\"filePath\":\"/projects/external/collabmd/bin/collabmd.js\",\"messages\":[],\"suppressedMessages\":[],\"errorCount\":0,\"fatalErrorCount\":0,\"warningCount\":0,\"fixableErrorCount\":0,\"fixableWarningCount\":0,\"usedDeprecatedRules\":[]},{\"filePath\":\"/projects/external/collabmd/eslint.config.js\",\"messages\":[],\"suppressedMessages\":[],\"errorCount\":0,\"fatalErrorCount\":0,\"warningCount\":0,\"fixableErrorCount\":0,\"fixableWarningCount\":0,\"usedDeprecatedRules\":[]},{\"filePath\":\"/projects/external/collabmd/playwright.config.js\",\"messages\":[],\"suppressedMessages\":[],\"errorCount\":0,\"fatalErrorCount\":0,\"warningCount\":0,\"fixableErrorCount\":0,\"fixableWarningCount\":0,\"usedDeprecatedRules\":[]},{\"filePath\":\"/projects/external/collabmd/scripts/build-client.mjs\",\"messages\":[],\"suppressedMessages\":[],\"errorCount\":0,\"fatalErrorCount\":0,\"warningCount\":0,\"fixableErrorCount\":0,\"fixableWarningCount\":0,\"usedDeprecatedRules\":[]},{\"filePath\":\"/projects/external/collabmd/scripts/capture-readme-assets.mjs\",\"messages\":[],\"suppressedMessages\":[],\"errorCount\":0,\"fatalErrorCount\":0,\"warningCount\":0,\"fixableErrorCount\":0,\"fixableWarningCount\":0,\"usedDeprecatedRules\":[]},{\"filePath\":\"/projects/external/collabmd/scripts/cloudflare-tunnel.mjs\",\"messages\":[],\"suppressedMessages\":[],\"errorCount\":0,\"fatalErrorCount\":0,\"warningCount\":0,\"fixableErrorCount\":0,\"fixableWarningCount\":0,\"usedDeprecatedRules\":[]},{\"filePath\":\"/projects/external/collabmd/scripts/local-plantuml-compose.mjs\",\"messages\":[],\"suppressedMessages\":[],\"errorCount\":0,\"fatalErrorCount\":0,\"warningCount\":0,\"fixableErrorCount\":0,\"fixableWarningCount\":0,\"usedDeprecatedRules\":[]},{\"filePath\":\"/projects/external/collabmd/scripts/render-homebrew-formula.mjs\",\"messages\":[],\"suppressedMessages\":[],\"errorCount\":0,\"fatalErrorCount\":0,\"warningCount\":0,\"fixableErrorCount\":0,\"fixableWarningCount\":0,\"usedDeprecatedRules\":[]},{\"filePath\":\"/projects/external/collabmd/server.js\",\"messages\":[],\"suppressedMessages\":[],\"errorCount\":0,\"fatalErrorCount\":0,\"warningCount\":0,\"fixableErrorCount\":0,\"fixableWarningCount\":0,\"usedDeprecatedRules\":[]},{\"filePath\":\"/projects/external/collabmd/src/client/application/app-shell-elements.js\",\"messages\":[],\"suppressedMessages\":[],\"errorCount\":0,\"fatalErrorCount\":0,\"warningCount\":0,\"fixableErrorCount\":0,\"fixableWarningCount\":0,\"usedDeprecatedRules\":[]},{\"filePath\":\"/projects/external/collabmd/src/client/application/app-shell/chat-feature.js\",\"messages\":[],\"suppressedMessages\":[],\"errorCount\":0,\"fatalErrorCount\":0,\"warningCount\":0,\"fixableErrorCount\":0,\"fixableWarningCount\":0,\"usedDeprecatedRules\":[]},{\"filePath\":\"/projects/external/collabmd/src/client/application/app-shell/comments-feature.js\",\"messages\":[],\"suppressedMessages\":[],\"errorCount\":0,\"fatalErrorCount\":0,\"warningCount\":0,\"fixableErrorCount\":0,\"fixableWarningCount\":0,\"usedDeprecatedRules\":[]},{\"filePath\":\"/projects/external/collabmd/src/client/application/app-shell/git-feature.js\",\"messages\":[],\"suppressedMessages\":[],\"errorCount\":0,\"fatalErrorCount\":0,\"warningCount\":0,\"fixableErrorCount\":0,\"fixableWarningCount\":0,\"usedDeprecatedRules\":[]},{\"filePath\":\"/projects/external/collabmd/src/client/application/app-shell/presence-feature.js\",\"messages\":[],\"suppressedMessages\":[],\"errorCount\":0,\"fatalErrorCount\":0,\"warningCount\":0,\"fixableErrorCount\":0,\"fixableWarningCount\":0,\"usedDeprecatedRules\":[]},{\"filePath\":\"/projects/external/collabmd/src/client/application/app-shell/ui-feature.js\",\"messages\":[],\"suppressedMessages\":[],\"errorCount\":0,\"fatalErrorCount\":0,\"warningCount\":0,\"fixableErrorCount\":0,\"fixableWarningCount\":0,\"usedDeprecatedRules\":[]},{\"filePath\":\"/projects/external/collabmd/src/client/application/app-shell/workspace-feature.js\",\"messages\":[],\"suppressedMessages\":[],\"errorCount\":0,\"fatalErrorCount\":0,\"warningCount\":0,\"fixableErrorCount\":0,\"fixableWarningCount\":0,\"usedDeprecatedRules\":[]},{\"filePath\":\"/projects/external/collabmd/src/client/application/diagram-preview-hydrator.js\",\"messages\":[],\"suppressedMessages\":[],\"errorCount\":0,\"fatalErrorCount\":0,\"warningCount\":0,\"fixableErrorCount\":0,\"fixableWarningCount\":0,\"usedDeprecatedRules\":[]},{\"filePath\":\"/projects/external/collabmd/src/client/application/file-open-lifecycle.js\",\"messages\":[],\"suppressedMessages\":[],\"errorCount\":0,\"fatalErrorCount\":0,\"warningCount\":0,\"fixableErrorCount\":0,\"fixableWarningCount\":0,\"usedDeprecatedRules\":[]},{\"filePath\":\"/projects/external/collabmd/src/client/application/mermaid-preview-hydrator.js\",\"messages\":[],\"suppressedMessages\":[],\"errorCount\":0,\"fatalErrorCount\":0,\"warningCount\":0,\"fixableErrorCount\":0,\"fixableWarningCount\":0,\"usedDeprecatedRules\":[]},{\"filePath\":\"/projects/external/collabmd/src/client/application/plantuml-preview-hydrator.js\",\"messages\":[],\"suppressedMessages\":[],\"errorCount\":0,\"fatalErrorCount\":0,\"warningCount\":0,\"fixableErrorCount\":0,\"fixableWarningCount\":0,\"usedDeprecatedRules\":[]},{\"filePath\":\"/projects/external/collabmd/src/client/application/preview-diagram-utils.js\",\"messages\":[],\"suppressedMessages\":[],\"errorCount\":0,\"fatalErrorCount\":0,\"warningCount\":0,\"fixableErrorCount\":0,\"fixableWarningCount\":0,\"usedDeprecatedRules\":[]},{\"filePath\":\"/projects/external/collabmd/src/client/application/preview-render-compiler.js\",\"messages\":[],\"suppressedMessages\":[],\"errorCount\":0,\"fatalErrorCount\":0,\"warningCount\":0,\"fixableErrorCount\":0,\"fixableWarningCount\":0,\"usedDeprecatedRules\":[]},{\"filePath\":\"/projects/external/collabmd/src/client/application/preview-render-executor.js\",\"messages\":[],\"suppressedMessages\":[],\"errorCount\":0,\"fatalErrorCount\":0,\"warningCount\":0,\"fixableErrorCount\":0,\"fixableWarningCount\":0,\"usedDeprecatedRules\":[]},{\"filePath\":\"/projects/external/collabmd/src/client/application/preview-render-profile.js\",\"messages\":[],\"suppressedMessages\":[],\"errorCount\":0,\"fatalErrorCount\":0,\"warningCount\":0,\"fixableErrorCount\":0,\"fixableWarningCount\":0,\"usedDeprecatedRules\":[]},{\"filePath\":\"/projects/external/collabmd/src/client/application/preview-render-scheduler.js\",\"messages\":[],\"suppressedMessages\":[],\"errorCount\":0,\"fatalErrorCount\":0,\"warningCount\":0,\"fixableErrorCount\":0,\"fixableWarningCount\":0,\"usedDeprecatedRules\":[]},{\"filePath\":\"/projects/external/collabmd/src/client/application/preview-render-worker.js\",\"messages\":[],\"suppressedMessages\":[],\"errorCount\":0,\"fatalErrorCount\":0,\"warningCount\":0,\"fixableErrorCount\":0,\"fixableWarningCount\":0,\"usedDeprecatedRules\":[]},{\"filePath\":\"/projects/external/collabmd/src/client/application/preview-renderer.js\",\"messages\":[],\"suppressedMessages\":[],\"errorCount\":0,\"fatalErrorCount\":0,\"warningCount\":0,\"fixableErrorCount\":0,\"fixableWarningCount\":0,\"usedDeprecatedRules\":[]},{\"filePath\":\"/projects/external/collabmd/src/client/application/wiki-link-file-controller.js\",\"messages\":[],\"suppressedMessages\":[],\"errorCount\":0,\"fatalErrorCount\":0,\"warningCount\":0,\"fixableErrorCount\":0,\"fixableWarningCount\":0,\"usedDeprecatedRules\":[]},{\"filePath\":\"/projects/external/collabmd/src/client/application/workspace-chrome-controller.js\",\"messages\":[],\"suppressedMessages\":[],\"errorCount\":0,\"fatalErrorCount\":0,\"warningCount\":0,\"fixableErrorCount\":0,\"fixableWarningCount\":0,\"usedDeprecatedRules\":[]},{\"filePath\":\"/projects/external/collabmd/src/client/application/workspace-coordinator.js\",\"messages\":[],\"suppressedMessages\":[],\"errorCount\":0,\"fatalErrorCount\":0,\"warningCount\":0,\"fixableErrorCount\":0,\"fixableWarningCount\":0,\"usedDeprecatedRules\":[]},{\"filePath\":\"/projects/external/collabmd/src/client/application/workspace-preview-controller.js\",\"messages\":[],\"suppressedMessages\":[],\"errorCount\":0,\"fatalErrorCount\":0,\"warningCount\":0,\"fixableErrorCount\":0,\"fixableWarningCount\":0,\"usedDeprecatedRules\":[]},{\"filePath\":\"/projects/external/collabmd/src/client/application/workspace-route-controller.js\",\"messages\":[],\"suppressedMessages\":[],\"errorCount\":0,\"fatalErrorCount\":0,\"warningCount\":0,\"fixableErrorCount\":0,\"fixableWarningCount\":0,\"usedDeprecatedRules\":[]},{\"filePath\":\"/projects/external/collabmd/src/client/application/workspace-state-store.js\",\"messages\":[],\"suppressedMessages\":[],\"errorCount\":0,\"fatalErrorCount\":0,\"warningCount\":0,\"fixableErrorCount\":0,\"fixableWarningCount\":0,\"usedDeprecatedRules\":[]},{\"filePath\":\"/projects/external/collabmd/src/client/bootstrap/collabmd-app-shell.js\",\"messages\":[],\"suppressedMessages\":[],\"errorCount\":0,\"fatalErrorCount\":0,\"warningCount\":0,\"fixableErrorCount\":0,\"fixableWarningCount\":0,\"usedDeprecatedRules\":[]},{\"filePath\":\"/projects/external/collabmd/src/client/domain/diagram-action-icons.js\",\"messages\":[],\"suppressedMessages\":[],\"errorCount\":0,\"fatalErrorCount\":0,\"warningCount\":0,\"fixableErrorCount\":0,\"fixableWarningCount\":0,\"usedDeprecatedRules\":[]},{\"filePath\":\"/projects/external/collabmd/src/client/domain/excalidraw-collaboration.js\",\"messages\":[],\"suppressedMessages\":[],\"errorCount\":0,\"fatalErrorCount\":0,\"warningCount\":0,\"fixableErrorCount\":0,\"fixableWarningCount\":0,\"usedDeprecatedRules\":[]},{\"filePath\":\"/projects/external/collabmd/src/client/domain/excalidraw-scene.js\",\"messages\":[],\"suppressedMessages\":[],\"errorCount\":0,\"fatalErrorCount\":0,\"warningCount\":0,\"fixableErrorCount\":0,\"fixableWarningCount\":0,\"usedDeprecatedRules\":[]},{\"filePath\":\"/projects/external/collabmd/src/client/domain/markdown-formatting.js\",\"messages\":[],\"suppressedMessages\":[],\"errorCount\":0,\"fatalErrorCount\":0,\"warningCount\":0,\"fixableErrorCount\":0,\"fixableWarningCount\":0,\"usedDeprecatedRules\":[]},{\"filePath\":\"/projects/external/collabmd/src/client/domain/plantuml-language.js\",\"messages\":[],\"suppressedMessages\":[],\"errorCount\":0,\"fatalErrorCount\":0,\"warningCount\":0,\"fixableErrorCount\":0,\"fixableWarningCount\":0,\"usedDeprecatedRules\":[]},{\"filePath\":\"/projects/external/collabmd/src/client/domain/room.js\",\"messages\":[],\"suppressedMessages\":[],\"errorCount\":0,\"fatalErrorCount\":0,\"warningCount\":0,\"fixableErrorCount\":0,\"fixableWarningCount\":0,\"usedDeprecatedRules\":[]},{\"filePath\":\"/projects/external/collabmd/src/client/domain/runtime-paths.js\",\"messages\":[],\"suppressedMessages\":[],\"errorCount\":0,\"fatalErrorC\n... [truncated, 71619 chars total]",
+        "details": {
+          "by_rule": {
+            "unknown": 1
+          },
+          "by_severity": {
+            "warning": 1
+          },
+          "by_file": {
+            "/projects/external/collabmd/src/client/excalidraw-editor.js": 1
+          }
+        },
+        "collected_at": "2026-03-20T12:00:13.830757Z",
+        "duration_seconds": 13.92
+      },
+      "prettier_violations": {
+        "metric_id": "prettier_violations",
+        "value": 0.0,
+        "unit": "count",
+        "raw_output": "Checking formatting...\nAll matched files use Prettier code style!\n",
+        "details": {
+          "unformatted_files": []
+        },
+        "collected_at": "2026-03-20T12:00:13.715117Z",
+        "duration_seconds": 13.79
+      },
+      "dockerfile_issues": {
+        "metric_id": "dockerfile_issues",
+        "value": 0.0,
+        "unit": "count",
+        "raw_output": "[]",
+        "details": {
+          "violations": [],
+          "by_level": {}
+        },
+        "collected_at": "2026-03-20T12:00:00.198626Z",
+        "duration_seconds": 0.27
+      },
+      "secrets_detected": {
+        "metric_id": "secrets_detected",
+        "value": 5.0,
+        "unit": "count",
+        "raw_output": "{\n  \"version\": \"1.5.0\",\n  \"plugins_used\": [\n    {\n      \"name\": \"ArtifactoryDetector\"\n    },\n    {\n      \"name\": \"AWSKeyDetector\"\n    },\n    {\n      \"name\": \"AzureStorageKeyDetector\"\n    },\n    {\n      \"name\": \"Base64HighEntropyString\",\n      \"limit\": 4.5\n    },\n    {\n      \"name\": \"BasicAuthDetector\"\n    },\n    {\n      \"name\": \"CloudantDetector\"\n    },\n    {\n      \"name\": \"DiscordBotTokenDetector\"\n    },\n    {\n      \"name\": \"GitHubTokenDetector\"\n    },\n    {\n      \"name\": \"GitLabTokenDetector\"\n    },\n    {\n      \"name\": \"HexHighEntropyString\",\n      \"limit\": 3.0\n    },\n    {\n      \"name\": \"IbmCloudIamDetector\"\n    },\n    {\n      \"name\": \"IbmCosHmacDetector\"\n    },\n    {\n      \"name\": \"IPPublicDetector\"\n    },\n    {\n      \"name\": \"JwtTokenDetector\"\n    },\n    {\n      \"name\": \"KeywordDetector\",\n      \"keyword_exclude\": \"\"\n    },\n    {\n      \"name\": \"MailchimpDetector\"\n    },\n    {\n      \"name\": \"NpmDetector\"\n    },\n    {\n      \"name\": \"OpenAIDetector\"\n    },\n    {\n      \"name\": \"PrivateKeyDetector\"\n    },\n    {\n      \"name\": \"PypiTokenDetector\"\n    },\n    {\n      \"name\": \"SendGridDetector\"\n    },\n    {\n      \"name\": \"SlackDetector\"\n    },\n    {\n      \"name\": \"SoftlayerDetector\"\n    },\n    {\n      \"name\": \"SquareOAuthDetector\"\n    },\n    {\n      \"name\": \"StripeDetector\"\n    },\n    {\n      \"name\": \"TelegramBotTokenDetector\"\n    },\n    {\n      \"name\": \"TwilioKeyDetector\"\n    }\n  ],\n  \"filters_used\": [\n    {\n      \"path\": \"detect_secrets.filters.allowlist.is_line_allowlisted\"\n    },\n    {\n      \"path\": \"detect_secrets.filters.common.is_ignored_due_to_verification_policies\",\n      \"min_level\": 2\n    },\n    {\n      \"path\": \"detect_secrets.filters.heuristic.is_indirect_reference\"\n    },\n    {\n      \"path\": \"detect_secrets.filters.heuristic.is_likely_id_string\"\n    },\n    {\n      \"path\": \"detect_secrets.filters.heuristic.is_lock_file\"\n    },\n    {\n      \"path\": \"detect_secrets.filters.heuristic.is_not_alphanumeric_string\"\n    },\n    {\n      \"path\": \"detect_secrets.filters.heuristic.is_potential_uuid\"\n    },\n    {\n      \"path\": \"detect_secrets.filters.heuristic.is_prefixed_with_dollar_sign\"\n    },\n    {\n      \"path\": \"detect_secrets.filters.heuristic.is_sequential_string\"\n    },\n    {\n      \"path\": \"detect_secrets.filters.heuristic.is_swagger_file\"\n    },\n    {\n      \"path\": \"detect_secrets.filters.heuristic.is_templated_secret\"\n    }\n  ],\n  \"results\": {\n    \"src/client/infrastructure/auth-client.js\": [\n      {\n        \"type\": \"Secret Keyword\",\n        \"filename\": \"src/client/infrastructure/auth-client.js\",\n        \"hashed_secret\": \"8be3c943b1609fffbfc51aad666d0a04adf83c9d\",\n        \"is_verified\": false,\n        \"line_number\": 7\n      }\n    ],\n    \"src/server/auth/create-auth-service.js\": [\n      {\n        \"type\": \"Secret Keyword\",\n        \"filename\": \"src/server/auth/create-auth-service.js\",\n        \"hashed_secret\": \"5baa61e4c9b93f3f0682250b6cf8331b7ee68fd8\",\n        \"is_verified\": false,\n        \"line_number\": 11\n      },\n      {\n        \"type\": \"Base64 High Entropy String\",\n        \"filename\": \"src/server/auth/create-auth-service.js\",\n        \"hashed_secret\": \"8f617a83a2f4b3fa3aa116b1a4fa819531e20c72\",\n        \"is_verified\": false,\n        \"line_number\": 24\n      },\n      {\n        \"type\": \"Secret Keyword\",\n        \"filename\": \"src/server/auth/create-auth-service.js\",\n        \"hashed_secret\": \"e316d061640d7f24635624ea3c205ecafe138cfb\",\n        \"is_verified\": false,\n        \"line_number\": 232\n      },\n      {\n        \"type\": \"Secret Keyword\",\n        \"filename\": \"src/server/auth/create-auth-service.js\",\n        \"hashed_secret\": \"ecb252044b5ea0f679ee78ec1a12904739e2904d\",\n        \"is_verified\": false,\n        \"line_number\": 279\n      }\n    ]\n  },\n  \"generated_at\": \"2026-03-20T12:00:09Z\"\n}\n",
+        "details": {
+          "files_with_secrets": 2,
+          "total": 5,
+          "by_type": {
+            "Secret Keyword": 4,
+            "Base64 High Entropy String": 1
+          }
+        },
+        "collected_at": "2026-03-20T12:00:09.769832Z",
+        "duration_seconds": 9.84
+      }
+    },
+    "collected_at": "2026-03-20T11:59:59.904423Z",
+    "total_duration_seconds": 13.93,
+    "errors": {}
+  },
+  "understanding": {
+    "metric_analyses": [
+      {
+        "metric_id": "eslint_violations",
+        "measures": "Number of linting violations detected by ESLint across the codebase, representing deviations from configured code style and quality rules",
+        "computation_method": "ESLint CLI tool with JSON output format parsing; scans entire codebase and counts violations across all files",
+        "influencing_factors": [
+          {
+            "factor": "Code adherence to ESLint rules",
+            "direction": "increases",
+            "magnitude": "high"
+          },
+          {
+            "factor": "ESLint rule strictness and configuration",
+            "direction": "increases",
+            "magnitude": "high"
+          },
+          {
+            "factor": "Code review process rigor",
+            "direction": "decreases",
+            "magnitude": "medium"
+          },
+          {
+            "factor": "Automated code formatting tools (Prettier, formatters)",
+            "direction": "decreases",
+            "magnitude": "high"
+          },
+          {
+            "factor": "Developer experience and training",
+            "direction": "decreases",
+            "magnitude": "medium"
+          }
+        ],
+        "theoretical_bounds": {
+          "floor": 0.0,
+          "ceiling": 10000.0,
+          "unit": "count"
+        },
+        "data_freshness": "Real-time; updates with every code commit or on-demand execution"
+      },
+      {
+        "metric_id": "prettier_violations",
+        "measures": "Number of source files that do not conform to Prettier code formatting standards, indicating formatting inconsistency",
+        "computation_method": "Prettier CLI in check mode against src/ directory; counts files that would be modified by Prettier formatting",
+        "influencing_factors": [
+          {
+            "factor": "Code formatting consistency across files",
+            "direction": "increases",
+            "magnitude": "high"
+          },
+          {
+            "factor": "Prettier configuration changes",
+            "direction": "increases",
+            "magnitude": "medium"
+          },
+          {
+            "factor": "Automated formatting on commit/pre-commit hooks",
+            "direction": "decreases",
+            "magnitude": "high"
+          },
+          {
+            "factor": "New code contributions without formatting",
+            "direction": "increases",
+            "magnitude": "medium"
+          },
+          {
+            "factor": "Developer adherence to formatting standards",
+            "direction": "decreases",
+            "magnitude": "medium"
+          }
+        ],
+        "theoretical_bounds": {
+          "floor": 0.0,
+          "ceiling": 5000.0,
+          "unit": "count"
+        },
+        "data_freshness": "Real-time; updates with every file modification in src/ directory"
+      },
+      {
+        "metric_id": "dockerfile_issues",
+        "measures": "Number of linting violations detected by Hadolint in the Dockerfile, identifying deviations from Docker best practices and security standards",
+        "computation_method": "Hadolint linter with JSON output format parsing; analyzes single Dockerfile for violations across layers, commands, and configurations",
+        "influencing_factors": [
+          {
+            "factor": "Docker best practices adherence",
+            "direction": "increases",
+            "magnitude": "high"
+          },
+          {
+            "factor": "Hadolint rule strictness and version",
+            "direction": "increases",
+            "magnitude": "high"
+          },
+          {
+            "factor": "Base image selection and configuration",
+            "direction": "increases",
+            "magnitude": "medium"
+          },
+          {
+            "factor": "Security hardening practices in Dockerfile",
+            "direction": "decreases",
+            "magnitude": "medium"
+          },
+          {
+            "factor": "Code review of Docker configurations",
+            "direction": "decreases",
+            "magnitude": "medium"
+          }
+        ],
+        "theoretical_bounds": {
+          "floor": 0.0,
+          "ceiling": 200.0,
+          "unit": "count"
+        },
+        "data_freshness": "Changes when Dockerfile is modified; can be run on-demand"
+      },
+      {
+        "metric_id": "secrets_detected",
+        "measures": "Number of hardcoded secrets (API keys, passwords, credentials, tokens) detected in source code by detect-secrets tool",
+        "computation_method": "detect-secrets scan tool with JSON output format parsing; scans src/ directory for patterns matching common secret types",
+        "influencing_factors": [
+          {
+            "factor": "Hardcoded credentials and secrets in code",
+            "direction": "increases",
+            "magnitude": "high"
+          },
+          {
+            "factor": "Security awareness and developer training",
+            "direction": "decreases",
+            "magnitude": "high"
+          },
+          {
+            "factor": "Code review process rigor",
+            "direction": "decreases",
+            "magnitude": "high"
+          },
+          {
+            "factor": "Use of secrets management systems (env vars, vaults)",
+            "direction": "decreases",
+            "magnitude": "high"
+          },
+          {
+            "factor": "Accidental commits bypassing pre-commit hooks",
+            "direction": "increases",
+            "magnitude": "medium"
+          }
+        ],
+        "theoretical_bounds": {
+          "floor": 0.0,
+          "ceiling": 1000.0,
+          "unit": "count"
+        },
+        "data_freshness": "Real-time; updates with every code commit; should be monitored continuously"
+      }
+    ],
+    "dependency_map": {
+      "dependencies": [
+        {
+          "source_metric": "prettier_violations",
+          "target_metric": "eslint_violations",
+          "relationship": "causal",
+          "confidence": "inferred",
+          "explanation": "JavaScript projects commonly integrate eslint-plugin-prettier, which surfaces every Prettier formatting violation as an ESLint error. This means prettier_violations are likely a strict subset of eslint_violations. Running `prettier --write` on the src/ directory would mechanically collapse a measurable portion of the ESLint count without any manual code review. Given the project has 87 files under src/, even a handful of formatting-heavy files can inflate eslint_violations significantly."
+        },
+        {
+          "source_metric": "eslint_violations",
+          "target_metric": "prettier_violations",
+          "relationship": "correlated",
+          "confidence": "inferred",
+          "explanation": "Files accumulating ESLint violations tend to be the same files that drift from Prettier standards — they share a root cause of reduced code-hygiene discipline (e.g., editor not auto-formatting on save, no pre-commit hooks). In a codebase with this many application-layer files (workspace-*, preview-render-*, presentation/*), both metrics rising together signals a missing or broken formatting enforcement gate."
+        },
+        {
+          "source_metric": "dockerfile_issues",
+          "target_metric": "secrets_detected",
+          "relationship": "correlated",
+          "confidence": "speculative",
+          "explanation": "Hadolint frequently flags missing .dockerignore, overly broad COPY . . instructions, and insecure ENV/ARG usage. A Dockerfile that copies the entire build context without a tight .dockerignore may bake src/ files (including any hardcoded secrets in src/server/config/env.js or src/server/auth/) directly into image layers. This creates a pathway where dockerfile_issues and secrets_detected share a compounding risk surface — secrets in source are also reachable via image inspection."
+        },
+        {
+          "source_metric": "eslint_violations",
+          "target_metric": "secrets_detected",
+          "relationship": "inverse",
+          "confidence": "speculative",
+          "explanation": "A codebase enforcing ESLint rigorously (low violations) tends to also enforce security-oriented rules via plugins such as eslint-plugin-security or no-secrets. Conversely, high eslint_violations suggest linting gates are not being enforced in CI, which means security-focused ESLint rules (e.g., detecting template literals used to construct auth headers) are also bypassed — increasing the probability that secrets slip through undetected."
+        }
+      ],
+      "critical_path": [
+        "secrets_detected",
+        "dockerfile_issues",
+        "prettier_violations",
+        "eslint_violations"
+      ],
+      "risk_clusters": [
+        {
+          "metrics": [
+            "secrets_detected",
+            "dockerfile_issues"
+          ],
+          "risk": "Security exposure cluster: hardcoded credentials in src/ (particularly high-risk in src/server/auth/create-auth-service.js, src/server/config/env.js, src/client/infrastructure/auth-client.js, and src/client/domain/vault-api-client.js) combined with Dockerfile best-practice violations create a dual attack surface. Secrets can leak via source control AND via Docker image layer inspection if COPY directives are too broad. Remediating both together is essential — fixing secrets without tightening the Dockerfile leaves baked-in copies reachable via `docker history` or image export. Priority: block merge and rotate any exposed credentials immediately."
+        },
+        {
+          "metrics": [
+            "eslint_violations",
+            "prettier_violations"
+          ],
+          "risk": "Code hygiene debt cluster: both metrics reflect a broken or absent automated enforcement gate (pre-commit hook, CI lint step). In a collaborative editor codebase (collabmd) with 87 source files spanning multiple architectural layers — application, domain, infrastructure, presentation, server — uncontrolled style drift accelerates merge conflicts and increases the cognitive load of reviewing real logic changes. Because prettier_violations likely cause a causal subset of eslint_violations, a single `prettier --write src/` pass followed by `eslint --fix` can dramatically reduce both counters mechanically, making the remaining eslint_violations the true signal of logic-level issues requiring manual attention."
+        }
+      ]
+    },
+    "doc_understanding": {
+      "application_purpose": "CollabMD turns an existing local Markdown folder, Obsidian-style vault, or git-backed docs repository into a real-time collaborative web workspace without migrating files, keeping the filesystem as the source of truth while adding Yjs-powered co-editing, anchored comments, presence, and diagram support.",
+      "target_users": [
+        "Individual knowledge workers using Obsidian-style vaults who want browser-based access",
+        "Remote software/engineering teams collaborating on RFCs, architecture notes, and runbooks",
+        "Technical writers and documentation teams reviewing drafts with anchored feedback",
+        "Developers hosting a shared markdown knowledge base for teammates who don't use local markdown tooling",
+        "Teams using git-backed documentation repositories wanting live co-editing without leaving plain-file workflows"
+      ],
+      "key_workflows": [
+        "Start a local-only collaborative session against an existing folder or vault",
+        "Share a session publicly via Cloudflare Quick Tunnel with password protection",
+        "Authenticate collaborators via Google OIDC with optional email/domain allow-listing",
+        "Co-edit Markdown files in real time with live preview and scroll sync",
+        "Add and resolve source-anchored comment threads on lines or text selections",
+        "Browse, create, rename, and delete files via the file explorer sidebar",
+        "Follow another collaborator's cursor with follow mode and see presence",
+        "Edit and preview Mermaid, PlantUML, and Excalidraw diagram files",
+        "Embed public videos inline in Markdown documents",
+        "Bootstrap a Docker deployment from a private git repository over SSH",
+        "Run a self-hosted PlantUML server via the bundled docker-compose setup",
+        "Navigate large vaults with wiki-links, backlinks, quick switcher, and outline"
+      ],
+      "known_limitations": [
+        "Single-instance only: collaboration room state is in-process and cannot be shared across replicas, ruling out horizontal scaling or high-availability deployments",
+        "OIDC support is limited to Google only; no other providers (GitHub, Microsoft, etc.) are supported",
+        "Source-anchored comments are not supported on .excalidraw files",
+        "Windows is supported only via WSL2, not native Windows execution",
+        "OIDC auth is incompatible with ephemeral Cloudflare Quick Tunnel URLs; a stable PUBLIC_BASE_URL is required",
+        "Dirty git checkouts at startup are reused as-is and startup skips the remote sync, potentially leaving the vault out of date",
+        "Cloudflare Quick Tunnel is started by default when cloudflared is present unless explicitly disabled with --no-tunnel, which is a surprising default that can expose the vault unintentionally",
+        "No auth is applied by default (--auth none), so any URL holder has full write access to the vault",
+        "Video embeds are restricted to public YouTube URLs and direct public HTTPS .mp4/.webm/.ogg files only; no support for private or authenticated video sources",
+        "PlantUML rendering requires either an external server or the bundled docker-compose local service; it is not bundled natively",
+        "Node.js 24 is required, which may be a constraint in environments pinned to older LTS versions",
+        "README is truncated mid-sentence in the docker-compose PlantUML section, indicating incomplete documentation"
+      ],
+      "improvement_opportunities": [
+        "Default auth is 'none', silently giving any URL holder write access to the vault: change the default to 'password' or at minimum print a prominent warning at startup when auth is disabled and a tunnel is active",
+        "Cloudflare Quick Tunnel starts automatically when cloudflared is installed without the user explicitly requesting it: invert the default to --no-tunnel and require an explicit --tunnel flag to opt in, preventing accidental vault exposure",
+        "OIDC is limited to Google only: add support for GitHub OAuth and generic OIDC providers (e.g., Microsoft Entra, Keycloak) since the underlying PKCE flow is provider-agnostic",
+        "Single-instance limitation prevents HA deployments: document a Redis- or external Yjs-provider-backed architecture path so teams can plan for multi-instance deployments, even if not yet implemented",
+        "Anchored comments are unsupported on .excalidraw files: implement comment anchoring for Excalidraw using element IDs or canvas coordinates as anchors, then remove the explicit exclusion",
+        "Dirty git checkout at startup silently skips the remote sync: emit a clear warning and expose a --force-sync flag or a UI indicator so users know the vault may be stale",
+        "The README's docker-compose PlantUML section is cut off mid-sentence: complete the documentation to cover the full local docker-compose setup, environment variables, and teardown steps",
+        "No bulk export or download of the vault is available from the browser UI: add a 'Download vault as ZIP' endpoint so collaborators who don't have filesystem access can export their work",
+        "The generated --auth password rotates on every restart, invalidating shared URLs and requiring re-distribution of credentials: add a --persist-auth-secret flag or env var to pin the session secret across restarts",
+        "Error messages and startup failures are not documented: provide a troubleshooting section covering common errors (port conflicts, cloudflared not found, git clone failures, Node version mismatch) with remediation steps",
+        "No role-based access control exists beyond a single shared password: add read-only access tokens so vault owners can share preview/comment-only links without granting write access",
+        "The video embed feature supports only public URLs; there is no documented mechanism for authenticated or self-hosted video: document the limitation explicitly and consider supporting presigned URLs or relative path video files already in the vault",
+        "No mention of conflict resolution behaviour when an external file edit (e.g., from Obsidian) races with an in-progress Yjs session edit: document the reconciliation strategy and surface conflicts to the user rather than silently overwriting"
+      ]
+    }
+  },
+  "discovery": {
+    "proposals": [
+      {
+        "id": "P-001",
+        "title": "Fix the single remaining ESLint violation in src/",
+        "target_metric": "eslint_violations",
+        "target_outcome": null,
+        "category": "fix_lint",
+        "impact_estimate": {
+          "direction": "improve",
+          "magnitude": "low",
+          "confidence": 0.95
+        },
+        "effort": "trivial",
+        "risk": "safe",
+        "description": "The ESLint report shows exactly 1 violation (errorCount or warningCount > 0) somewhere in the src/ tree — the JSON output is truncated before the offending file is reached, but all files explicitly listed in the snippet are clean. Run `npx eslint src/ --format=compact` to surface the file, rule, and line. The fix is likely a trivial one-liner: removing an unused variable, adding a missing semicolon/`await`, or correcting a `no-undef` reference. Common candidates given the codebase shape are the large files that contain inline `const` arrow functions not exported (e.g. `src/client/application/preview-render-compiler.js`, `src/client/bootstrap/collabmd-app-shell.js`, or `src/server/config/env.js`). Once identified, apply the minimal fix — delete the unused binding, add the missing `return`, or prefix with `_` to signal intentional non-use — then confirm `eslint_violations` reports 0.",
+        "affected_files": [
+          "src/client/application/preview-render-compiler.js",
+          "src/client/bootstrap/collabmd-app-shell.js",
+          "src/server/config/env.js",
+          "src/server/auth/create-auth-service.js"
+        ],
+        "affected_symbols": [],
+        "acceptance_criteria": [
+          "`npx eslint src/` exits with code 0 and reports 0 errors and 0 warnings",
+          "No existing behaviour is changed — the fix must be purely syntactic/structural"
+        ],
+        "touches_security": false,
+        "discovered_by": [],
+        "consensus_level": null
+      },
+      {
+        "id": "P-002",
+        "title": "Resolve 5 detect-secrets findings via inline allowlist annotations or env-var refactors",
+        "target_metric": "secrets_detected",
+        "target_outcome": null,
+        "category": "fix_security",
+        "impact_estimate": {
+          "direction": "improve",
+          "magnitude": "high",
+          "confidence": 0.8
+        },
+        "effort": "small",
+        "risk": "moderate",
+        "description": "detect-secrets reports 5 findings. Given the symbol inventory, the most probable sources are: (1) `src/server/auth/create-auth-service.js` — `createRandomAuthPassword` / `createRandomSessionSecret` may contain high-entropy string literals used as fallback defaults or in unit-test stubs; (2) `src/server/config/env.js` — `resolveSessionSecret` likely has a hardcoded example/default value that triggers the KeywordDetector or HexHighEntropyString plugin; (3) `src/server/auth/session-cookie.js` — `createSignature` / `decodeBase64Url` may contain Base64 test vectors that exceed the entropy threshold.\n\nFor each finding:\n- If the value is a REAL default secret (e.g. a fallback session secret used when no env var is set): replace it with an explicit error thrown when the env var is absent, or generate it at runtime with `crypto.randomBytes`. Never ship a static fallback secret.\n- If the value is a deliberate non-secret (e.g. a test vector, an example placeholder, a PKCE `code_verifier` stub): add an end-of-line `// pragma: allowlist secret` comment so detect-secrets marks it as intentionally reviewed.\n\nRun `detect-secrets scan --baseline .secrets.baseline` after all changes to regenerate the baseline and confirm 0 unresolved findings.",
+        "affected_files": [
+          "src/server/auth/create-auth-service.js",
+          "src/server/config/env.js",
+          "src/server/auth/session-cookie.js"
+        ],
+        "affected_symbols": [
+          "createRandomAuthPassword",
+          "createRandomSessionSecret",
+          "resolveSessionSecret",
+          "createSessionCookieManager",
+          "createSignedCookieManager"
+        ],
+        "acceptance_criteria": [
+          "`detect-secrets scan` reports 0 unverified findings (either resolved or annotated with `pragma: allowlist secret`)",
+          "No static/hardcoded fallback secret string remains in any production code path — all secrets must come from environment variables or be generated at runtime",
+          "All annotated allowlist entries have an accompanying inline comment explaining why the value is not a real secret (e.g. `// test vector`, `// example placeholder`)"
+        ],
+        "touches_security": true,
+        "discovered_by": [],
+        "consensus_level": null
+      },
+      {
+        "id": "F-001",
+        "title": "Prominent startup warning when auth=none and Cloudflare tunnel is active",
+        "target_metric": null,
+        "target_outcome": "Operators who accidentally expose a vault publicly without any authentication see an unmissable console warning at startup — including the tunnel URL — so they can decide to add a password before sharing the link",
+        "category": "ux_improvement",
+        "impact_estimate": {
+          "direction": "improve",
+          "magnitude": "high",
+          "confidence": 0.9
+        },
+        "effort": "small",
+        "risk": "safe",
+        "description": "Currently, `--auth none` is the default and Cloudflare Quick Tunnel starts automatically whenever `cloudflared` is present. The combination silently gives any URL holder full write access to the vault. The fix is to detect, at server startup, the case where the resolved auth strategy is 'none' AND a tunnel URL has been assigned, then print a clearly formatted, colour-coded WARNING block (using stderr or a distinctive prefix such as ⚠️ SECURITY WARNING) that names the exposed tunnel URL and instructs the operator to restart with `--auth password`. No new runtime dependencies are needed — the tunnel URL is already available in the startup flow, and the auth strategy is resolved in `env.js`.",
+        "affected_files": [
+          "src/server/index.js",
+          "src/server/config/env.js",
+          "src/server/create-app-server.js"
+        ],
+        "affected_symbols": [
+          "loadConfig",
+          "normalizeAuthStrategy",
+          "createAppServer",
+          "listen"
+        ],
+        "acceptance_criteria": [
+          "When auth strategy resolves to 'none' and a Cloudflare tunnel URL is active, a WARNING block is printed to stderr before the server accepts connections",
+          "The warning includes the tunnel URL so operators can assess exposure immediately",
+          "The warning explicitly suggests restarting with --auth password",
+          "When auth strategy is 'password' or 'oidc', no warning is printed regardless of tunnel state",
+          "When auth is 'none' but no tunnel is active (local-only), a lighter advisory is printed noting that anyone on the local network has write access"
+        ],
+        "touches_security": true,
+        "discovered_by": [],
+        "consensus_level": null
+      },
+      {
+        "id": "F-002",
+        "title": "Warn and surface stale-vault indicator when dirty git checkout skips remote sync",
+        "target_metric": null,
+        "target_outcome": "When a dirty git checkout causes CollabMD to skip the remote sync at startup, operators and collaborators are clearly told the vault may be behind the remote — in both the startup log and the browser UI — rather than silently receiving stale content",
+        "category": "ux_improvement",
+        "impact_estimate": {
+          "direction": "improve",
+          "magnitude": "medium",
+          "confidence": 0.82
+        },
+        "effort": "small",
+        "risk": "safe",
+        "description": "In `git-remote-bootstrap.js`, when `hasCleanWorkingTree` returns false the bootstrap flow re-uses the existing checkout and skips `git pull`. Currently, this is silent. The fix has two parts: (1) in `git-remote-bootstrap.js`, return a structured result that includes a `skippedRemoteSync: true` flag and a human-readable reason; (2) in `src/server/index.js`, log a clearly formatted warning at startup when this flag is set. Optionally, expose the flag through the existing runtime config so the browser client can show a toast or toolbar badge on first load. No new dependencies are required — the git helper functions that detect dirty state already exist in the file.",
+        "affected_files": [
+          "src/server/startup/git-remote-bootstrap.js",
+          "src/server/index.js",
+          "src/server/config/env.js"
+        ],
+        "affected_symbols": [
+          "prepareConfigForStartup",
+          "hasCleanWorkingTree",
+          "updateExistingCheckout",
+          "loadConfig"
+        ],
+        "acceptance_criteria": [
+          "When startup detects a dirty working tree and skips the remote sync, a clearly labelled WARNING is printed to the server log identifying the dirty files and stating the vault may be behind the remote",
+          "The structured startup result from prepareConfigForStartup includes a skippedRemoteSync boolean that downstream callers can consume",
+          "When the working tree is clean and sync succeeds, no extra output is produced",
+          "Existing behaviour for clean checkouts is completely unchanged"
+        ],
+        "touches_security": false,
+        "discovered_by": [],
+        "consensus_level": null
+      },
+      {
+        "id": "F-003",
+        "title": "Stable auth secret via environment variable to survive server restarts",
+        "target_metric": null,
+        "target_outcome": "Teams running CollabMD with password auth can set a fixed secret via an environment variable so that session cookies and shared links remain valid across server restarts, eliminating the need to redistribute passwords every time the process is restarted",
+        "category": "feature_addition",
+        "impact_estimate": {
+          "direction": "improve",
+          "magnitude": "medium",
+          "confidence": 0.85
+        },
+        "effort": "trivial",
+        "risk": "safe",
+        "description": "Today, `createRandomSessionSecret` in `create-auth-service.js` generates a fresh secret on every startup, and `resolveSessionSecret` in `env.js` has no provision for a user-supplied value. The fix is to extend `resolveSessionSecret` to first check for a `COLLABMD_SESSION_SECRET` environment variable; if present and of sufficient length (≥32 bytes), use it as-is; otherwise fall back to the existing random generation and log a note that the secret is ephemeral. No new dependencies are required — the existing cookie signing in `session-cookie.js` already accepts an arbitrary secret string. The change touches only two files and adds a single env-var read with a length validation guard.",
+        "affected_files": [
+          "src/server/config/env.js",
+          "src/server/auth/create-auth-service.js"
+        ],
+        "affected_symbols": [
+          "resolveSessionSecret",
+          "createRandomSessionSecret",
+          "loadConfig"
+        ],
+        "acceptance_criteria": [
+          "When COLLABMD_SESSION_SECRET is set to a string of 32+ characters, the server uses it as the session signing secret without generating a random one",
+          "When COLLABMD_SESSION_SECRET is absent or too short, the server falls back to a random secret and prints a startup note indicating sessions will not survive restarts",
+          "A secret shorter than 32 characters is rejected with a clear error message at startup rather than silently accepted",
+          "The env var is documented in the startup help output alongside other auth-related options",
+          "Existing behaviour when no env var is set is identical to the current behaviour"
+        ],
+        "touches_security": true,
+        "discovered_by": [],
+        "consensus_level": null
+      }
+    ],
+    "validated_count": 5,
+    "discarded_count": 1,
+    "ranking": {
+      "ranked_proposals": [
+        {
+          "proposal_id": "F-001",
+          "priority_score": 27.0,
+          "rank": 1,
+          "rationale": "impact=high effort=small risk=safe"
+        },
+        {
+          "proposal_id": "F-003",
+          "priority_score": 24.0,
+          "rank": 2,
+          "rationale": "impact=medium effort=trivial risk=safe"
+        },
+        {
+          "proposal_id": "P-002",
+          "priority_score": 18.0,
+          "rank": 3,
+          "rationale": "impact=high effort=small risk=moderate"
+        },
+        {
+          "proposal_id": "F-002",
+          "priority_score": 18.0,
+          "rank": 4,
+          "rationale": "impact=medium effort=small risk=safe"
+        },
+        {
+          "proposal_id": "P-001",
+          "priority_score": 12.0,
+          "rank": 5,
+          "rationale": "impact=low effort=trivial risk=safe"
+        }
+      ],
+      "duplicates_removed": [],
+      "batch_groups": []
+    }
+  },
+  "formulation": {
+    "tasks": [
+      {
+        "task_id": "T-001",
+        "source_proposal": "P-001",
+        "title": "Fix the single remaining ESLint violation in src/",
+        "description": "Run `npx eslint src/ --format=compact` to identify the exact file, rule, and line of the one remaining violation. Candidate files are:\n- `src/client/application/preview-render-compiler.js`\n- `src/client/bootstrap/collabmd-app-shell.js`\n- `src/server/config/env.js`\n- `src/server/auth/create-auth-service.js`\n\nApply the minimal fix only:\n- **Unused variable:** delete the binding or prefix with `_` to signal intentional non-use (check ESLint rule — some configs accept the `_` prefix convention).\n- **Missing `await`:** add the `await` keyword before the async call.\n- **Missing semicolon:** add it.\n- **`no-undef`:** correct the reference or import the identifier.\n\nDo NOT refactor surrounding code. Do NOT change logic, rename functions, or reorder statements. The change must be purely syntactic/structural. After the fix, run `npx eslint src/` and confirm exit code 0 with zero errors and zero warnings.",
+        "acceptance_criteria": [
+          {
+            "criterion": "`npx eslint src/` exits with code 0 and reports 0 errors and 0 warnings",
+            "verification_command": "npx eslint src/ --format=compact; echo \"Exit: $?\"",
+            "expected_outcome": "No output lines containing 'error' or 'warning'; process exits with code 0"
+          },
+          {
+            "criterion": "No behaviour change — git diff shows only the minimal syntactic/structural fix with no logic alterations",
+            "verification_command": "git diff --stat HEAD",
+            "expected_outcome": "Only the single identified file appears in the diff with a small line count change"
+          }
+        ],
+        "safety_constraints": [
+          "Do NOT modify any test files under tests/",
+          "Do NOT change function signatures, exported symbols, or module interfaces",
+          "Do NOT reorder imports or reformat unrelated code"
+        ],
+        "target_agent": "be-lead",
+        "estimated_complexity": "trivial",
+        "rollback_plan": "git revert HEAD — reverts only the one-line fix; no data or runtime state is affected."
+      },
+      {
+        "task_id": "T-002",
+        "source_proposal": "P-002",
+        "title": "Resolve all detect-secrets findings via env-var refactors or allowlist annotations",
+        "description": "Run `detect-secrets scan --baseline .secrets.baseline` to enumerate all 5 current findings and note each one's file, line, and plugin (KeywordDetector, HexHighEntropyString, Base64HighEntropyString, etc.).\n\nFor each finding, apply the correct treatment:\n\n**Real fallback/default secrets (must be eliminated):**\n- `src/server/config/env.js` — `resolveSessionSecret`: If a static fallback secret string exists as a default when no env var is set, remove it. Instead, either throw a startup error instructing the operator to set `COLLABMD_SESSION_SECRET`, or generate a value at runtime with `crypto.randomBytes(32).toString('hex')` and log a note that the secret is ephemeral. Never ship a static string.\n- `src/server/auth/create-auth-service.js` — `createRandomAuthPassword` / `createRandomSessionSecret`: If any static high-entropy string is used as a fallback (e.g. a hardcoded default password), replace it with `crypto.randomBytes(N)` generation. If the function already generates randomly and the finding is a false positive triggered by a variable name keyword, annotate with `// pragma: allowlist secret` and add `// random — not a real credential` inline.\n\n**Deliberate non-secrets (annotate with allowlist):**\n- `src/server/auth/session-cookie.js` — `createSignature` / `decodeBase64Url`: If the finding is a Base64 test vector, example PKCE `code_verifier`, or other non-credential literal, add `// pragma: allowlist secret` at the end of the line AND an explanatory comment, e.g. `// test vector — not a real secret` or `// example PKCE stub`.\n\nAfter all changes, regenerate the baseline: `detect-secrets scan --baseline .secrets.baseline`. Commit the updated `.secrets.baseline` alongside the source changes. Verify `detect-secrets audit .secrets.baseline` shows 0 unresolved findings.",
+        "acceptance_criteria": [
+          {
+            "criterion": "`detect-secrets scan --baseline .secrets.baseline` reports 0 unverified findings",
+            "verification_command": "detect-secrets scan --baseline .secrets.baseline && detect-secrets audit .secrets.baseline --report 2>&1 | grep -c 'unreviewed'",
+            "expected_outcome": "grep returns 0 matches (or exits non-zero on no match); audit shows all findings are either resolved or marked as allowlisted"
+          },
+          {
+            "criterion": "No static/hardcoded fallback secret string remains in any production code path",
+            "verification_command": "grep -rn 'resolveSessionSecret\\|createRandomAuthPassword\\|createRandomSessionSecret' src/server/auth/ src/server/config/ --include='*.js'",
+            "expected_outcome": "All identified functions either throw on missing env var, use crypto.randomBytes(), or are annotated with pragma: allowlist secret plus an explanatory comment"
+          },
+          {
+            "criterion": "Every allowlist annotation has an accompanying inline explanation comment (e.g. '// test vector', '// example placeholder')",
+            "verification_command": "grep -rn 'pragma: allowlist secret' src/ --include='*.js'",
+            "expected_outcome": "Each matching line also contains a human-readable explanation of why the value is not a real secret"
+          }
+        ],
+        "safety_constraints": [
+          "Do NOT modify any files under tests/ — test vectors in test files are handled separately",
+          "Do NOT change function signatures or module exports",
+          "Do NOT alter the session cookie signing algorithm or cookie format in session-cookie.js beyond annotation comments",
+          "Do NOT delete or truncate .secrets.baseline without regenerating it — always run detect-secrets scan to produce the updated file"
+        ],
+        "target_agent": "be-lead",
+        "estimated_complexity": "small",
+        "rollback_plan": "git revert HEAD~N..HEAD (covering all changed files in this task). Restore the previous .secrets.baseline from git history with `git checkout HEAD~N -- .secrets.baseline`. No runtime data is affected."
+      },
+      {
+        "task_id": "T-003",
+        "source_proposal": "F-003",
+        "title": "Support COLLABMD_SESSION_SECRET env var for stable session signing across restarts",
+        "description": "Extend `src/server/config/env.js` — specifically `resolveSessionSecret` (or wherever the session secret is derived) — to read `process.env.COLLABMD_SESSION_SECRET` before falling back to random generation.\n\nImplementation steps:\n\n1. **In `src/server/config/env.js`**, update `resolveSessionSecret` (or the equivalent export) as follows:\n   ```js\n   const MIN_SECRET_LENGTH = 32;\n   const envSecret = process.env.COLLABMD_SESSION_SECRET;\n   if (envSecret !== undefined) {\n     if (envSecret.length < MIN_SECRET_LENGTH) {\n       throw new Error(\n         `COLLABMD_SESSION_SECRET must be at least ${MIN_SECRET_LENGTH} characters. ` +\n         `Received ${envSecret.length} characters. Aborting startup.`\n       );\n     }\n     return envSecret; // caller receives the stable secret\n   }\n   // fallback: generate ephemeral secret and warn\n   const ephemeral = crypto.randomBytes(32).toString('hex');\n   console.warn('[collabmd] No COLLABMD_SESSION_SECRET set — using ephemeral session secret. Sessions will not survive restarts.');\n   return ephemeral;\n   ```\n2. **In `src/server/auth/create-auth-service.js`**, verify that `createRandomSessionSecret` is only called when `resolveSessionSecret` has already determined no env var is present (i.e. no double-generation). If `create-auth-service.js` calls `createRandomSessionSecret` independently of `env.js`, update it to delegate to `resolveSessionSecret` instead so there is a single source of truth.\n3. **Document the env var** in the startup help/usage output (wherever other auth-related options are described). A single line such as `COLLABMD_SESSION_SECRET  (optional) Stable session signing secret — min 32 chars` is sufficient.\n4. Ensure no static fallback secret string is introduced (this task MUST remain consistent with T-002).",
+        "acceptance_criteria": [
+          {
+            "criterion": "When COLLABMD_SESSION_SECRET is set to a 32+ character string, the server uses it as the session signing secret and does not generate a random one",
+            "verification_command": "COLLABMD_SESSION_SECRET='aaaabbbbccccddddeeeeffffgggghhhh' node -e \"const {resolveSessionSecret} = require('./src/server/config/env.js'); const s = resolveSessionSecret(); console.log(s === 'aaaabbbbccccddddeeeeffffgggghhhh' ? 'PASS' : 'FAIL');\"",
+            "expected_outcome": "Prints PASS"
+          },
+          {
+            "criterion": "When COLLABMD_SESSION_SECRET is absent, server starts with an ephemeral random secret and prints a startup note about sessions not surviving restarts",
+            "verification_command": "node -e \"const {resolveSessionSecret} = require('./src/server/config/env.js'); const s = resolveSessionSecret(); console.log(s && s.length >= 32 ? 'PASS' : 'FAIL');\" 2>&1",
+            "expected_outcome": "Prints a warning containing 'ephemeral' or 'not survive restarts', and prints PASS (secret is ≥32 chars)"
+          },
+          {
+            "criterion": "A secret shorter than 32 characters causes a thrown error at startup rather than being silently accepted",
+            "verification_command": "COLLABMD_SESSION_SECRET='tooshort' node -e \"try { require('./src/server/config/env.js').resolveSessionSecret(); console.log('FAIL'); } catch(e) { console.log(e.message.includes('32') ? 'PASS' : 'FAIL'); }\"",
+            "expected_outcome": "Prints PASS"
+          }
+        ],
+        "safety_constraints": [
+          "Do NOT modify session-cookie.js signing logic — the secret is passed in; only the source of the secret changes",
+          "Do NOT introduce a static hardcoded fallback secret string (must remain consistent with T-002)",
+          "Do NOT modify any test files under tests/"
+        ],
+        "target_agent": "be-lead",
+        "estimated_complexity": "trivial",
+        "rollback_plan": "git revert HEAD — removes env-var read and reverts to pure random generation. Existing sessions will be invalidated on next restart (same as today's behaviour). No data loss."
+      },
+      {
+        "task_id": "T-004",
+        "source_proposal": "F-001",
+        "title": "Print a prominent security warning at startup when auth=none and a Cloudflare tunnel is active",
+        "description": "In the server startup flow, detect the combination of auth strategy `'none'` AND an active Cloudflare tunnel URL, then emit a clearly formatted warning to stderr before the server begins accepting connections. Also emit a lighter advisory when auth is `'none'` but no tunnel is active.\n\nImplementation steps:\n\n1. **Identify where tunnel URL and auth strategy both become available.** This is likely in `src/server/index.js` after `createAppServer` resolves and the tunnel URL is assigned. Confirm the variable names by reading the startup flow in `src/server/index.js` and `src/server/create-app-server.js`.\n\n2. **Add a `printAuthWarnings(authStrategy, tunnelUrl)` helper** (inline in `src/server/index.js` or extracted to a small `src/server/startup/auth-warnings.js` module):\n   ```js\n   function printAuthWarnings(authStrategy, tunnelUrl) {\n     if (authStrategy !== 'none') return;\n     if (tunnelUrl) {\n       process.stderr.write([\n         '',\n         '⚠️  SECURITY WARNING ⚠️',\n         '──────────────────────────────────────────────',\n         'Authentication is disabled (--auth none) and a',\n         'Cloudflare tunnel is active:',\n         `  ${tunnelUrl}`,\n         'Anyone with this URL has FULL WRITE access to',\n         'your vault. To add password protection, restart',\n         'with: --auth password',\n         '──────────────────────────────────────────────',\n         '',\n       ].join('\\n'));\n     } else {\n       process.stderr.write(\n         '⚠️  [collabmd] Auth is disabled. Anyone on the local network has full write access to this vault.\\n'\n       );\n     }\n   }\n   ```\n3. **Call `printAuthWarnings`** immediately after the tunnel URL is known and before the \"server ready\" log line.\n4. **Ensure no warning is emitted** when `authStrategy` is `'password'` or `'oidc'`, regardless of tunnel state. Add a guard at the top of the helper.\n5. The warning must be written to **stderr** (not stdout) so it is visible even when stdout is piped.",
+        "acceptance_criteria": [
+          {
+            "criterion": "When auth strategy is 'none' and a Cloudflare tunnel URL is active, a WARNING block is printed to stderr before the server accepts connections — the block includes the tunnel URL and instructs the operator to restart with --auth password",
+            "verification_command": null,
+            "expected_outcome": null
+          },
+          {
+            "criterion": "When auth strategy is 'none' but no tunnel is active, a lighter advisory is printed to stderr noting that anyone on the local network has write access",
+            "verification_command": null,
+            "expected_outcome": null
+          },
+          {
+            "criterion": "When auth strategy is 'password' or 'oidc', no warning is printed regardless of whether a tunnel URL is present",
+            "verification_command": null,
+            "expected_outcome": null
+          },
+          {
+            "criterion": "The warning block is written to stderr, not stdout, so it remains visible when stdout is redirected",
+            "verification_command": null,
+            "expected_outcome": null
+          }
+        ],
+        "safety_constraints": [
+          "Do NOT modify the Cloudflare tunnel initiation logic — only read the resulting tunnel URL",
+          "Do NOT modify src/server/config/env.js auth resolution logic beyond reading the resolved strategy value",
+          "Do NOT add new npm dependencies — use only Node.js built-ins and existing project utilities",
+          "Do NOT modify any test files under tests/"
+        ],
+        "target_agent": "be-lead",
+        "estimated_complexity": "small",
+        "rollback_plan": "git revert HEAD — removes the warning helper and the call site. Server startup returns to its previous silent behaviour. No data or configuration is affected."
+      },
+      {
+        "task_id": "T-005",
+        "source_proposal": "F-002",
+        "title": "Emit a structured stale-vault warning when a dirty git checkout causes the remote sync to be skipped",
+        "description": "Update `src/server/startup/git-remote-bootstrap.js` to return a structured result indicating whether the remote sync was skipped, then log a clearly formatted warning in `src/server/index.js` when this flag is set.\n\nImplementation steps:\n\n1. **In `src/server/startup/git-remote-bootstrap.js`**, update the bootstrap function's return value. Currently it likely returns `void` or a simple boolean. Change it to always return (or resolve with) a structured object:\n   ```js\n   // Success path (clean tree, sync completed):\n   return { skippedRemoteSync: false };\n\n   // Dirty tree path (sync skipped):\n   const dirtyFiles = await getDirtyFiles(); // use existing git helper\n   return {\n     skippedRemoteSync: true,\n     reason: 'dirty working tree',\n     dirtyFiles, // array of relative file paths\n   };\n   ```\n   Use the existing `hasCleanWorkingTree` helper and any sibling git utility that can enumerate dirty files (e.g. `git status --porcelain` via the existing exec helper). Do NOT add new dependencies.\n\n2. **In `src/server/index.js`**, consume the structured result from the bootstrap call:\n   ```js\n   const bootstrapResult = await prepareGitRemoteBootstrap(...);\n   if (bootstrapResult.skippedRemoteSync) {\n     process.stderr.write([\n       '',\n       '⚠️  WARNING: Remote sync skipped — vault may be behind the remote',\n       `Reason: ${bootstrapResult.reason}`,\n       'Dirty files:',\n       ...bootstrapResult.dirtyFiles.map(f => `  - ${f}`),\n       'Commit or stash local changes and restart to sync from remote.',\n       '',\n     ].join('\\n'));\n   }\n   ```\n3. **Optionally expose the flag via the runtime config** (if an existing runtime config object is passed to the browser client): add `skippedRemoteSync: bootstrapResult.skippedRemoteSync` to that config object so the frontend can later display a toast or badge. This is optional — only do it if a clear existing extension point exists. Do NOT create new IPC or API endpoints for this task.\n4. **Clean path must produce no extra output** — the `if (bootstrapResult.skippedRemoteSync)` guard ensures silence on clean checkouts.\n5. Do NOT change the behaviour for clean checkouts in any way.",
+        "acceptance_criteria": [
+          {
+            "criterion": "When startup detects a dirty working tree and skips the remote sync, a clearly labelled WARNING is printed to stderr identifying the dirty files and stating the vault may be behind the remote",
+            "verification_command": null,
+            "expected_outcome": null
+          },
+          {
+            "criterion": "The structured result returned by the git bootstrap function includes a `skippedRemoteSync` boolean that downstream callers can inspect",
+            "verification_command": "node -e \"const mod = require('./src/server/startup/git-remote-bootstrap.js'); console.log(typeof mod === 'function' || typeof mod.prepareGitRemoteBootstrap === 'function' ? 'exported' : 'check export');\"",
+            "expected_outcome": "Module loads without error; the returned/resolved value from the bootstrap function includes a skippedRemoteSync boolean property"
+          },
+          {
+            "criterion": "When the working tree is clean and sync succeeds, no extra output is produced and existing startup log lines are unchanged",
+            "verification_command": null,
+            "expected_outcome": null
+          },
+          {
+            "criterion": "All existing tests in tests/ continue to pass",
+            "verification_command": "npm test",
+            "expected_outcome": "Test suite exits with code 0 and no new failures"
+          }
+        ],
+        "safety_constraints": [
+          "Do NOT change the git sync logic itself — only change what is returned/logged after the decision is made",
+          "Do NOT add new npm dependencies — use Node.js built-ins and existing project git helpers",
+          "Do NOT modify src/server/config/env.js for this task (overlap with T-002 and T-003 is already handled in those tasks)",
+          "Do NOT modify any test files under tests/ — if tests break due to the new return shape, update the bootstrap function's return to be backward-compatible (add the new fields without removing existing ones)"
+        ],
+        "target_agent": "be-lead",
+        "estimated_complexity": "small",
+        "rollback_plan": "git revert HEAD — reverts the structured return value to its previous form and removes the warning log. The git sync behaviour is unchanged. No data affected."
+      }
+    ],
+    "implementation_order": [
+      "T-001",
+      "T-002",
+      "T-003",
+      "T-004",
+      "T-005"
+    ]
+  },
+  "execution": null,
+  "metrics_after": null,
+  "validation": null,
+  "review": null,
+  "scope": null
+}

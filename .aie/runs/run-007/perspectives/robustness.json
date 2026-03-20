@@ -1,0 +1,88 @@
+{
+  "perspective_name": "robustness",
+  "raw_output": {
+    "summary": "Five robustness findings identified across the codebase. The most impactful are: (1) toast DOM elements that leak permanently when CSS animations don't fire, (2) the entire application startup silently failing with no user feedback due to discarded Promise rejections in `main.js`, and (3) a potential re-entrant `disconnect()` loop in the Yjs provider close guard. Two further findings cover loss of diagnostic information when a Web Worker compile error occurs and when an image paste upload fails silently.",
+    "findings": [
+      {
+        "id": "R-001",
+        "severity": "warning",
+        "title": "Toast elements leak into DOM when CSS animation does not fire",
+        "description": "In `ToastController.show`, the toast element is only removed when the `animationend` event fires. If the CSS animation never plays — for example when `prefers-reduced-motion` is active, when stylesheets have not loaded, when the container is hidden, or when the element is detached before the animation completes — `animationend` will never be dispatched and the event listener registered with `{ once: true }` will never execute. This means toast `<div>` elements accumulate in the DOM for the lifetime of the page.",
+        "affected_files": [
+          "src/client/presentation/toast-controller.js"
+        ],
+        "affected_symbols": [
+          "ToastController.show"
+        ],
+        "recommendation": "Add a fallback removal path that does not depend on the CSS animation. A simple fix is to schedule a second `setTimeout` with the expected animation duration plus a small buffer as a guaranteed teardown. For example, after adding the `animationend` listener also call `setTimeout(() => toast.remove(), animationDurationMs + 100)`. Using `toast.isConnected` as a guard prevents a double-remove error.",
+        "effort_to_fix": "trivial"
+      },
+      {
+        "id": "R-002",
+        "severity": "warning",
+        "title": "Application startup errors silently discarded via `void start()`",
+        "description": "In `src/client/main.js`, both code paths call `void start()`, which intentionally discards the returned Promise. If `ensureClientAuthenticated()` rejects, or if the `CollabMdAppShell` constructor or `app.initialize()` throws, the error is silently lost — producing only an unhandled-promise-rejection warning in the browser console with no user-visible feedback. The application will appear to do nothing, with no error surface to diagnose the failure.",
+        "affected_files": [
+          "src/client/main.js"
+        ],
+        "affected_symbols": [
+          "start"
+        ],
+        "recommendation": "Attach a top-level `.catch` handler to every `start()` invocation so startup failures are visible and logged:\n```js\nstart().catch((error) => {\n  console.error('[app] Fatal startup error:', error);\n  // Optionally render a visible error state in the DOM\n});\n```\nBoth the `DOMContentLoaded` callback path and the synchronous else-branch need this treatment.",
+        "effort_to_fix": "trivial"
+      },
+      {
+        "id": "R-003",
+        "severity": "warning",
+        "title": "Re-entrant `disconnect()` call inside `connection-close` handler may loop",
+        "description": "In `stopReconnectOnControlledClose`, `provider.disconnect()` is called synchronously from within the `connection-close` event handler. Depending on the Yjs WebSocket provider implementation, calling `disconnect()` may itself emit a new `connection-close` event — potentially preserving the same close reason from the original server frame. If that happens the handler fires again, calls `disconnect()` again, and the cycle repeats. There is no guard such as a `disconnecting` boolean or a check that the provider is already in the disconnected state.",
+        "affected_files": [
+          "src/client/infrastructure/yjs-provider-reset-guard.js"
+        ],
+        "affected_symbols": [
+          "stopReconnectOnControlledClose"
+        ],
+        "recommendation": "Introduce a one-shot guard so `disconnect()` is called at most once per provider instance:\n```js\nlet handled = false;\nprovider.on('connection-close', (event) => {\n  const reason = String(event?.reason || '');\n  if (handled || !NON_RECONNECT_CLOSE_REASONS.has(reason)) return;\n  handled = true;\n  provider.disconnect();\n});\n```",
+        "effort_to_fix": "trivial"
+      },
+      {
+        "id": "R-004",
+        "severity": "warning",
+        "title": "Worker compile errors are reported as strings, losing stack traces and causal chains",
+        "description": "In `src/client/application/preview-render-worker.js`, when `compilePreviewDocument` throws, only `error.message` (a plain string) is posted back to the main thread. The full `Error` object — including `stack`, `cause`, and any custom properties — cannot be transferred across `postMessage` boundaries because `Error` instances are not structured-cloneable in all environments. When a render failure occurs the main thread receives only a bare message string, making it significantly harder to diagnose the root cause, especially for errors that are re-thrown with chained causes.",
+        "affected_files": [
+          "src/client/application/preview-render-worker.js"
+        ],
+        "affected_symbols": [],
+        "recommendation": "Post a richer error payload that captures all available diagnostic context:\n```js\nself.postMessage({\n  error: {\n    message: error instanceof Error ? error.message : String(error),\n    stack: error instanceof Error ? error.stack : undefined,\n    name: error instanceof Error ? error.name : 'Error',\n  },\n  renderVersion,\n});\n```\nThe main thread should log all fields, not just `message`.",
+        "effort_to_fix": "small"
+      },
+      {
+        "id": "R-005",
+        "severity": "info",
+        "title": "Image paste upload failures are silently swallowed with no user feedback",
+        "description": "In `handleImagePasteEvent`, when `onImagePaste(imageFile)` rejects, the rejection is caught with a `console.error` only. The user receives no toast or visible indication that the pasted image failed to upload. The paste event's default has already been suppressed via `event.preventDefault()` at that point, so the paste is consumed but the image silently disappears.",
+        "affected_files": [
+          "src/client/infrastructure/editor-paste-utils.js"
+        ],
+        "affected_symbols": [
+          "handleImagePasteEvent"
+        ],
+        "recommendation": "Expose an `onError` callback parameter alongside `onImagePaste` and invoke it when the promise rejects, enabling callers to surface a toast notification. Alternatively, allow the rejected reason to propagate up to the consumer that already holds a reference to the `ToastController`.",
+        "effort_to_fix": "small"
+      }
+    ]
+  },
+  "metadata": {
+    "model": "claude-sonnet-4-6",
+    "stage": "review_robustness",
+    "input_tokens": 5,
+    "output_tokens": 6954,
+    "duration_seconds": 134.05
+  },
+  "success": true,
+  "error": null,
+  "error_type": null,
+  "error_detail": null,
+  "duration_seconds": 134.05
+}

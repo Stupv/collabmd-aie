@@ -1,0 +1,408 @@
+{
+  "metadata": {
+    "run_id": "run-007",
+    "project_name": "collabmd",
+    "project_path": "/projects/external/collabmd",
+    "started_at": "2026-03-20T12:00:01.922757Z",
+    "completed_at": "2026-03-20T12:10:31.110607Z",
+    "status": "completed",
+    "stages_completed": [],
+    "llm_calls": [
+      {
+        "model": "claude-sonnet-4-6",
+        "stage": "review_robustness",
+        "input_tokens": 5,
+        "output_tokens": 6954,
+        "duration_seconds": 134.05
+      },
+      {
+        "model": "claude-sonnet-4-6",
+        "stage": "review_simplicity",
+        "input_tokens": 4,
+        "output_tokens": 5305,
+        "duration_seconds": 88.09
+      },
+      {
+        "model": "claude-sonnet-4-6",
+        "stage": "review_security",
+        "input_tokens": 5,
+        "output_tokens": 12071,
+        "duration_seconds": 225.2
+      }
+    ],
+    "total_duration_seconds": 629.18785,
+    "aie_version": "2.0.0",
+    "run_type": "review",
+    "reconciliation_method": "llm"
+  },
+  "metrics_before": null,
+  "understanding": null,
+  "discovery": null,
+  "formulation": null,
+  "execution": null,
+  "metrics_after": null,
+  "validation": null,
+  "review": {
+    "findings": [
+      {
+        "id": "F-001",
+        "severity": "critical",
+        "title": "PlantUML dangerous directives not filtered before server-side rendering",
+        "description": "The `encodePlantUmlText` function in `plantuml-encoder.js` compresses and encodes raw user-supplied PlantUML source text without filtering any dangerous directives. PlantUML supports `!include`, `!include_once`, `!import`, `!pragma`, and URL-based includes (e.g. `!include https://...`). When an attacker embeds directives such as `!include /etc/passwd` in a PlantUML block, the encoded payload is forwarded to the server-side `PlantUmlRenderer`, which passes it to the PlantUML execution engine. This can be exploited for Local File Disclosure (LFI) by reading arbitrary server files via `!include` paths, SSRF by fetching internal network resources via URL includes, and DoS via recursive include expansion. The encoder code contains zero pre-processing or directive stripping; only zlib compression and a base64-variant encoding are applied to the raw source string.",
+        "affected_files": [
+          "src/server/domain/plantuml-encoder.js",
+          "src/server/domain/plantuml-renderer.js"
+        ],
+        "affected_symbols": [
+          "encodePlantUmlText"
+        ],
+        "recommendation": "Before encoding, strip or reject dangerous PlantUML directives. At minimum apply a blocklist regex pass over the source string that removes or rejects lines matching `^\\s*!include`, `^\\s*!import`, `^\\s*!pragma`, and any URL-scheme references (`http://`, `https://`, `file://`). For defence-in-depth, run the PlantUML renderer in a network-isolated container with a read-only filesystem mount regardless of input filtering.",
+        "effort_to_fix": "medium",
+        "source_perspectives": [
+          "security"
+        ]
+      },
+      {
+        "id": "F-002",
+        "severity": "critical",
+        "title": "postMessage handler in ExcalidrawEmbedController likely missing origin validation",
+        "description": "The `_onMessage(event)` handler in `ExcalidrawEmbedController` receives messages from embedded Excalidraw iframes and dispatches them to methods that modify application state (scene data, user identity, follow/collaborate state via `_syncEntryUser`, `_syncEntryFollowState`, etc.). A postMessage handler that does not validate `event.origin` before acting on the payload is exploitable: any page that obtains a reference to the main window (e.g. via `window.opener` after a link navigation, or by framing the app if `frame-ancestors` is not set) can send arbitrary crafted messages. This could corrupt shared Excalidraw document state or impersonate collaborators. The presence of `_buildIframeUrl(entry)` constructing iframe src URLs dynamically compounds the risk if that URL is ever partially user-influenced.",
+        "affected_files": [
+          "src/client/presentation/excalidraw-embed-controller.js"
+        ],
+        "affected_symbols": [
+          "ExcalidrawEmbedController._onMessage",
+          "ExcalidrawEmbedController._postMessageToEntry",
+          "ExcalidrawEmbedController._buildIframeUrl"
+        ],
+        "recommendation": "Add an explicit origin check at the top of `_onMessage`: `if (event.origin !== window.location.origin) return;`. Verify that `_buildIframeUrl` only ever produces same-origin URLs. Pair this with a `Content-Security-Policy: frame-ancestors 'self'` response header on all app routes to prevent third-party framing.",
+        "effort_to_fix": "small",
+        "source_perspectives": [
+          "security"
+        ]
+      },
+      {
+        "id": "F-003",
+        "severity": "warning",
+        "title": "Toast elements leak into DOM when CSS animation does not fire",
+        "description": "In `ToastController.show`, the toast element is only removed when the `animationend` event fires. If the CSS animation never plays — for example when `prefers-reduced-motion` is active, when stylesheets have not loaded, when the container is hidden, or when the element is detached before the animation completes — `animationend` will never be dispatched and the event listener registered with `{ once: true }` will never execute. This means toast `<div>` elements accumulate in the DOM for the lifetime of the page.",
+        "affected_files": [
+          "src/client/presentation/toast-controller.js"
+        ],
+        "affected_symbols": [
+          "ToastController.show"
+        ],
+        "recommendation": "Add a fallback removal path that does not depend on the CSS animation. A simple fix is to schedule a second `setTimeout` with the expected animation duration plus a small buffer as a guaranteed teardown. For example, after adding the `animationend` listener also call `setTimeout(() => toast.remove(), animationDurationMs + 100)`. Using `toast.isConnected` as a guard prevents a double-remove error.",
+        "effort_to_fix": "trivial",
+        "source_perspectives": [
+          "robustness"
+        ]
+      },
+      {
+        "id": "F-004",
+        "severity": "warning",
+        "title": "Application startup errors silently discarded via `void start()`",
+        "description": "In `src/client/main.js`, both code paths call `void start()`, which intentionally discards the returned Promise. If `ensureClientAuthenticated()` rejects, or if the `CollabMdAppShell` constructor or `app.initialize()` throws, the error is silently lost — producing only an unhandled-promise-rejection warning in the browser console with no user-visible feedback. The application will appear to do nothing, with no error surface to diagnose the failure.",
+        "affected_files": [
+          "src/client/main.js"
+        ],
+        "affected_symbols": [
+          "start"
+        ],
+        "recommendation": "Attach a top-level `.catch` handler to every `start()` invocation so startup failures are visible and logged:\n```js\nstart().catch((error) => {\n  console.error('[app] Fatal startup error:', error);\n  // Optionally render a visible error state in the DOM\n});\n```\nBoth the `DOMContentLoaded` callback path and the synchronous else-branch need this treatment.",
+        "effort_to_fix": "trivial",
+        "source_perspectives": [
+          "robustness"
+        ]
+      },
+      {
+        "id": "F-005",
+        "severity": "warning",
+        "title": "Re-entrant `disconnect()` call inside `connection-close` handler may loop",
+        "description": "In `stopReconnectOnControlledClose`, `provider.disconnect()` is called synchronously from within the `connection-close` event handler. Depending on the Yjs WebSocket provider implementation, calling `disconnect()` may itself emit a new `connection-close` event — potentially preserving the same close reason from the original server frame. If that happens the handler fires again, calls `disconnect()` again, and the cycle repeats. There is no guard such as a `disconnecting` boolean or a check that the provider is already in the disconnected state.",
+        "affected_files": [
+          "src/client/infrastructure/yjs-provider-reset-guard.js"
+        ],
+        "affected_symbols": [
+          "stopReconnectOnControlledClose"
+        ],
+        "recommendation": "Introduce a one-shot guard so `disconnect()` is called at most once per provider instance:\n```js\nlet handled = false;\nprovider.on('connection-close', (event) => {\n  const reason = String(event?.reason || '');\n  if (handled || !NON_RECONNECT_CLOSE_REASONS.has(reason)) return;\n  handled = true;\n  provider.disconnect();\n});\n```",
+        "effort_to_fix": "trivial",
+        "source_perspectives": [
+          "robustness"
+        ]
+      },
+      {
+        "id": "F-006",
+        "severity": "warning",
+        "title": "Worker compile errors are reported as strings, losing stack traces and causal chains",
+        "description": "In `src/client/application/preview-render-worker.js`, when `compilePreviewDocument` throws, only `error.message` (a plain string) is posted back to the main thread. The full `Error` object — including `stack`, `cause`, and any custom properties — cannot be transferred across `postMessage` boundaries because `Error` instances are not structured-cloneable in all environments. When a render failure occurs the main thread receives only a bare message string, making it significantly harder to diagnose the root cause, especially for errors that are re-thrown with chained causes.",
+        "affected_files": [
+          "src/client/application/preview-render-worker.js"
+        ],
+        "affected_symbols": [],
+        "recommendation": "Post a richer error payload that captures all available diagnostic context:\n```js\nself.postMessage({\n  error: {\n    message: error instanceof Error ? error.message : String(error),\n    stack: error instanceof Error ? error.stack : undefined,\n    name: error instanceof Error ? error.name : 'Error',\n  },\n  renderVersion,\n});\n```\nThe main thread should log all fields, not just `message`.",
+        "effort_to_fix": "small",
+        "source_perspectives": [
+          "robustness"
+        ]
+      },
+      {
+        "id": "F-007",
+        "severity": "warning",
+        "title": "PreviewRenderer duplicates hydration logic already abstracted into dedicated hydrator classes",
+        "description": "`src/client/application/preview-renderer.js` (488 lines) contains ~20 paired Mermaid/PlantUML method duplicates — `cancelMermaidHydration`/`cancelPlantUmlHydration`, `setupMermaidHydration`/`setupPlantUmlHydration`, `hydrateVisibleMermaids`/`hydrateVisiblePlantUmls`, `enqueueMermaidShell`/`enqueuePlantUmlShell`, `scheduleMermaidHydration`/`schedulePlantUmlHydration`, `flushMermaidHydrationQueue`/`flushPlantUmlHydrationQueue`, `reconcileHydratedMermaids`/`reconcileHydratedPlantUmls`, `syncPreservedMermaidShell`/`syncPreservedPlantUmlShell`, `preserveHydratedMermaidsForCommit`/`preserveHydratedPlantUmlsForCommit`, `enhanceMermaidDiagram`/`enhancePlantUmlDiagram`, `createMermaidZoomButton`/`createPlantUmlToolButton`, and more. The codebase already has `DiagramPreviewHydrator` (417 lines), `MermaidPreviewHydrator` (627 lines), and `PlantUmlPreviewHydrator` (611 lines) that are clearly meant to own exactly this responsibility. `PreviewRenderer` appears to be a legacy monolith that was never fully refactored to delegate to the hydrator classes, resulting in two parallel implementations of the same logic. Any bug in hydration behaviour must be fixed in multiple places.",
+        "affected_files": [
+          "src/client/application/preview-renderer.js",
+          "src/client/application/diagram-preview-hydrator.js",
+          "src/client/application/mermaid-preview-hydrator.js",
+          "src/client/application/plantuml-preview-hydrator.js"
+        ],
+        "affected_symbols": [
+          "PreviewRenderer",
+          "MermaidPreviewHydrator",
+          "PlantUmlPreviewHydrator",
+          "DiagramPreviewHydrator"
+        ],
+        "recommendation": "Complete the refactoring: have `PreviewRenderer` own and delegate to `MermaidPreviewHydrator` and `PlantUmlPreviewHydrator` instances rather than re-implementing their logic inline. All the paired mermaid*/plantUml* methods in `PreviewRenderer` should become thin delegation calls or be removed entirely once the hydrators are the authoritative owners.",
+        "effort_to_fix": "large",
+        "source_perspectives": [
+          "simplicity"
+        ]
+      },
+      {
+        "id": "F-008",
+        "severity": "warning",
+        "title": "Twelve zoom/pan utility functions duplicated verbatim between the two diagram hydrators",
+        "description": "Both `src/client/application/mermaid-preview-hydrator.js` and `src/client/application/plantuml-preview-hydrator.js` define an identical set of module-level functions: `calculateDefaultZoom`, `applyZoom`, `getViewportCenter`, `restoreViewportCenter`, `animateZoomTo`, `tick`, `zoomBy`, `resetZoomToFit`, `scheduleResetZoomToFit`, `syncMaximizeButtonState`, `setMaximizedState`, `stopPanning`. `src/client/application/preview-diagram-utils.js` already exists as a shared utility module for exactly this kind of shared diagram logic (it already exports `requestIdleRender`, `cancelIdleRender`, `getSvgSize`, etc.), yet these 12 functions were not placed there.",
+        "affected_files": [
+          "src/client/application/mermaid-preview-hydrator.js",
+          "src/client/application/plantuml-preview-hydrator.js",
+          "src/client/application/preview-diagram-utils.js"
+        ],
+        "affected_symbols": [
+          "calculateDefaultZoom",
+          "applyZoom",
+          "getViewportCenter",
+          "restoreViewportCenter",
+          "animateZoomTo",
+          "tick",
+          "zoomBy",
+          "resetZoomToFit",
+          "scheduleResetZoomToFit",
+          "syncMaximizeButtonState",
+          "setMaximizedState",
+          "stopPanning"
+        ],
+        "recommendation": "Extract all 12 functions into `preview-diagram-utils.js` (or a new `preview-zoom-utils.js` if they are voluminous) and import them in both hydrator files. This halves the code to maintain for the zoom/pan feature.",
+        "effort_to_fix": "small",
+        "source_perspectives": [
+          "simplicity"
+        ]
+      },
+      {
+        "id": "F-009",
+        "severity": "warning",
+        "title": "WorkspaceCoordinator constructor accepts approximately 40 named parameters",
+        "description": "`WorkspaceCoordinator.constructor` in `src/client/application/workspace-coordinator.js` takes a single destructured options object with ~40 distinct named parameters (`attachEditorScroller`, `beginDocumentLoad`, `cleanupAfterSessionDestroy`, `createEditorSession`, `getDisplayName`, `getFileList`, `getLineWrappingEnabled`, `getLocalUser`, `getStoredUserName`, `getTheme`, `isExcalidrawFile`, `isImageFile`, `isMermaidFile`, `isPlantUmlFile`, `isTabActive`, `loadBootstrapContent`, `loadEditorSessionClass`, `loadBacklinks`, `onBeforeFileOpen`, `onConnectionChange`, `onContentChange`, `onCommentsChange`, `onFileAwarenessChange`, `onFileOpenError`, `onFileOpenReady`, `onImagePaste`, `onSelectionChange`, `onSessionAssigned`, `onFileOpenMetric`, `onRenderExcalidrawPreview`, `onRenderImagePreview`, `onSyncWrapToggle`, `onUpdateActiveFile`, `onUpdateCurrentFile`, `onUpdateLobbyCurrentFile`, `onUpdateVisibleChrome`, `onViewModeReset`, `renderPresence`, `scrollContainerForSession`, `showEditorLoading`, `stateStore`). This makes the class nearly impossible to reason about in isolation and signals it has absorbed too many responsibilities. `WorkspaceChromeController` also has ~18 constructor parameters.",
+        "affected_files": [
+          "src/client/application/workspace-coordinator.js",
+          "src/client/application/workspace-chrome-controller.js"
+        ],
+        "affected_symbols": [
+          "WorkspaceCoordinator",
+          "WorkspaceChromeController"
+        ],
+        "recommendation": "Group related callbacks into sub-objects or intermediate services. For example, all the file-kind predicates (`isExcalidrawFile`, `isImageFile`, `isMermaidFile`, `isPlantUmlFile`) could become a single `FileKindService`; all the `onXxx` event callbacks could be grouped into an `EventBus` or typed handler objects. The goal is to reduce the constructor to under 10 conceptually distinct dependencies.",
+        "effort_to_fix": "large",
+        "source_perspectives": [
+          "simplicity"
+        ]
+      },
+      {
+        "id": "F-010",
+        "severity": "warning",
+        "title": "`generatePeerId` and `normalizeUserName` duplicated across domain modules",
+        "description": "`generatePeerId` is defined independently in both `src/client/domain/room.js` and `src/client/domain/excalidraw-collaboration.js`. `normalizeUserName` is defined independently in both `src/client/domain/room.js` and `src/client/domain/excalidraw-scene.js`. These are small pure functions with identical names and almost certainly identical semantics. Having two canonical sources of truth for identity generation means divergence over time and confusion about which to import.",
+        "affected_files": [
+          "src/client/domain/room.js",
+          "src/client/domain/excalidraw-collaboration.js",
+          "src/client/domain/excalidraw-scene.js"
+        ],
+        "affected_symbols": [
+          "generatePeerId",
+          "normalizeUserName"
+        ],
+        "recommendation": "Keep a single implementation in `room.js` (which already exports `getLocalPeerId`, `getLocalUserId`, `normalizeUserName`, `createRandomUser`) and import from it in `excalidraw-collaboration.js` and `excalidraw-scene.js`. Delete the local duplicates.",
+        "effort_to_fix": "trivial",
+        "source_perspectives": [
+          "simplicity"
+        ]
+      },
+      {
+        "id": "F-011",
+        "severity": "warning",
+        "title": "`requestIdleRender` / `cancelIdleRender` / `isNearViewport` duplicated in ExcalidrawEmbedController",
+        "description": "`src/client/application/preview-diagram-utils.js` exports `requestIdleRender`, `cancelIdleRender`, and `isNearViewport` as shared utilities. `src/client/presentation/excalidraw-embed-controller.js` (1082 lines) locally re-defines its own private versions of all three functions at the top of the file rather than importing from the shared module. This is confirmed by both the symbol summary (which shows these as private functions in `excalidraw-embed-controller.js`) and the exports list in `preview-diagram-utils.js`.",
+        "affected_files": [
+          "src/client/presentation/excalidraw-embed-controller.js",
+          "src/client/application/preview-diagram-utils.js"
+        ],
+        "affected_symbols": [
+          "requestIdleRender",
+          "cancelIdleRender",
+          "isNearViewport"
+        ],
+        "recommendation": "Remove the three private functions from `excalidraw-embed-controller.js` and import `requestIdleRender`, `cancelIdleRender`, and `isNearViewport` from `preview-diagram-utils.js` instead.",
+        "effort_to_fix": "trivial",
+        "source_perspectives": [
+          "simplicity"
+        ]
+      },
+      {
+        "id": "F-012",
+        "severity": "warning",
+        "title": "Password transmitted via URL hash fragment",
+        "description": "The functions `getPasswordFromHash` and `removePasswordFromHash` in `auth-client.js` confirm that the vault password is delivered to the client through the URL fragment (e.g. `https://app/#password=secret`). Although hash fragments are not sent in HTTP request headers, they are stored in browser history (accessible to local users and software with history access), readable by any JavaScript loaded on the same page (analytics SDKs, error reporters, browser extensions) before `removePasswordFromHash` fires, and may appear in crash reports or debugging tooling that captures the full URL.",
+        "affected_files": [
+          "src/client/infrastructure/auth-client.js"
+        ],
+        "affected_symbols": [
+          "getPasswordFromHash",
+          "removePasswordFromHash",
+          "ensureClientAuthenticated"
+        ],
+        "recommendation": "Avoid transmitting secrets via URL parameters or fragments. Present the password prompt as a UI form and submit it via a POST request body. If invite-link-style bootstrapping is required, use short-lived server-issued tokens that are exchanged for a session server-side and immediately invalidated, rather than embedding the raw secret in a URL.",
+        "effort_to_fix": "medium",
+        "source_perspectives": [
+          "security"
+        ]
+      },
+      {
+        "id": "F-013",
+        "severity": "warning",
+        "title": "Open redirect risk in post-authentication return-to URL",
+        "description": "The auth service defines `sanitizeReturnTo` and `getCurrentReturnTo` to handle the redirect destination after successful authentication. If `sanitizeReturnTo` permits absolute URLs (`https://evil.com`), protocol-relative URLs (`//evil.com`), or any value whose host differs from the app's own origin, an attacker can craft a login URL that redirects the victim to a phishing site after authentication. The `appendHashParam` utility further suggests hash manipulation of redirect URLs, which can be abused to inject hash-based payloads into the landing page.",
+        "affected_files": [
+          "src/server/auth/create-auth-service.js"
+        ],
+        "affected_symbols": [
+          "sanitizeReturnTo",
+          "getCurrentReturnTo",
+          "getDefaultReturnTo",
+          "appendHashParam",
+          "prependBasePath"
+        ],
+        "recommendation": "Ensure `sanitizeReturnTo` only allows relative, same-origin paths. Reject any value containing a host component or a non-relative scheme. A safe guard: `if (!value.startsWith('/') || value.startsWith('//')) return defaultPath;`. Add unit tests covering open-redirect payloads: `//evil.com`, `https://evil.com`, `/\\evil.com`, `\\\\evil.com`.",
+        "effort_to_fix": "small",
+        "source_perspectives": [
+          "security"
+        ]
+      },
+      {
+        "id": "F-014",
+        "severity": "warning",
+        "title": "SVG markup from server rendered into DOM with unverifiable sanitization depth",
+        "description": "`PlantUmlPreviewHydrator.enhanceDiagram(shell, svgMarkup)` and `MermaidPreviewHydrator.enhanceDiagram(shell, renderedDiagram)` insert diagram SVG output directly into the document. The existence of `sanitizeSvgMarkup` in `preview-diagram-utils.js` confirms that the SVG content is treated as potentially unsafe, but the implementation is not available for review. SVG is a well-known XSS vector: it supports inline `<script>`, event-handler attributes (`onload`, `onerror`), `<use xlink:href>` for resource loading, and CSS `url()` references. If server-side rendering is exploited (see F-001) to produce attacker-controlled SVG, or if Mermaid's SVG output is not fully neutralised, arbitrary JavaScript can execute in the user's browser.",
+        "affected_files": [
+          "src/client/application/preview-diagram-utils.js",
+          "src/client/application/plantuml-preview-hydrator.js",
+          "src/client/application/mermaid-preview-hydrator.js"
+        ],
+        "affected_symbols": [
+          "sanitizeSvgMarkup",
+          "PlantUmlPreviewHydrator.enhanceDiagram",
+          "MermaidPreviewHydrator.enhanceDiagram"
+        ],
+        "recommendation": "Use DOMPurify with `USE_PROFILES: { svg: true, svgFilters: true }` and explicitly add `FORBID_ATTR: ['onerror', 'onload']` and strip `xlink:href`/`href` attributes pointing to non-fragment, non-data-URI values. Audit the current `sanitizeSvgMarkup` implementation against this baseline. Consider rendering SVG inside a sandboxed `<iframe>` to provide a hard execution boundary.",
+        "effort_to_fix": "small",
+        "source_perspectives": [
+          "security"
+        ]
+      },
+      {
+        "id": "F-015",
+        "severity": "warning",
+        "title": "Shell argument quoting in git bootstrap is fragile; private key file permissions unverified",
+        "description": "`git-remote-bootstrap.js` defines `quoteShellArg` and uses `execGit` to run git operations with operands derived from config values such as repository URLs, branch names, and identity settings. It also writes SSH private key material to the filesystem via `createPrivateKeyFile`. Custom shell-quoting functions are notoriously difficult to get right across all edge cases (null bytes, newlines, locale-dependent characters). If any config value originates from an untrusted or operator-supplied environment variable and quoting is incomplete, command injection is possible. Additionally, the permissions and path of the private key file are not visible; world-readable key files would expose SSH credentials to other local processes.",
+        "affected_files": [
+          "src/server/startup/git-remote-bootstrap.js"
+        ],
+        "affected_symbols": [
+          "quoteShellArg",
+          "execGit",
+          "createPrivateKeyFile",
+          "buildGitSshCommand",
+          "prepareGitCommandEnv",
+          "createGitEnv"
+        ],
+        "recommendation": "Replace shell-string construction with `child_process.execFile` or `execa` using argument arrays, which eliminates shell interpolation entirely and makes `quoteShellArg` unnecessary. Write the private key file to a `mkdtemp`-created temporary directory with mode `0o600`, owned by the process user, and delete it in a `finally` block. Validate the Git remote URL against an allowlist of accepted schemes (`https://`, `ssh://`, `git@`) before use.",
+        "effort_to_fix": "medium",
+        "source_perspectives": [
+          "security"
+        ]
+      },
+      {
+        "id": "F-016",
+        "severity": "info",
+        "title": "Image paste upload failures are silently swallowed with no user feedback",
+        "description": "In `handleImagePasteEvent`, when `onImagePaste(imageFile)` rejects, the rejection is caught with a `console.error` only. The user receives no toast or visible indication that the pasted image failed to upload. The paste event's default has already been suppressed via `event.preventDefault()` at that point, so the paste is consumed but the image silently disappears.",
+        "affected_files": [
+          "src/client/infrastructure/editor-paste-utils.js"
+        ],
+        "affected_symbols": [
+          "handleImagePasteEvent"
+        ],
+        "recommendation": "Expose an `onError` callback parameter alongside `onImagePaste` and invoke it when the promise rejects, enabling callers to surface a toast notification. Alternatively, allow the rejected reason to propagate up to the consumer that already holds a reference to the `ToastController`.",
+        "effort_to_fix": "small",
+        "source_perspectives": [
+          "robustness"
+        ]
+      },
+      {
+        "id": "F-017",
+        "severity": "info",
+        "title": "BrowserNavigationPort is a zero-logic delegation wrapper around three already-exported functions",
+        "description": "`src/client/infrastructure/browser-navigation-port.js` defines a class with three instance methods — `getHashRoute()`, `navigateToFile()`, `navigateToGitDiff()` — each of which is a single-line call to the identically-named function imported from `runtime-config.js`. The class adds no state, no error handling, no transformation, and no testability benefit. Every method body is exactly one line delegating to the imported function.",
+        "affected_files": [
+          "src/client/infrastructure/browser-navigation-port.js",
+          "src/client/infrastructure/runtime-config.js"
+        ],
+        "affected_symbols": [
+          "BrowserNavigationPort"
+        ],
+        "recommendation": "Either (a) remove `BrowserNavigationPort` and have callers import the three functions directly from `runtime-config.js`, or (b) if the class abstraction is genuinely needed for testing/injection purposes, document that intent clearly. As written, the class is pure noise.",
+        "effort_to_fix": "small",
+        "source_perspectives": [
+          "simplicity"
+        ]
+      },
+      {
+        "id": "F-018",
+        "severity": "info",
+        "title": "`src/client/domain/vault-api-client.js` is a trivial re-export indirection with no added value",
+        "description": "The entire file `src/client/domain/vault-api-client.js` consists of two lines that re-export `VaultApiClient` and `vaultApiClient` from `src/client/infrastructure/vault-api-client.js`. It adds no transformation, aliasing, or domain adaptation. Callers importing from the domain path get exactly the same symbols as the infrastructure path, making the intermediate file purely an indirection cost (an extra module to trace when debugging, another file in the tree to maintain).",
+        "affected_files": [
+          "src/client/domain/vault-api-client.js",
+          "src/client/infrastructure/vault-api-client.js"
+        ],
+        "affected_symbols": [
+          "VaultApiClient",
+          "vaultApiClient"
+        ],
+        "recommendation": "Remove `src/client/domain/vault-api-client.js` and update all importers to import directly from `src/client/infrastructure/vault-api-client.js`. If the domain/infrastructure separation is important, add a comment in the infrastructure file explaining its dual role rather than maintaining a pass-through module.",
+        "effort_to_fix": "small",
+        "source_perspectives": [
+          "simplicity"
+        ]
+      }
+    ],
+    "summary": "The collabmd review surfaced 18 distinct findings across security, robustness, and simplicity dimensions. The two most urgent issues are security-critical: server-side PlantUML rendering accepts raw user directives enabling SSRF and local file disclosure, and the ExcalidrawEmbedController's postMessage handler likely lacks origin validation, allowing cross-origin injection into shared drawing state. A further cluster of security warnings covers password-in-URL-hash authentication, an unvalidated open-redirect in the post-auth `returnTo` parameter, insufficiently audited SVG sanitization, and fragile shell-quoting in the git bootstrap. On the robustness side, application startup failures are silently swallowed via `void start()`, toast elements permanently leak into the DOM when CSS animations don't fire, and a re-entrant `disconnect()` call in the Yjs provider guard can loop. The simplicity findings reveal a pervasive pattern of incomplete refactoring: `PreviewRenderer` duplicates ~20 methods already owned by dedicated hydrator classes, 12 zoom/pan utilities are copy-pasted between both hydrators despite a shared utility module existing for exactly this purpose, and identity primitives (`generatePeerId`, `normalizeUserName`) are independently redefined across domain modules — all compounding maintenance burden and bug-fix surface.",
+    "perspective_summaries": {
+      "robustness": "Five robustness findings identified across the codebase. The most impactful are: (1) toast DOM elements that leak permanently when CSS animations don't fire, (2) the entire application startup silently failing with no user feedback due to discarded Promise rejections in `main.js`, and (3) a potential re-entrant `disconnect()` loop in the Yjs provider close guard. Two further findings cover loss of diagnostic information when a Web Worker compile error occurs and when an image paste upload fails silently.",
+      "simplicity": "The codebase shows a clear pattern of incomplete refactoring: dedicated hydrator classes (DiagramPreviewHydrator, MermaidPreviewHydrator, PlantUmlPreviewHydrator) were created to decompose diagram rendering concerns, but PreviewRenderer still contains a parallel inline implementation of all the same logic — effectively doubling the code surface for hydration bugs. The same abstraction failure appears at a smaller scale: 12 zoom/pan utility functions are copy-pasted between the two hydrator files despite a shared preview-diagram-utils module existing for exactly this purpose, and three idle-render utilities are re-implemented locally in ExcalidrawEmbedController despite being exported from that shared module. Identity primitives (generatePeerId, normalizeUserName) are independently redefined in multiple domain modules. Two structural simplicity issues round out the picture: WorkspaceCoordinator's ~40-parameter constructor signals excessive responsibility aggregation, and a zero-logic BrowserNavigationPort wrapper class adds indirection without value.",
+      "security": "Security review of collabmd identified six findings across the server and client layers. The most critical are: (1) server-side PlantUML rendering that accepts raw user directives, enabling SSRF and local file disclosure via `!include` and URL-based includes; (2) a postMessage handler in ExcalidrawEmbedController that appears to lack origin validation, allowing cross-origin message injection into shared drawing state. Supporting vulnerabilities include a password-in-URL-hash authentication flow that exposes credentials to browser history and on-page scripts; an open-redirect risk in the post-authentication `returnTo` parameter; SVG markup from the server inserted into the DOM whose sanitization depth cannot be verified; and shell command construction in the git bootstrap that would be safer rewritten to use argument arrays instead of a custom quoting function."
+    }
+  },
+  "scope": null
+}
